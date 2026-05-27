@@ -8,6 +8,7 @@ import os
 import urllib.request
 import urllib.parse
 import urllib.error
+import webbrowser
 
 import sys
 import os
@@ -204,6 +205,11 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     print(f'\n  ClipQ is running at http://localhost:{PORT}\n')
+    try:
+        webbrowser.open(f'http://localhost:{PORT}')
+    except Exception as e:
+        print(f"Could not open browser: {e}")
+        
     server = http.server.HTTPServer(('', PORT), ClipQHandler)
     try:
         server.serve_forever()
