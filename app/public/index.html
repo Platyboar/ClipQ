@@ -2,6 +2,16 @@
 <html lang="en">
 
 <head>
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            fetch('/log-error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, source, lineno, colno, error: error ? error.stack : null })
+            });
+            return false;
+        };
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClipQ — Clip Queue</title>
@@ -135,12 +145,13 @@
                 <button class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
                 <button class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
                 <button class="tab" data-stab="design" data-i18n="settings.tab.design">Design</button>
+                <button class="tab" data-stab="layout" data-i18n="settings.tab.layout">Layout</button>
             </div>
             <div class="modal-body">
                 <!-- General Tab -->
                 <div class="settings-tab-content active" id="stab-general">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.general.language">Language</label>
+                        <label class="form-label" for="set-language" data-i18n="settings.general.language">Language</label>
                         <div class="form-hint" data-i18n="settings.general.language_hint">Choose the display language of the app</div>
                         <select class="form-input" id="set-language">
                             <!-- Populated dynamically -->
@@ -160,7 +171,7 @@
                 <!-- Queue Tab -->
                 <div class="settings-tab-content" id="stab-queue">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.queue.providers">Clip Providers</label>
+                        <span class="form-label" data-i18n="settings.queue.providers">Clip Providers</span>
                         <div class="form-hint" data-i18n="settings.queue.providers_hint">Choose which platforms are allowed</div>
                         <div class="provider-toggles">
                             <button class="provider-chip active" data-provider="twitch">Twitch Clips</button>
@@ -181,12 +192,12 @@
                         <input class="form-input" id="set-age-limit" type="number" min="0" value="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.queue.blocked_streamers">Blocked Streamers</label>
+                        <label class="form-label" for="set-blocked-streamers" data-i18n="settings.queue.blocked_streamers">Blocked Streamers</label>
                         <div class="form-hint" data-i18n="settings.queue.blocked_streamers_hint">One channel name per line. Clips from these streamers will be rejected.</div>
                         <textarea class="form-textarea" id="set-blocked-streamers"></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.queue.blocked_users">Blocked Users</label>
+                        <label class="form-label" for="set-blocked-users" data-i18n="settings.queue.blocked_users">Blocked Users</label>
                         <div class="form-hint" data-i18n="settings.queue.blocked_users_hint">One name per line. Messages from these users will be ignored.</div>
                         <textarea class="form-textarea" id="set-blocked-users">streamlabs
 nightbot
@@ -208,7 +219,7 @@ moobot</textarea>
                     </div>
                     <!-- Command rows with role checkboxes -->
                     <div class="cmd-row form-group" data-cmd="next">
-                        <label class="form-label" data-i18n="settings.commands.next">Next Clip</label>
+                        <label class="form-label" for="set-cmd-next" data-i18n="settings.commands.next">Next Clip</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-next" value="next">
                             <div class="cmd-roles" data-cmd="next">
@@ -222,7 +233,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-next"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="push">
-                        <label class="form-label" data-i18n="settings.commands.push">Push Clip to #1</label>
+                        <label class="form-label" for="set-cmd-push" data-i18n="settings.commands.push">Push Clip to #1</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-push" value="push">
                             <div class="cmd-roles" data-cmd="push">
@@ -236,7 +247,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-push"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="open">
-                        <label class="form-label" data-i18n="settings.commands.open">Open Queue</label>
+                        <label class="form-label" for="set-cmd-open" data-i18n="settings.commands.open">Open Queue</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-open" value="open">
                             <div class="cmd-roles" data-cmd="open">
@@ -250,7 +261,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-open"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="close">
-                        <label class="form-label" data-i18n="settings.commands.close">Close Queue</label>
+                        <label class="form-label" for="set-cmd-close" data-i18n="settings.commands.close">Close Queue</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-close" value="close">
                             <div class="cmd-roles" data-cmd="close">
@@ -264,7 +275,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-close"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="clear">
-                        <label class="form-label" data-i18n="settings.commands.clear">Clear Queue</label>
+                        <label class="form-label" for="set-cmd-clear" data-i18n="settings.commands.clear">Clear Queue</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-clear" value="clear">
                             <div class="cmd-roles" data-cmd="clear">
@@ -278,7 +289,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-clear"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="purgememory">
-                        <label class="form-label" data-i18n="settings.commands.purgememory">Purge Clip Memory</label>
+                        <label class="form-label" for="set-cmd-purgememory" data-i18n="settings.commands.purgememory">Purge Clip Memory</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-purgememory" value="purgememory">
                             <div class="cmd-roles" data-cmd="purgememory">
@@ -292,7 +303,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-purgememory"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="autoplay">
-                        <label class="form-label" data-i18n="settings.commands.autoplay">Autoplay on/off</label>
+                        <label class="form-label" for="set-cmd-autoplay" data-i18n="settings.commands.autoplay">Autoplay on/off</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-autoplay" value="autoplay">
                             <div class="cmd-roles" data-cmd="autoplay">
@@ -306,7 +317,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-autoplay"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="limit">
-                        <label class="form-label" data-i18n="settings.commands.limit">Set Clip Limit</label>
+                        <label class="form-label" for="set-cmd-limit" data-i18n="settings.commands.limit">Set Clip Limit</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-limit" value="limit">
                             <div class="cmd-roles" data-cmd="limit">
@@ -320,7 +331,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-limit"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="remove">
-                        <label class="form-label" data-i18n="settings.commands.remove">Remove Clip</label>
+                        <label class="form-label" for="set-cmd-remove" data-i18n="settings.commands.remove">Remove Clip</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-remove" value="remove">
                             <div class="cmd-roles" data-cmd="remove">
@@ -334,7 +345,7 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-remove"></div>
                     </div>
                     <div class="cmd-row form-group" data-cmd="providers">
-                        <label class="form-label" data-i18n="settings.commands.providers">Provider on/off</label>
+                        <label class="form-label" for="set-cmd-providers" data-i18n="settings.commands.providers">Provider on/off</label>
                         <div class="cmd-row-inner">
                             <input class="form-input cmd-word" id="set-cmd-providers" value="providers">
                             <div class="cmd-roles" data-cmd="providers">
@@ -374,7 +385,7 @@ moobot</textarea>
                     <div class="form-group">
                         <div class="toggle-row">
                             <div>
-                                <label class="form-label" for="design-show-badges" data-i18n="settings.design.show_badges">Show Badges</label>
+                                <span class="form-label" data-i18n="settings.design.show_badges">Show Badges</span>
                                 <div class="form-hint" data-i18n="settings.design.show_badges_hint">Show Twitch roles (Moderator, VIP, Streamer) in the queue</div>
                             </div>
                             <div class="toggle-switch" id="design-show-badges"></div>
@@ -403,6 +414,73 @@ moobot</textarea>
                         <button class="btn btn-danger" id="design-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
                     </div>
                 </div>
+                <!-- Layout Tab -->
+                <div class="settings-tab-content" id="stab-layout">
+                    <div class="form-group">
+                        <label class="form-label" for="layout-info-position" data-i18n="settings.layout.info_position">Info Bar Position</label>
+                        <div class="form-hint" data-i18n="settings.layout.info_position_hint">Choose whether the info bar is displayed above or below the player</div>
+                        <select class="form-input" id="layout-info-position">
+                            <option value="below" data-i18n="settings.layout.position_below">Below the player</option>
+                            <option value="above" data-i18n="settings.layout.position_above">Above the player</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="layout-sidebar-position" data-i18n="settings.layout.sidebar_position">Sidebar Position</label>
+                        <div class="form-hint" data-i18n="settings.layout.sidebar_position_hint">Choose whether the sidebar is to the right or left of the player</div>
+                        <select class="form-input" id="layout-sidebar-position">
+                            <option value="right" data-i18n="settings.layout.position_right">Right of the player</option>
+                            <option value="left" data-i18n="settings.layout.position_left">Left of the player</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="layout-player-width" data-i18n="settings.layout.player_width">Player Width</label>
+                        <div class="form-hint" data-i18n="settings.layout.player_width_hint">Adjust the width of the video player relative to the sidebar</div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <input type="range" class="form-input" id="layout-player-width" min="50" max="85" value="70" style="flex:1; padding:0; height:auto;">
+                            <span id="layout-player-width-val" style="min-width:40px; font-weight:bold; text-align:right;">70%</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <span class="form-label" data-i18n="settings.layout.visibility">Component Visibility</span>
+                        <div class="form-hint" data-i18n="settings.layout.visibility_hint">Show or hide individual sidebar components</div>
+                        
+                        <div class="toggle-row" style="margin-top:10px;">
+                            <div>
+                                <span class="form-label" data-i18n="settings.layout.show_facecam">Show Facecam Box</span>
+                            </div>
+                            <div class="toggle-switch active" id="layout-show-facecam"></div>
+                        </div>
+                        <div class="toggle-row" style="margin-top:10px;">
+                            <div>
+                                <span class="form-label" data-i18n="settings.layout.show_chat">Show Chat Box</span>
+                            </div>
+                            <div class="toggle-switch active" id="layout-show-chat"></div>
+                        </div>
+                        <div class="toggle-row" style="margin-top:10px;">
+                            <div>
+                                <span class="form-label" data-i18n="settings.layout.show_ad">Show Ad Box</span>
+                            </div>
+                            <div class="toggle-switch active" id="layout-show-ad"></div>
+                        </div>
+                        <div class="toggle-row" style="margin-top:10px;">
+                            <div>
+                                <span class="form-label" data-i18n="settings.layout.show_queue">Show Queue Box</span>
+                            </div>
+                            <div class="toggle-switch active" id="layout-show-queue"></div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="layout-ordering-group">
+                        <span class="form-label" data-i18n="settings.layout.ordering">Component Order</span>
+                        <div class="form-hint" data-i18n="settings.layout.ordering_hint">Determine the vertical position of each active component in the sidebar</div>
+                        <div id="layout-ordering-list" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border);display:flex;gap:10px;">
+                        <button class="btn btn-primary" id="layout-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
+                        <button class="btn btn-danger" id="layout-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" id="settings-cancel" data-i18n="settings.cancel">Cancel</button>
@@ -424,6 +502,7 @@ moobot</textarea>
     <script src="/js/lang/it.js?v=12"></script>
     <script src="/js/providers.js?v=11"></script>
     <script src="/js/memory.js?v=10"></script>
+    <script src="/js/layout.js?v=12"></script>
     <script src="/js/settings.js?v=12"></script>
     <script src="/js/design.js?v=9"></script>
     <script src="/js/auth.js?v=10"></script>

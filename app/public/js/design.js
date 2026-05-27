@@ -82,7 +82,7 @@ ClipQ.Design = (() => {
         '--color-info-bg': '#101010',
         '--color-ad-bg': '#101010',
         '--color-settings-bg': '#141414',
-        '--color-overlay': 'rgba(0,0,0,0.7)',
+        '--color-overlay': 'rgba(0,0,0,0.3)',
         '--color-border': '#222222',
         '--color-border-facecam': '#2a1a1a',
         '--color-border-chat': '#1e1e1e',

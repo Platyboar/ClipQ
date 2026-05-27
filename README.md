@@ -10,7 +10,7 @@ Developed with the help of Google Antigravity.
 - 🔧 **Chat Commands** — Moderators (and configurable roles) can control the queue via chat
 - 🛡️ **Role-Based Permissions** — Configure which roles (Broadcaster, Lead Mod, Mod, VIP, All) can use each command
 - 🌍 **Multi-Language** — English, German, Spanish, Russian, Portuguese, French, Japanese, and Italian included (Spanish, Russian, Portuguese, French, Japanese, and Italian were translated using AI; easily extendable)
-- 🎨 **Customizable Design** — Colors, fonts, and layout are fully customizable
+- 🎨 **Customizable Design & Layout** — Colors, fonts, and layout (component ordering, sidebar position, info bar placement, and component visibility) are fully customizable and can be saved as defaults
 - 📋 **Clip Memory** — Prevents duplicate clips from being re-queued
 - 📜 **History** — Browse previously watched clips
 - 🚫 **Moderation** — Blocked users/streamers, auto-removal on timeout/ban

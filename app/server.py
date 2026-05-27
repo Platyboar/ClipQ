@@ -198,6 +198,23 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
 
         super().do_GET()
 
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/log-error':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                print("\n[CLIENT ERROR]", json.dumps(data, indent=2))
+            except Exception as e:
+                print("\n[CLIENT ERROR LOG PARSE FAILED]", e, post_data)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+            return
+
     def log_message(self, format, *args):
         # Cleaner log output
         pass

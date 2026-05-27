@@ -9,6 +9,8 @@ ClipQ.Settings = (() => {
 
     const DEFAULT_ROLES = { broadcaster: true, leadMod: true, mod: true, vip: false, all: false };
 
+    let currentLayoutOrder = ['chat_ad', 'facecam', 'queue'];
+
     const DEFAULTS = {
         channel: '',
         appTitle: 'ClipQ',
@@ -31,7 +33,17 @@ ClipQ.Settings = (() => {
             remove:      { word: 'remove',      roles: { ...DEFAULT_ROLES } },
             providers:   { word: 'providers',   roles: { ...DEFAULT_ROLES } },
         },
-        design: { colors: {}, fontFamily: 'Inter', showBadges: true }
+        design: { colors: {}, fontFamily: 'Inter', showBadges: true },
+        layout: {
+            infoPosition: 'below',
+            sidebarPosition: 'right',
+            showFacecam: true,
+            showChat: true,
+            showAd: true,
+            showQueue: true,
+            playerWidth: 70,
+            order: ['chat_ad', 'facecam', 'queue']
+        }
     };
 
     /** All command keys (excluding 'prefix') */
@@ -90,13 +102,18 @@ ClipQ.Settings = (() => {
                     ...DEFAULTS.design,
                     ...(saved?.design || {}),
                     colors: { ...(saved?.design?.colors || {}) }
+                },
+                layout: {
+                    ...DEFAULTS.layout,
+                    ...(saved?.layout || {})
                 }
             };
         } catch {
             current = { ...DEFAULTS, commands: { ...DEFAULTS.commands } };
         }
-        // Apply saved design to CSS variables on load
+        // Apply saved design and layout on load
         if (current.design && ClipQ.Design) ClipQ.Design.applyAll(current.design);
+        if (current.layout && window.ClipQ && window.ClipQ.Layout) window.ClipQ.Layout.apply(current.layout);
         return current;
     }
 
@@ -200,6 +217,33 @@ ClipQ.Settings = (() => {
         }
 
         if (ClipQ.Design) ClipQ.Design.populate(s.design);
+
+        // Layout
+        if (s.layout) {
+            document.getElementById('layout-info-position').value = s.layout.infoPosition || 'below';
+            document.getElementById('layout-sidebar-position').value = s.layout.sidebarPosition || 'right';
+            
+            const playerWidth = s.layout.playerWidth || 70;
+            document.getElementById('layout-player-width').value = playerWidth;
+            const widthValEl = document.getElementById('layout-player-width-val');
+            if (widthValEl) widthValEl.textContent = `${playerWidth}%`;
+
+            const facecamToggle = document.getElementById('layout-show-facecam');
+            if (facecamToggle) facecamToggle.classList.toggle('active', s.layout.showFacecam !== false);
+
+            const chatToggle = document.getElementById('layout-show-chat');
+            if (chatToggle) chatToggle.classList.toggle('active', s.layout.showChat !== false);
+
+            const adToggle = document.getElementById('layout-show-ad');
+            if (adToggle) adToggle.classList.toggle('active', s.layout.showAd !== false);
+
+            const queueToggle = document.getElementById('layout-show-queue');
+            if (queueToggle) queueToggle.classList.toggle('active', s.layout.showQueue !== false);
+
+            currentLayoutOrder = s.layout.order ? [...s.layout.order] : ['chat_ad', 'facecam', 'queue'];
+            renderOrderingUI();
+        }
+
         updateCommandExamples();
     }
 
@@ -243,7 +287,17 @@ ClipQ.Settings = (() => {
                 const badgesSwitch = document.getElementById('design-show-badges');
                 designVals.showBadges = badgesSwitch ? badgesSwitch.classList.contains('active') : true;
                 return designVals;
-            })()
+            })(),
+            layout: {
+                infoPosition: document.getElementById('layout-info-position') ? document.getElementById('layout-info-position').value : 'below',
+                sidebarPosition: document.getElementById('layout-sidebar-position') ? document.getElementById('layout-sidebar-position').value : 'right',
+                playerWidth: document.getElementById('layout-player-width') ? (parseInt(document.getElementById('layout-player-width').value) || 70) : 70,
+                showFacecam: document.getElementById('layout-show-facecam') ? document.getElementById('layout-show-facecam').classList.contains('active') : true,
+                showChat: document.getElementById('layout-show-chat') ? document.getElementById('layout-show-chat').classList.contains('active') : true,
+                showAd: document.getElementById('layout-show-ad') ? document.getElementById('layout-show-ad').classList.contains('active') : true,
+                showQueue: document.getElementById('layout-show-queue') ? document.getElementById('layout-show-queue').classList.contains('active') : true,
+                order: currentLayoutOrder
+            }
         };
     }
 
@@ -319,6 +373,110 @@ ClipQ.Settings = (() => {
             }
         });
 
+        // Layout listeners
+        const infoPosSelect = document.getElementById('layout-info-position');
+        if (infoPosSelect) {
+            infoPosSelect.addEventListener('change', triggerLiveLayoutApply);
+        }
+
+        const sidebarPosSelect = document.getElementById('layout-sidebar-position');
+        if (sidebarPosSelect) {
+            sidebarPosSelect.addEventListener('change', triggerLiveLayoutApply);
+        }
+
+        const playerWidthInput = document.getElementById('layout-player-width');
+        if (playerWidthInput) {
+            playerWidthInput.addEventListener('input', () => {
+                const widthValEl = document.getElementById('layout-player-width-val');
+                if (widthValEl) widthValEl.textContent = `${playerWidthInput.value}%`;
+                triggerLiveLayoutApply();
+            });
+        }
+
+        const layoutToggles = ['facecam', 'chat', 'ad', 'queue'];
+        layoutToggles.forEach(type => {
+            const toggle = document.getElementById(`layout-show-${type}`);
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    toggle.classList.toggle('active');
+                    renderOrderingUI();
+                    triggerLiveLayoutApply();
+                });
+            }
+        });
+
+        const layoutSetDefaultBtn = document.getElementById('layout-set-default-btn');
+        if (layoutSetDefaultBtn) {
+            layoutSetDefaultBtn.addEventListener('click', () => {
+                if (confirm(ClipQ.I18n.t('settings.layout.confirm_set_default'))) {
+                    const currentLayout = {
+                        infoPosition: document.getElementById('layout-info-position').value,
+                        sidebarPosition: document.getElementById('layout-sidebar-position').value,
+                        playerWidth: parseInt(document.getElementById('layout-player-width').value) || 70,
+                        showFacecam: document.getElementById('layout-show-facecam').classList.contains('active'),
+                        showChat: document.getElementById('layout-show-chat').classList.contains('active'),
+                        showAd: document.getElementById('layout-show-ad').classList.contains('active'),
+                        showQueue: document.getElementById('layout-show-queue').classList.contains('active'),
+                        order: currentLayoutOrder
+                    };
+                    localStorage.setItem('clipq_layout_custom_defaults', JSON.stringify(currentLayout));
+                    alert(ClipQ.I18n.t('settings.layout.alert_set_default'));
+                }
+            });
+        }
+
+        const layoutResetBtn = document.getElementById('layout-reset-btn');
+        if (layoutResetBtn) {
+            layoutResetBtn.addEventListener('click', () => {
+                const hasCustom = !!localStorage.getItem('clipq_layout_custom_defaults');
+                let targetLayout = null;
+
+                if (hasCustom) {
+                    const choice = confirm(ClipQ.I18n.t('settings.layout.confirm_reset_custom'));
+                    if (choice) {
+                        targetLayout = JSON.parse(localStorage.getItem('clipq_layout_custom_defaults'));
+                    } else {
+                        if (confirm(ClipQ.I18n.t('settings.layout.confirm_reset_factory'))) {
+                            localStorage.removeItem('clipq_layout_custom_defaults');
+                            targetLayout = DEFAULTS.layout;
+                        }
+                    }
+                } else {
+                    if (confirm(ClipQ.I18n.t('settings.layout.confirm_reset_all'))) {
+                        targetLayout = DEFAULTS.layout;
+                    }
+                }
+
+                if (targetLayout) {
+                    // Update UI Controls
+                    document.getElementById('layout-info-position').value = targetLayout.infoPosition || 'below';
+                    document.getElementById('layout-sidebar-position').value = targetLayout.sidebarPosition || 'right';
+                    
+                    const playerWidth = targetLayout.playerWidth || 70;
+                    document.getElementById('layout-player-width').value = playerWidth;
+                    const widthValEl = document.getElementById('layout-player-width-val');
+                    if (widthValEl) widthValEl.textContent = `${playerWidth}%`;
+
+                    const facecamToggle = document.getElementById('layout-show-facecam');
+                    if (facecamToggle) facecamToggle.classList.toggle('active', targetLayout.showFacecam !== false);
+
+                    const chatToggle = document.getElementById('layout-show-chat');
+                    if (chatToggle) chatToggle.classList.toggle('active', targetLayout.showChat !== false);
+
+                    const adToggle = document.getElementById('layout-show-ad');
+                    if (adToggle) adToggle.classList.toggle('active', targetLayout.showAd !== false);
+
+                    const queueToggle = document.getElementById('layout-show-queue');
+                    if (queueToggle) queueToggle.classList.toggle('active', targetLayout.showQueue !== false);
+
+                    currentLayoutOrder = targetLayout.order ? [...targetLayout.order] : ['chat_ad', 'facecam', 'queue'];
+                    
+                    renderOrderingUI();
+                    triggerLiveLayoutApply();
+                }
+            });
+        }
+
         document.getElementById('settings-close').addEventListener('click', closeModal);
         document.getElementById('settings-cancel').addEventListener('click', closeModal);
 
@@ -336,6 +494,11 @@ ClipQ.Settings = (() => {
             // Apply app title
             const titleEl = document.getElementById('app-title');
             if (titleEl) titleEl.textContent = newSettings.appTitle || 'ClipQ';
+
+            // Apply layout changes
+            if (newSettings.layout && window.ClipQ && window.ClipQ.Layout) {
+                window.ClipQ.Layout.apply(newSettings.layout);
+            }
 
             closeModal(true);
 
@@ -390,8 +553,149 @@ ClipQ.Settings = (() => {
             const titleEl = document.getElementById('app-title');
             if (titleEl) titleEl.textContent = s.appTitle || 'ClipQ';
             if (ClipQ.App.renderQueueList) ClipQ.App.renderQueueList();
+            if (s.layout && window.ClipQ && window.ClipQ.Layout) {
+                window.ClipQ.Layout.apply(s.layout);
+            }
         }
         document.getElementById('settings-overlay').classList.add('hidden');
+    }
+
+    function triggerLiveLayoutApply() {
+        const infoPosEl = document.getElementById('layout-info-position');
+        const sidebarPosEl = document.getElementById('layout-sidebar-position');
+        const playerWidthEl = document.getElementById('layout-player-width');
+        const facecamToggle = document.getElementById('layout-show-facecam');
+        const chatToggle = document.getElementById('layout-show-chat');
+        const adToggle = document.getElementById('layout-show-ad');
+        const queueToggle = document.getElementById('layout-show-queue');
+
+        const config = {
+            infoPosition: infoPosEl ? infoPosEl.value : 'below',
+            sidebarPosition: sidebarPosEl ? sidebarPosEl.value : 'right',
+            playerWidth: playerWidthEl ? (parseInt(playerWidthEl.value) || 70) : 70,
+            showFacecam: facecamToggle ? facecamToggle.classList.contains('active') : true,
+            showChat: chatToggle ? chatToggle.classList.contains('active') : true,
+            showAd: adToggle ? adToggle.classList.contains('active') : true,
+            showQueue: queueToggle ? queueToggle.classList.contains('active') : true,
+            order: currentLayoutOrder
+        };
+        if (window.ClipQ && window.ClipQ.Layout) {
+            window.ClipQ.Layout.apply(config);
+        }
+    }
+
+    function renderOrderingUI() {
+        const listContainer = document.getElementById('layout-ordering-list');
+        if (!listContainer) return;
+
+        const t = ClipQ.I18n.t.bind(ClipQ.I18n);
+
+        const facecamToggle = document.getElementById('layout-show-facecam');
+        const chatToggle = document.getElementById('layout-show-chat');
+        const adToggle = document.getElementById('layout-show-ad');
+        const queueToggle = document.getElementById('layout-show-queue');
+
+        const showFacecam = facecamToggle ? facecamToggle.classList.contains('active') : true;
+        const showChat = chatToggle ? chatToggle.classList.contains('active') : true;
+        const showAd = adToggle ? adToggle.classList.contains('active') : true;
+        const showQueue = queueToggle ? queueToggle.classList.contains('active') : true;
+        const showChatAd = showChat || showAd;
+
+        // Filter currently active components in current layout order
+        const activeComponents = currentLayoutOrder.filter(item => {
+            if (item === 'facecam') return showFacecam;
+            if (item === 'chat_ad') return showChatAd;
+            if (item === 'queue') return showQueue;
+            return false;
+        });
+
+        // If 1 or fewer components are active, hide the entire group
+        const orderingGroup = document.getElementById('layout-ordering-group');
+        if (activeComponents.length <= 1) {
+            if (orderingGroup) orderingGroup.style.display = 'none';
+            listContainer.innerHTML = '';
+            return;
+        } else {
+            if (orderingGroup) orderingGroup.style.display = '';
+        }
+
+        listContainer.innerHTML = '';
+
+        const labels = {
+            facecam: t('settings.layout.block_facecam') || 'Facecam',
+            chat_ad: t('settings.layout.block_chat_ad') || 'Chat + Ad',
+            queue: t('settings.layout.block_queue') || 'Queue'
+        };
+
+        const positions = [
+            { label: t('settings.layout.pos_top') || 'Top', index: 0 },
+            { label: t('settings.layout.pos_middle') || 'Middle', index: 1 },
+            { label: t('settings.layout.pos_bottom') || 'Bottom', index: 2 }
+        ];
+
+        // If only 2 components are active, only show Top and Bottom
+        const allowedPositions = activeComponents.length === 3 
+            ? positions 
+            : [positions[0], positions[2]];
+
+        activeComponents.forEach((comp, idx) => {
+            const row = document.createElement('div');
+            row.className = 'layout-order-row';
+            row.style.display = 'flex';
+            row.style.justify = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.padding = '8px 12px';
+            row.style.background = 'rgba(255,255,255,0.03)';
+            row.style.border = '1px solid var(--color-border)';
+            row.style.borderRadius = 'var(--border-radius-sm)';
+
+            const labelSpan = document.createElement('span');
+            labelSpan.textContent = labels[comp];
+            labelSpan.style.fontWeight = '600';
+            labelSpan.style.flex = '1';
+            row.appendChild(labelSpan);
+
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'layout-order-buttons';
+            btnGroup.style.display = 'flex';
+            btnGroup.style.gap = '4px';
+
+            allowedPositions.forEach((pos, posIdx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.style.padding = '4px 10px';
+                btn.style.fontSize = 'var(--font-size-sm)';
+                btn.style.borderRadius = '4px';
+                btn.textContent = pos.label;
+
+                const isActive = idx === posIdx;
+
+                if (isActive) {
+                    btn.className += ' btn-primary';
+                } else {
+                    btn.className += ' btn-ghost';
+                }
+
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (isActive) return;
+
+                    const item = activeComponents.splice(idx, 1)[0];
+                    activeComponents.splice(posIdx, 0, item);
+
+                    const inactive = ['facecam', 'chat_ad', 'queue'].filter(c => !activeComponents.includes(c));
+                    currentLayoutOrder = [...activeComponents, ...inactive];
+
+                    renderOrderingUI();
+                    triggerLiveLayoutApply();
+                });
+
+                btnGroup.appendChild(btn);
+            });
+
+            row.appendChild(btnGroup);
+            listContainer.appendChild(row);
+        });
     }
 
     return { load, save, get, isUserBlocked, isStreamerBlocked, hasCommandPermission, initUI, populateUI, CMD_KEYS };
