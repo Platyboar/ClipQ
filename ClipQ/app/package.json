@@ -1,0 +1,13 @@
+{
+  "name": "clipq",
+  "version": "1.0.0",
+  "description": "ClipQ - Twitch Clip Queue for Streamers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

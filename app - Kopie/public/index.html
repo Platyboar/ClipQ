@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClipQ — Clip Queue</title>
+    <meta name="description" content="ClipQ - Twitch Clip Queue for Streamers">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div id="login-screen" class="screen">
+    <div class="login-logo">ClipQ</div>
+    <p class="login-subtitle">Clip Queue für deinen Stream</p>
+    <button id="twitch-login-btn">
+        <svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+        Mit Twitch verbinden
+    </button>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="app-screen" class="screen hidden">
+
+    <!-- Menu Bar -->
+    <header id="menubar">
+        <div class="menu-left">
+            <h1>ClipQ</h1>
+            <nav class="menu-tabs">
+                <button class="tab active" data-tab="queue">Queue <span id="queue-count-tab"></span></button>
+                <button class="tab" data-tab="history">History</button>
+            </nav>
+        </div>
+        <div class="menu-right">
+            <div class="queue-status-toggle">
+                <button class="toggle-btn" data-state="open" id="btn-open">Offen</button>
+                <button class="toggle-btn active-closed" data-state="closed" id="btn-closed">Geschlossen</button>
+            </div>
+            <div class="user-menu-wrapper">
+                <div class="menu-user" id="user-menu-toggle">
+                    <div class="avatar-ring" id="avatar-ring">
+                        <img id="user-avatar" src="" alt="">
+                    </div>
+                    <span id="user-name"></span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="user-dropdown hidden" id="user-dropdown">
+                    <button id="dropdown-settings">⚙ Einstellungen</button>
+                    <hr>
+                    <button id="dropdown-logout">↪ Abmelden</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Queue View -->
+    <div id="queue-view" class="main-layout">
+        <!-- Player -->
+        <section id="player-area">
+            <div class="player-empty">
+                <div class="player-empty-icon">🎬</div>
+                <div class="player-empty-text">Warte auf Clips...</div>
+            </div>
+        </section>
+
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div id="chat-area"></div>
+            <div id="facecam-area"></div>
+            <div id="queue-section">
+                <div class="queue-header">
+                    <span>Queue (<span id="queue-count">0</span>)</span>
+                    <button id="queue-clear-btn" class="btn-ghost" style="padding:4px 10px;font-size:11px;">Leeren</button>
+                </div>
+                <div class="queue-items" id="queue-list"></div>
+            </div>
+        </aside>
+
+        <!-- Info Bar -->
+        <section id="info-bar">
+            <div class="clip-details" id="clip-details">
+                <div style="color:var(--color-text-dim)">Kein Clip geladen</div>
+            </div>
+            <div class="player-controls">
+                <div class="autoplay-toggle" id="btn-autoplay" title="Autoplay">
+                    <div class="toggle-switch" id="autoplay-switch"></div>
+                    <span class="autoplay-label">Auto</span>
+                </div>
+                <button class="ctrl-btn" id="btn-prev">← Vorheriger</button>
+                <button class="ctrl-btn primary" id="btn-next">▶ Start</button>
+            </div>
+        </section>
+
+        <!-- Ad Placeholder -->
+        <div id="ad-area"></div>
+    </div>
+
+    <!-- History View -->
+    <div id="history-view" class="hidden">
+        <div class="history-grid" id="history-grid"></div>
+    </div>
+</div>
+
+<!-- ==================== SETTINGS MODAL ==================== -->
+<div id="settings-overlay" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Einstellungen</h2>
+            <button class="modal-close" id="settings-close">✕</button>
+        </div>
+        <div class="modal-tabs">
+            <button class="tab active" data-stab="general">Allgemein</button>
+            <button class="tab" data-stab="queue">Clip Queue</button>
+            <button class="tab" data-stab="commands">Commands</button>
+            <button class="tab" data-stab="history">History</button>
+            <button class="tab" data-stab="memory">Clip Memory</button>
+        </div>
+        <div class="modal-body">
+            <!-- General Tab -->
+            <div class="settings-tab-content active" id="stab-general">
+                <div class="form-group">
+                    <label class="form-label" for="set-channel">Twitch Channel</label>
+                    <div class="form-hint">Chat-Kanal dem beigetreten wird</div>
+                    <input class="form-input" id="set-channel" placeholder="dein_kanal">
+                </div>
+            </div>
+            <!-- Queue Tab -->
+            <div class="settings-tab-content" id="stab-queue">
+                <div class="form-group">
+                    <label class="form-label">Clip-Anbieter</label>
+                    <div class="form-hint">Wähle welche Plattformen erlaubt sind</div>
+                    <div class="provider-toggles">
+                        <button class="provider-chip active" data-provider="twitch">Twitch</button>
+                        <button class="provider-chip active" data-provider="youtube">YouTube</button>
+                        <button class="provider-chip active" data-provider="tiktok">TikTok</button>
+                        <button class="provider-chip" data-provider="kick">Kick</button>
+                        <button class="provider-chip" data-provider="streamable">Streamable</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-clip-limit">Clip-Limit</label>
+                    <div class="form-hint">Maximale Clips in der Queue (0 = unbegrenzt)</div>
+                    <input class="form-input" id="set-clip-limit" type="number" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-age-limit">Clip-Alter-Limit (Tage)</label>
+                    <div class="form-hint">Clips die älter sind werden abgelehnt (0 = deaktiviert)</div>
+                    <input class="form-input" id="set-age-limit" type="number" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gesperrte Streamer</label>
+                    <div class="form-hint">Ein Kanalname pro Zeile. Clips von diesen Streamern werden abgelehnt.</div>
+                    <textarea class="form-textarea" id="set-blocked-streamers"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gesperrte User</label>
+                    <div class="form-hint">Ein Name pro Zeile. Nachrichten dieser User werden ignoriert.</div>
+                    <textarea class="form-textarea" id="set-blocked-users">streamlabs
+nightbot
+streamelements
+fossabot
+moobot</textarea>
+                </div>
+            </div>
+            <!-- Commands Tab -->
+            <div class="settings-tab-content" id="stab-commands">
+                <div class="form-hint" style="margin-bottom:16px">
+                    Chat-Commands für Moderatoren. Nicht case-sensitive.<br>
+                    Beispiel: Wenn Prefix <code>!queue</code> und Skip <code>skip</code>, dann wird <code>!queueskip</code> erkannt.
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-cmd-prefix">Command-Prefix</label>
+                    <input class="form-input" id="set-cmd-prefix" value="!queue">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-cmd-skip">Skip / Nächster Clip</label>
+                    <input class="form-input" id="set-cmd-skip" value="skip">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-cmd-open">Queue öffnen</label>
+                    <input class="form-input" id="set-cmd-open" value="open">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-cmd-close">Queue schließen</label>
+                    <input class="form-input" id="set-cmd-close" value="close">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="set-cmd-clear">Queue leeren</label>
+                    <input class="form-input" id="set-cmd-clear" value="clear">
+                </div>
+            </div>
+            <!-- History Tab -->
+            <div class="settings-tab-content" id="stab-history">
+                <div class="form-group">
+                    <label class="form-label" for="set-history-retention">Aufbewahrung (Tage)</label>
+                    <div class="form-hint">Wie lange gesehene Clips in der History bleiben (0 = unbegrenzt). Beeinflusst nicht die Clip Memory.</div>
+                    <input class="form-input" id="set-history-retention" type="number" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <p style="margin:12px 0">Du hast <strong id="history-count">0</strong> Clips in der History.</p>
+                    <p class="form-hint">Das Löschen entfernt nur die History-Anzeige, nicht die Clip Memory.</p>
+                    <button class="btn btn-danger" id="purge-history-btn">History leeren</button>
+                </div>
+            </div>
+            <!-- Memory Tab -->
+            <div class="settings-tab-content" id="stab-memory">
+                <div class="form-group">
+                    <p class="form-hint">Die Clip Memory speichert URLs aller gesehenen Clips, damit sie nicht erneut in die Queue kommen.</p>
+                    <p style="margin:12px 0">Du hast <strong id="memory-count">0</strong> Clips in der Memory.</p>
+                    <button class="btn btn-danger" id="purge-memory-btn">Memory leeren</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="settings-cancel">Abbrechen</button>
+            <button class="btn btn-primary" id="settings-save">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="/js/tmi.min.js"></script>
+<script src="/js/providers.js?v=6"></script>
+<script src="/js/memory.js?v=6"></script>
+<script src="/js/settings.js?v=6"></script>
+<script src="/js/auth.js?v=6"></script>
+<script src="/js/queue.js?v=6"></script>
+<script src="/js/player.js?v=6"></script>
+<script src="/js/chat.js?v=6"></script>
+<script src="/js/app.js?v=6"></script>
+</body>
+</html>
