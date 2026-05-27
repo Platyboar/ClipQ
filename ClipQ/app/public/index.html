@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -18,13 +18,23 @@
     <!-- ==================== LOGIN SCREEN ==================== -->
     <div id="login-screen" class="screen">
         <div class="login-logo">ClipQ</div>
-        <p class="login-subtitle">Clip Queue für deinen Stream</p>
-        <button id="twitch-login-btn">
+        <p class="login-subtitle" data-i18n="login.subtitle">Clip Queue for your Stream</p>
+
+        <!-- Language Selector (shown on first visit) -->
+        <div id="language-selector" class="language-selector">
+            <p class="language-prompt" data-i18n="login.select_language">Select Language</p>
+            <div class="language-options" id="language-options">
+                <!-- Populated dynamically by app.js -->
+            </div>
+        </div>
+
+        <!-- Twitch Login Button (hidden until language is selected) -->
+        <button id="twitch-login-btn" class="hidden">
             <svg viewBox="0 0 24 24">
                 <path
                     d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
             </svg>
-            Mit Twitch verbinden
+            <span data-i18n="login.connect_twitch">Connect with Twitch</span>
         </button>
     </div>
 
@@ -34,16 +44,16 @@
         <!-- Menu Bar -->
         <header id="menubar">
             <div class="menu-left">
-                <h1>ClipQ</h1>
+                <h1 id="app-title">ClipQ</h1>
                 <nav class="menu-tabs">
-                    <button class="tab active" data-tab="queue">Queue <span id="queue-count-tab"></span></button>
-                    <button class="tab" data-tab="history">History</button>
+                    <button class="tab active" data-tab="queue"><span data-i18n="nav.queue">Queue</span> <span id="queue-count-tab"></span></button>
+                    <button class="tab" data-tab="history" data-i18n="nav.history">History</button>
                 </nav>
             </div>
             <div class="menu-right">
                 <div class="queue-status-toggle">
-                    <button class="toggle-btn" data-state="open" id="btn-open">Offen</button>
-                    <button class="toggle-btn active-closed" data-state="closed" id="btn-closed">Geschlossen</button>
+                    <button class="toggle-btn" data-state="open" id="btn-open" data-i18n="queue.status.open">Open</button>
+                    <button class="toggle-btn active-closed" data-state="closed" id="btn-closed" data-i18n="queue.status.closed">Closed</button>
                 </div>
                 <div class="user-menu-wrapper">
                     <div class="menu-user" id="user-menu-toggle">
@@ -54,9 +64,9 @@
                         <span class="dropdown-arrow">▼</span>
                     </div>
                     <div class="user-dropdown hidden" id="user-dropdown">
-                        <button id="dropdown-settings">⚙ Einstellungen</button>
+                        <button id="dropdown-settings" data-i18n="menu.settings">⚙ Settings</button>
                         <hr>
-                        <button id="dropdown-logout">↪ Abmelden</button>
+                        <button id="dropdown-logout" data-i18n="menu.logout">↪ Logout</button>
                     </div>
                 </div>
             </div>
@@ -68,7 +78,7 @@
             <section id="player-area">
                 <div class="player-empty">
                     <div class="player-empty-icon">🎬</div>
-                    <div class="player-empty-text">Warte auf Clips...</div>
+                    <div class="player-empty-text" data-i18n="player.waiting">Waiting for clips...</div>
                 </div>
             </section>
 
@@ -81,9 +91,9 @@
                 <div id="facecam-area"></div>
                 <div id="queue-section">
                     <div class="queue-header">
-                        <span>Queue (<span id="queue-count">0</span>)</span>
+                        <span><span data-i18n="queue.title">Queue</span> (<span id="queue-count">0</span>)</span>
                         <button id="queue-clear-btn" class="btn-ghost"
-                            style="padding:4px 10px;font-size:11px;">Leeren</button>
+                            style="padding:4px 10px;font-size:11px;" data-i18n="queue.clear_btn">Clear</button>
                     </div>
                     <div class="queue-items" id="queue-list"></div>
                 </div>
@@ -92,15 +102,15 @@
             <!-- Info Bar -->
             <section id="info-bar">
                 <div class="clip-details" id="clip-details">
-                    <div style="color:var(--color-text-dim)">Kein Clip geladen</div>
+                    <div style="color:var(--color-text-dim)" data-i18n="player.no_clip">No clip loaded</div>
                 </div>
                 <div class="player-controls">
                     <div class="autoplay-toggle" id="btn-autoplay" title="Autoplay">
                         <div class="toggle-switch" id="autoplay-switch"></div>
-                        <span class="autoplay-label">Auto</span>
+                        <span class="autoplay-label" data-i18n="player.auto">Auto</span>
                     </div>
-                    <button class="ctrl-btn" id="btn-prev">← Vorheriger</button>
-                    <button class="ctrl-btn primary" id="btn-next">▶ Start</button>
+                    <button class="ctrl-btn" id="btn-prev" data-i18n="player.previous">← Previous</button>
+                    <button class="ctrl-btn primary" id="btn-next" data-i18n="player.start">▶ Start</button>
                 </div>
             </section>
         </div>
@@ -115,31 +125,43 @@
     <div id="settings-overlay" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal-header">
-                <h2>Einstellungen</h2>
+                <h2 data-i18n="settings.title">Settings</h2>
                 <button class="modal-close" id="settings-close">✕</button>
             </div>
             <div class="modal-tabs">
-                <button class="tab active" data-stab="general">Allgemein</button>
-                <button class="tab" data-stab="queue">Clip Queue</button>
-                <button class="tab" data-stab="commands">Commands</button>
-                <button class="tab" data-stab="history">History</button>
-                <button class="tab" data-stab="memory">Clip Memory</button>
-                <button class="tab" data-stab="design">Design</button>
+                <button class="tab active" data-stab="general" data-i18n="settings.tab.general">General</button>
+                <button class="tab" data-stab="queue" data-i18n="settings.tab.queue">Clip Queue</button>
+                <button class="tab" data-stab="commands" data-i18n="settings.tab.commands">Commands</button>
+                <button class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
+                <button class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
+                <button class="tab" data-stab="design" data-i18n="settings.tab.design">Design</button>
             </div>
             <div class="modal-body">
                 <!-- General Tab -->
                 <div class="settings-tab-content active" id="stab-general">
                     <div class="form-group">
-                        <label class="form-label" for="set-channel">Twitch Channel</label>
-                        <div class="form-hint">Chat-Kanal dem beigetreten wird</div>
-                        <input class="form-input" id="set-channel" placeholder="dein_kanal">
+                        <label class="form-label" data-i18n="settings.general.language">Language</label>
+                        <div class="form-hint" data-i18n="settings.general.language_hint">Choose the display language of the app</div>
+                        <select class="form-input" id="set-language">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-app-title" data-i18n="settings.general.app_title">App Name</label>
+                        <div class="form-hint" data-i18n="settings.general.app_title_hint">Change the title shown in the top left (max. 30 characters)</div>
+                        <input class="form-input" id="set-app-title" maxlength="30" data-i18n-placeholder="settings.general.app_title_placeholder">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-channel" data-i18n="settings.general.channel">Twitch Channel</label>
+                        <div class="form-hint" data-i18n="settings.general.channel_hint">Chat channel to join</div>
+                        <input class="form-input" id="set-channel" data-i18n-placeholder="settings.general.channel_placeholder">
                     </div>
                 </div>
                 <!-- Queue Tab -->
                 <div class="settings-tab-content" id="stab-queue">
                     <div class="form-group">
-                        <label class="form-label">Clip-Anbieter</label>
-                        <div class="form-hint">Wähle welche Plattformen erlaubt sind</div>
+                        <label class="form-label" data-i18n="settings.queue.providers">Clip Providers</label>
+                        <div class="form-hint" data-i18n="settings.queue.providers_hint">Choose which platforms are allowed</div>
                         <div class="provider-toggles">
                             <button class="provider-chip active" data-provider="twitch">Twitch</button>
                             <button class="provider-chip active" data-provider="youtube">YouTube</button>
@@ -148,25 +170,23 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="set-user-clip-limit">User Clip-Limit</label>
-                        <div class="form-hint">Maximale Clips die ein einzelner User gleichzeitig in der Queue haben
-                            darf (0 = unbegrenzt)</div>
+                        <label class="form-label" for="set-user-clip-limit" data-i18n="settings.queue.user_limit">User Clip Limit</label>
+                        <div class="form-hint" data-i18n="settings.queue.user_limit_hint">Maximum clips a single user can have in the queue at once (0 = unlimited)</div>
                         <input class="form-input" id="set-user-clip-limit" type="number" min="0" value="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="set-age-limit">Clip-Alter-Limit (Tage)</label>
-                        <div class="form-hint">Clips die älter sind werden abgelehnt (0 = deaktiviert)</div>
+                        <label class="form-label" for="set-age-limit" data-i18n="settings.queue.age_limit">Clip Age Limit (Days)</label>
+                        <div class="form-hint" data-i18n="settings.queue.age_limit_hint">Clips older than this will be rejected (0 = disabled)</div>
                         <input class="form-input" id="set-age-limit" type="number" min="0" value="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Gesperrte Streamer</label>
-                        <div class="form-hint">Ein Kanalname pro Zeile. Clips von diesen Streamern werden abgelehnt.
-                        </div>
+                        <label class="form-label" data-i18n="settings.queue.blocked_streamers">Blocked Streamers</label>
+                        <div class="form-hint" data-i18n="settings.queue.blocked_streamers_hint">One channel name per line. Clips from these streamers will be rejected.</div>
                         <textarea class="form-textarea" id="set-blocked-streamers"></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Gesperrte User</label>
-                        <div class="form-hint">Ein Name pro Zeile. Nachrichten dieser User werden ignoriert.</div>
+                        <label class="form-label" data-i18n="settings.queue.blocked_users">Blocked Users</label>
+                        <div class="form-hint" data-i18n="settings.queue.blocked_users_hint">One name per line. Messages from these users will be ignored.</div>
                         <textarea class="form-textarea" id="set-blocked-users">streamlabs
 nightbot
 streamelements
@@ -176,57 +196,166 @@ moobot</textarea>
                 </div>
                 <!-- Commands Tab -->
                 <div class="settings-tab-content" id="stab-commands">
-                    <div class="form-hint" style="margin-bottom:16px">
-                        Chat-Commands für Moderatoren. Nicht case-sensitive.<br>
-                        Beispiel: Wenn Prefix <code>!queue</code> und Skip <code>skip</code>, dann wird
-                        <code>!queueskip</code> erkannt.
+                    <div class="form-hint" style="margin-bottom:16px" data-i18n-html="settings.commands.hint">
+                        Chat commands for the stream. Not case-sensitive.<br>
+                        Example: If prefix is <code>!queue</code> and next is <code>next</code>, then
+                        <code>!queuenext</code> is recognized.
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="set-cmd-prefix">Command-Prefix</label>
+                        <label class="form-label" for="set-cmd-prefix" data-i18n="settings.commands.prefix">Command Prefix</label>
                         <input class="form-input" id="set-cmd-prefix" value="!queue">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="set-cmd-skip">Skip / Nächster Clip</label>
-                        <input class="form-input" id="set-cmd-skip" value="skip">
+                    <!-- Command rows with role checkboxes -->
+                    <div class="cmd-row form-group" data-cmd="next">
+                        <label class="form-label" data-i18n="settings.commands.next">Next Clip</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-next" value="next">
+                            <div class="cmd-roles" data-cmd="next">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="set-cmd-push">Clip an 1. Stelle pushen</label>
-                        <input class="form-input" id="set-cmd-push" value="push">
+                    <div class="cmd-row form-group" data-cmd="push">
+                        <label class="form-label" data-i18n="settings.commands.push">Push Clip to #1</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-push" value="push">
+                            <div class="cmd-roles" data-cmd="push">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="set-cmd-open">Queue öffnen</label>
-                        <input class="form-input" id="set-cmd-open" value="open">
+                    <div class="cmd-row form-group" data-cmd="open">
+                        <label class="form-label" data-i18n="settings.commands.open">Open Queue</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-open" value="open">
+                            <div class="cmd-roles" data-cmd="open">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="set-cmd-close">Queue schließen</label>
-                        <input class="form-input" id="set-cmd-close" value="close">
+                    <div class="cmd-row form-group" data-cmd="close">
+                        <label class="form-label" data-i18n="settings.commands.close">Close Queue</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-close" value="close">
+                            <div class="cmd-roles" data-cmd="close">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="set-cmd-clear">Queue leeren</label>
-                        <input class="form-input" id="set-cmd-clear" value="clear">
+                    <div class="cmd-row form-group" data-cmd="clear">
+                        <label class="form-label" data-i18n="settings.commands.clear">Clear Queue</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-clear" value="clear">
+                            <div class="cmd-roles" data-cmd="clear">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cmd-row form-group" data-cmd="purgememory">
+                        <label class="form-label" data-i18n="settings.commands.purgememory">Purge Clip Memory</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-purgememory" value="purgememory">
+                            <div class="cmd-roles" data-cmd="purgememory">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cmd-row form-group" data-cmd="autoplay">
+                        <label class="form-label" data-i18n="settings.commands.autoplay">Autoplay on/off</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-autoplay" value="autoplay">
+                            <div class="cmd-roles" data-cmd="autoplay">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cmd-row form-group" data-cmd="limit">
+                        <label class="form-label" data-i18n="settings.commands.limit">Set Clip Limit</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-limit" value="limit">
+                            <div class="cmd-roles" data-cmd="limit">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cmd-row form-group" data-cmd="remove">
+                        <label class="form-label" data-i18n="settings.commands.remove">Remove Clip</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-remove" value="remove">
+                            <div class="cmd-roles" data-cmd="remove">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cmd-row form-group" data-cmd="providers">
+                        <label class="form-label" data-i18n="settings.commands.providers">Provider on/off</label>
+                        <div class="cmd-row-inner">
+                            <input class="form-input cmd-word" id="set-cmd-providers" value="providers">
+                            <div class="cmd-roles" data-cmd="providers">
+                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
+                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://img.icons8.com/color/18/swords.png" alt="Lead Mod"></button>
+                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
+                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <!-- History Tab -->
                 <div class="settings-tab-content" id="stab-history">
                     <div class="form-group">
-                        <label class="form-label" for="set-history-retention">Aufbewahrung (Tage)</label>
-                        <div class="form-hint">Wie lange gesehene Clips in der History bleiben (0 = unbegrenzt).
-                            Beeinflusst nicht die Clip Memory.</div>
+                        <label class="form-label" for="set-history-retention" data-i18n="settings.history.retention">Retention (Days)</label>
+                        <div class="form-hint" data-i18n="settings.history.retention_hint">How long watched clips stay in history (0 = unlimited). Does not affect Clip Memory.</div>
                         <input class="form-input" id="set-history-retention" type="number" min="0" value="0">
                     </div>
                     <div class="form-group">
-                        <p style="margin:12px 0">Du hast <strong id="history-count">0</strong> Clips in der History.</p>
-                        <p class="form-hint">Das Löschen entfernt nur die History-Anzeige, nicht die Clip Memory.</p>
-                        <button class="btn btn-danger" id="purge-history-btn">History leeren</button>
+                        <p style="margin:12px 0" id="history-count-text" data-i18n-html="settings.history.count">You have <strong id="history-count">0</strong> clips in history.</p>
+                        <p class="form-hint" data-i18n="settings.history.purge_hint">Clearing only removes the history display, not the Clip Memory.</p>
+                        <button class="btn btn-danger" id="purge-history-btn" data-i18n="settings.history.purge_btn">Clear History</button>
                     </div>
                 </div>
                 <!-- Memory Tab -->
                 <div class="settings-tab-content" id="stab-memory">
                     <div class="form-group">
-                        <p class="form-hint">Die Clip Memory speichert URLs aller gesehenen Clips, damit sie nicht
-                            erneut in die Queue kommen.</p>
-                        <p style="margin:12px 0">Du hast <strong id="memory-count">0</strong> Clips in der Memory.</p>
-                        <button class="btn btn-danger" id="purge-memory-btn">Memory leeren</button>
+                        <p class="form-hint" data-i18n="settings.memory.hint">Clip Memory stores URLs of all watched clips to prevent them from being re-queued.</p>
+                        <p style="margin:12px 0" id="memory-count-text" data-i18n-html="settings.memory.count">You have <strong id="memory-count">0</strong> clips in memory.</p>
+                        <button class="btn btn-danger" id="purge-memory-btn" data-i18n="settings.memory.purge_btn">Clear Memory</button>
                     </div>
                 </div>
                 <!-- Design Tab -->
@@ -234,16 +363,15 @@ moobot</textarea>
                     <div class="form-group">
                         <div class="toggle-row">
                             <div>
-                                <label class="form-label" for="design-show-badges">Zeige Badges</label>
-                                <div class="form-hint">Twitch-Rollen (Moderator, VIP, Streamer) in der Queue anzeigen
-                                </div>
+                                <label class="form-label" for="design-show-badges" data-i18n="settings.design.show_badges">Show Badges</label>
+                                <div class="form-hint" data-i18n="settings.design.show_badges_hint">Show Twitch roles (Moderator, VIP, Streamer) in the queue</div>
                             </div>
                             <div class="toggle-switch" id="design-show-badges"></div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="design-font-select">Schriftart</label>
-                        <div class="form-hint">Wähle eine Schriftart für die gesamte App</div>
+                        <label class="form-label" for="design-font-select" data-i18n="settings.design.font">Font</label>
+                        <div class="form-hint" data-i18n="settings.design.font_hint">Choose a font for the entire app</div>
                         <select class="form-input" id="design-font-select">
                             <option value="Inter">Inter</option>
                             <option value="Roboto">Roboto</option>
@@ -260,29 +388,32 @@ moobot</textarea>
                     <div id="design-colors-container"></div>
                     <div class="form-group"
                         style="margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border);display:flex;gap:10px;">
-                        <button class="btn btn-primary" id="design-set-default-btn">Als Default setzen</button>
-                        <button class="btn btn-danger" id="design-reset-btn">Auf Standard zurücksetzen</button>
+                        <button class="btn btn-primary" id="design-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
+                        <button class="btn btn-danger" id="design-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" id="settings-cancel">Abbrechen</button>
-                <button class="btn btn-primary" id="settings-save">Speichern</button>
+                <button class="btn btn-ghost" id="settings-cancel" data-i18n="settings.cancel">Cancel</button>
+                <button class="btn btn-primary" id="settings-save" data-i18n="settings.save">Save</button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="/js/tmi.min.js"></script>
-    <script src="/js/providers.js?v=7"></script>
-    <script src="/js/memory.js?v=7"></script>
-    <script src="/js/settings.js?v=8"></script>
+    <script src="/js/i18n.js?v=9"></script>
+    <script src="/js/lang/de.js?v=9"></script>
+    <script src="/js/lang/en.js?v=9"></script>
+    <script src="/js/providers.js?v=9"></script>
+    <script src="/js/memory.js?v=9"></script>
+    <script src="/js/settings.js?v=9"></script>
     <script src="/js/design.js?v=8"></script>
-    <script src="/js/auth.js?v=7"></script>
-    <script src="/js/queue.js?v=7"></script>
-    <script src="/js/player.js?v=7"></script>
-    <script src="/js/chat.js?v=7"></script>
-    <script src="/js/app.js?v=7"></script>
+    <script src="/js/auth.js?v=9"></script>
+    <script src="/js/queue.js?v=9"></script>
+    <script src="/js/player.js?v=9"></script>
+    <script src="/js/chat.js?v=9"></script>
+    <script src="/js/app.js?v=9"></script>
 </body>
 
 </html>

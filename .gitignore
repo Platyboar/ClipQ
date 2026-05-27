@@ -1,0 +1,27 @@
+# OS files
+desktop.ini
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+*.zip
+*.lnk
+dist/
+build/
+
+# Gemini
+.gemini/

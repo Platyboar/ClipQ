@@ -1,7 +1,8 @@
 /**
  * app.js — Main application controller
+ * Supports: i18n, login language selector, app title, command-exposed functions.
  */
-console.log('[ClipQ] app.js loaded — version 7');
+console.log('[ClipQ] app.js loaded — version 9');
 window.ClipQ = window.ClipQ || {};
 
 // Provider icon URLs (small favicons)
@@ -16,8 +17,12 @@ ClipQ.PROVIDER_ICONS = {
 ClipQ.App = (() => {
     let currentView = 'queue';
     let autoplay = false; // Default: OFF
+    const t = (key, params) => ClipQ.I18n.t(key, params);
 
     async function init() {
+        // Apply saved language immediately
+        ClipQ.I18n.applyToDOM();
+
         const hashToken = ClipQ.Auth.parseTokenFromHash();
         const savedToken = ClipQ.Auth.getToken();
         const token = hashToken || savedToken;
@@ -41,8 +46,53 @@ ClipQ.App = (() => {
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('app-screen').classList.add('hidden');
 
-        document.getElementById('twitch-login-btn').addEventListener('click', () => {
+        const hasLang = ClipQ.I18n.hasLanguage();
+        const langSelector = document.getElementById('language-selector');
+        const loginBtn = document.getElementById('twitch-login-btn');
+
+        if (hasLang) {
+            // Language already chosen — hide selector, show login button
+            langSelector.classList.add('hidden');
+            loginBtn.classList.remove('hidden');
+        } else {
+            // First visit — show language selector
+            langSelector.classList.remove('hidden');
+            loginBtn.classList.add('hidden');
+            populateLanguageSelector();
+        }
+
+        loginBtn.addEventListener('click', () => {
             window.location.href = ClipQ.Auth.getLoginUrl();
+        });
+    }
+
+    function populateLanguageSelector() {
+        const container = document.getElementById('language-options');
+        const langs = ClipQ.I18n.getAvailableLanguages();
+
+        container.innerHTML = langs.map(lang => `
+            <button class="language-btn" data-lang="${lang.code}">
+                <span class="lang-flag">${lang.flag}</span>
+                <span>${lang.name}</span>
+            </button>
+        `).join('');
+
+        container.querySelectorAll('.language-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lang = btn.dataset.lang;
+                ClipQ.I18n.setLanguage(lang);
+
+                // Animate: fade out language selector, show login button
+                const selector = document.getElementById('language-selector');
+                selector.classList.add('fade-out');
+
+                setTimeout(() => {
+                    selector.classList.add('hidden');
+                    const loginBtn = document.getElementById('twitch-login-btn');
+                    loginBtn.classList.remove('hidden');
+                    loginBtn.classList.add('slide-in');
+                }, 300);
+            });
         });
     }
 
@@ -59,8 +109,15 @@ ClipQ.App = (() => {
             ClipQ.Settings.save(settings);
         }
 
+        // Apply app title
+        const titleEl = document.getElementById('app-title');
+        if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';
+
         autoplay = localStorage.getItem('clipq_autoplay') === 'true';
         updateAutoplayUI();
+
+        // Apply i18n to DOM after app screen is shown
+        ClipQ.I18n.applyToDOM();
 
         ClipQ.Settings.initUI();
         ClipQ.Queue.setUpdateCallback(() => { renderQueueList(); updateNextButton(); });
@@ -109,21 +166,19 @@ ClipQ.App = (() => {
             }
         });
         document.getElementById('queue-clear-btn').addEventListener('click', () => {
-            if (confirm('Queue wirklich leeren?')) ClipQ.Queue.clear();
+            if (confirm(t('queue.confirm_clear'))) ClipQ.Queue.clear();
         });
     }
 
-    /** Handle "Start" vs "Nächster" button */
+    /** Handle "Start" vs "Next" button */
     function handleNextButton() {
         if (!ClipQ.Player.getCurrent()) {
-            // No clip playing → "Start" mode: play first clip and extract it from queue
             const first = ClipQ.Queue.start();
             if (first) {
                 ClipQ.Player.playClip(first);
                 updateNextButton();
             }
         } else {
-            // Clip is playing → "Nächster" mode: advance queue
             nextClip();
         }
     }
@@ -131,9 +186,9 @@ ClipQ.App = (() => {
     function updateNextButton() {
         const btn = document.getElementById('btn-next');
         if (ClipQ.Player.getCurrent()) {
-            btn.textContent = 'Nächster →';
+            btn.textContent = t('player.next');
         } else {
-            btn.textContent = '▶ Start';
+            btn.textContent = t('player.start');
         }
     }
 
@@ -142,9 +197,6 @@ ClipQ.App = (() => {
             autoplay = !autoplay;
             localStorage.setItem('clipq_autoplay', autoplay);
             updateAutoplayUI();
-            
-            // If autoplay is now ON, and we have a playing clip, we might need to kickstart it. 
-            // In a real scenario it would just apply to the next clip loaded.
             console.log(`[App] Autoplay: ${autoplay ? 'ON' : 'OFF'}`);
         });
     }
@@ -207,6 +259,34 @@ ClipQ.App = (() => {
         updateNextButton();
     }
 
+    /** Set autoplay state (called by chat command) */
+    function setAutoplay(state) {
+        autoplay = !!state;
+        localStorage.setItem('clipq_autoplay', autoplay);
+        updateAutoplayUI();
+        console.log(`[App] Autoplay set to: ${autoplay ? 'ON' : 'OFF'}`);
+    }
+
+    /** Set clip limit (called by chat command) */
+    function setClipLimit(num) {
+        const settings = ClipQ.Settings.get();
+        settings.userClipLimit = num;
+        ClipQ.Settings.save(settings);
+        console.log(`[App] Clip limit set to: ${num}`);
+    }
+
+    /** Toggle a provider on/off (called by chat command) */
+    function setProvider(providerName, enabled) {
+        const settings = ClipQ.Settings.get();
+        if (settings.providers.hasOwnProperty(providerName)) {
+            settings.providers[providerName] = enabled;
+            ClipQ.Settings.save(settings);
+            console.log(`[App] Provider "${providerName}" set to: ${enabled ? 'ON' : 'OFF'}`);
+        } else {
+            console.warn(`[App] Unknown provider: "${providerName}"`);
+        }
+    }
+
     function getProviderIcon(provider) {
         const url = ClipQ.PROVIDER_ICONS[provider];
         if (!url) return '';
@@ -223,7 +303,7 @@ ClipQ.App = (() => {
         countTabEl.textContent = items.length > 0 ? `(${items.length})` : '';
 
         if (items.length === 0) {
-            container.innerHTML = '<div class="queue-empty">Queue ist leer.<br>Warte auf Clips im Chat...</div>';
+            container.innerHTML = `<div class="queue-empty">${t('queue.empty_message')}</div>`;
             return;
         }
 
@@ -236,10 +316,10 @@ ClipQ.App = (() => {
                 thumbClass += ' instagram-logo';
             }
             const icon = getProviderIcon(item.provider);
-            
+
             // Delete SVG icon (Trash)
             const trashIcon = `<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-            
+
             const showBadges = ClipQ.Settings.get().design.showBadges !== false;
             const submittersList = item.submitters.map(sub => {
                 let badge = '';
@@ -259,26 +339,26 @@ ClipQ.App = (() => {
             }).join(', ');
 
             return `
-                <div class="queue-item" data-id="${item.id}" title="Klicken zum direkten Abspielen">
+                <div class="queue-item" data-id="${item.id}" title="${t('queue.click_to_play')}">
                     <div class="queue-thumb-wrap">
                         ${thumb ? `<img class="${thumbClass}" src="${thumb}" alt="">` : `<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--color-text-dim);font-size:22px">🎬</div>`}
                         ${icon}
                     </div>
                     <div class="queue-item-info">
                         <div class="queue-item-title">${meta.title || 'Clip'}</div>
-                        <div class="queue-item-channel">${meta.channel || item.provider} • ${submittersList}${item.isPushed ? ' • <span class="badge-pushed">Pushed</span>' : ''}</div>
+                        <div class="queue-item-channel">${meta.channel || item.provider} • ${submittersList}${item.isPushed ? ` • <span class="badge-pushed">${t('queue.pushed')}</span>` : ''}</div>
                     </div>
                     ${(() => {
                         if (item.pushCount <= 1) return '';
                         const m = 1 + Math.min(9, item.pushCount - 1) * (1.5 / 9);
                         return `<span class="queue-item-badge" style="font-size:${12*m}px; padding:${3*m}px ${8*m}px; border-radius:${4*m}px">${item.pushCount}x</span>`;
                     })()}
-                    <button class="queue-item-delete" title="Löschen">${trashIcon}</button>
+                    <button class="queue-item-delete" title="${t('queue.delete')}">${trashIcon}</button>
                 </div>
             `;
         }).join('');
 
-        // Handle delete clicks (stopPropagation so it doesn't trigger the item click)
+        // Handle delete clicks
         container.querySelectorAll('.queue-item-delete').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -291,10 +371,7 @@ ClipQ.App = (() => {
         container.querySelectorAll('.queue-item').forEach(item => {
             item.addEventListener('click', () => {
                 const id = item.dataset.id;
-                
-                // Pull clip to front, push currently playing clip to history
                 const newClip = ClipQ.Queue.extractAndPlay(id);
-                
                 if (newClip) {
                     ClipQ.Player.playClip(newClip);
                     updateNextButton();
@@ -308,7 +385,7 @@ ClipQ.App = (() => {
         const grid = document.getElementById('history-grid');
 
         if (hist.length === 0) {
-            grid.innerHTML = '<div style="color:var(--color-text-dim);padding:40px;text-align:center">Noch keine Clips angesehen.</div>';
+            grid.innerHTML = `<div style="color:var(--color-text-dim);padding:40px;text-align:center">${t('history.empty')}</div>`;
             return;
         }
 
@@ -334,7 +411,7 @@ ClipQ.App = (() => {
 
     function isAutoplay() { return autoplay; }
 
-    return { init, nextClip, setQueueOpen, isAutoplay, renderQueueList };
+    return { init, nextClip, setQueueOpen, isAutoplay, setAutoplay, setClipLimit, setProvider, renderQueueList };
 })();
 
 document.addEventListener('DOMContentLoaded', () => ClipQ.App.init());

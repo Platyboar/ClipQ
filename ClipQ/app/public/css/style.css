@@ -311,3 +311,29 @@ a:hover { text-decoration:underline; }
   box-shadow: 0 2px 6px rgba(230, 126, 34, 0.3);
   user-select: none;
 }
+
+/* ======================== */
+/* LOGIN LANGUAGE SELECTOR  */
+/* ======================== */
+.language-selector { display:flex; flex-direction:column; align-items:center; gap:16px; animation:fadeIn .3s ease-out; }
+.language-prompt { color:var(--color-text-dim); font-size:var(--font-size-lg); font-weight:500; }
+.language-options { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.language-btn { display:flex; align-items:center; gap:8px; padding:14px 28px; background:rgba(255,255,255,.05); color:var(--color-text); font-size:var(--font-size-lg); font-weight:500; border:1px solid var(--color-border); border-radius:var(--border-radius); cursor:pointer; transition:all .2s; }
+.language-btn:hover { background:rgba(255,255,255,.1); border-color:var(--color-accent); transform:translateY(-2px); box-shadow:0 4px 16px rgba(192,57,43,.2); }
+.language-btn .lang-flag { font-size:24px; }
+.language-selector.fade-out { opacity:0; transform:translateY(-10px); transition:all .3s ease-in; }
+#twitch-login-btn.slide-in { animation:slideUp .4s ease-out; }
+
+/* ======================== */
+/* COMMAND ROLE CHECKBOXES  */
+/* ======================== */
+.cmd-row-inner { display:flex; align-items:center; gap:10px; }
+.cmd-row-inner .cmd-word { flex:1; }
+.cmd-roles { display:flex; gap:4px; flex-shrink:0; }
+.role-badge { width:30px; height:30px; border-radius:6px; border:1px solid var(--color-border); background:rgba(255,255,255,.03); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; opacity:.35; filter:grayscale(1); padding:0; }
+.role-badge img { width:18px; height:18px; pointer-events:none; }
+.role-badge.active { opacity:1; filter:none; border-color:var(--color-accent); background:rgba(192,57,43,.12); }
+.role-badge:hover { opacity:.8; filter:none; }
+.role-badge.active:hover { opacity:1; }
+.role-badge.role-all { width:auto; min-width:30px; padding:0 8px; font-size:11px; font-weight:600; color:var(--color-text-dim); }
+.role-badge.role-all.active { color:var(--color-text-bright); }
