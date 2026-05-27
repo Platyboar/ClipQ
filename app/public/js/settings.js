@@ -12,7 +12,7 @@ ClipQ.Settings = (() => {
     const DEFAULTS = {
         channel: '',
         appTitle: 'ClipQ',
-        providers: { twitch: true, youtube: true, tiktok: true, instagram: true },
+        providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true },
         userClipLimit: 0,
         ageLimitDays: 0,
         historyRetentionDays: 0,

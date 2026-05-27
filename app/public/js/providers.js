@@ -6,7 +6,7 @@ window.ClipQ = window.ClipQ || {};
 ClipQ.Providers = (() => {
     const PROVIDERS = {
         twitch: {
-            name: 'Twitch',
+            name: 'Twitch Clips',
             patterns: [
                 /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/(\w+)\/clip\/([A-Za-z0-9_-]+)/,
                 /(?:https?:\/\/)?clips\.twitch\.tv\/([A-Za-z0-9_-]+)/
@@ -52,7 +52,7 @@ ClipQ.Providers = (() => {
                     if (clip.game_id) {
                         try {
                             const gRes = await fetch(`https://api.twitch.tv/helix/games?id=${clip.game_id}`, {
-                                headers: { 'Client-ID': ClipQ.CLIENT_ID, 'Authorization': `Bearer ${token}` }
+                                    headers: { 'Client-ID': ClipQ.CLIENT_ID, 'Authorization': `Bearer ${token}` }
                             });
                             const gData = await gRes.json();
                             if (gData.data && gData.data[0]) gameName = gData.data[0].name;
@@ -72,6 +72,64 @@ ClipQ.Providers = (() => {
                     };
                 } catch (e) {
                     console.error('Twitch clip fetch error:', e);
+                    return null;
+                }
+            }
+        },
+
+        twitch_vod: {
+            name: 'Twitch VOD',
+            patterns: [
+                /(?:https?:\/\/)?(?:www\.)?twitch\.tv\/videos\/(\d+)/i
+            ],
+            extractId(url) {
+                const m = url.match(/(?:https?:\/\/)?(?:www\.)?twitch\.tv\/videos\/(\d+)/i);
+                return m ? m[1] : null;
+            },
+            extractTime(url) {
+                const m = url.match(/[?&]t=([A-Za-z0-9_]+)/i);
+                return m ? m[1] : null;
+            },
+            getEmbedUrl(id, originalUrl) {
+                const time = this.extractTime(originalUrl || '');
+                let embed = `https://player.twitch.tv/?video=v${id}&parent=localhost&autoplay=true&muted=false`;
+                if (time) embed += `&time=${time}`;
+                return embed;
+            },
+            async fetchMeta(id, token) {
+                try {
+                    const res = await fetch(`https://api.twitch.tv/helix/videos?id=${id}`, {
+                        headers: {
+                            'Client-ID': ClipQ.CLIENT_ID,
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const data = await res.json();
+                    if (!data.data || !data.data[0]) return null;
+                    const video = data.data[0];
+
+                    // Fetch broadcaster avatar
+                    let avatarUrl = '';
+                    try {
+                        const uRes = await fetch(`https://api.twitch.tv/helix/users?id=${video.user_id}`, {
+                            headers: { 'Client-ID': ClipQ.CLIENT_ID, 'Authorization': `Bearer ${token}` }
+                        });
+                        const uData = await uRes.json();
+                        if (uData.data && uData.data[0]) avatarUrl = uData.data[0].profile_image_url;
+                    } catch (e) { /* ignore */ }
+
+                    return {
+                        title: video.title,
+                        channel: video.user_name,
+                        avatarUrl,
+                        category: 'Twitch VOD',
+                        creator: video.user_name,
+                        createdAt: video.created_at,
+                        thumbnail: video.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180'),
+                        duration: video.duration
+                    };
+                } catch (e) {
+                    console.error('Twitch VOD fetch error:', e);
                     return null;
                 }
             }

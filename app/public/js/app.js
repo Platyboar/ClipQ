@@ -8,6 +8,7 @@ window.ClipQ = window.ClipQ || {};
 // Provider icon URLs (small favicons)
 ClipQ.PROVIDER_ICONS = {
     twitch: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png',
+    twitch_vod: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png',
     youtube: 'https://www.youtube.com/favicon.ico',
     tiktok: 'https://sf-tb-sg.ibytedtos.com/obj/eden-sg/uhtyvueh7nulogpouzhm/tiktok-icon2.png',
     instagram: 'https://img.icons8.com/color/48/instagram-new.png',
@@ -328,7 +329,7 @@ ClipQ.App = (() => {
                     if (roles.isBroadcaster) {
                         badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" title="Streamer" alt="Streamer">';
                     } else if (roles.isLeadMod) {
-                        badge = '<img class="badge-role" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/2694.png" title="Lead-Moderator" alt="Lead-Moderator">';
+                        badge = '<img class="badge-role" src="https://assets.help.twitch.tv/article/img/000002212-07.png" title="Lead-Moderator" alt="Lead-Moderator">';
                     } else if (roles.isMod) {
                         badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" title="Moderator" alt="Moderator">';
                     } else if (roles.isVip) {

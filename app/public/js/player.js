@@ -42,7 +42,7 @@ ClipQ.Player = (() => {
 
     function getChannelUrl(channelName, provider, meta = {}) {
         if (!channelName) return '';
-        if (provider === 'twitch') return `https://www.twitch.tv/${channelName}`;
+        if (provider === 'twitch' || provider === 'twitch_vod') return `https://www.twitch.tv/${channelName}`;
         if (provider === 'youtube') {
             if (meta.authorUrl) return meta.authorUrl;
             return `https://www.youtube.com/results?search_query=${encodeURIComponent(channelName)}`;
@@ -127,7 +127,7 @@ ClipQ.Player = (() => {
                     console.warn('Could not fetch direct Instagram video URL, falling back to iframe', err);
                     if (currentClip !== clip) return;
 
-                    const embedUrl = provider.getEmbedUrl(clip.clipId);
+                    const embedUrl = provider.getEmbedUrl(clip.clipId, clip.url);
                     playerArea.innerHTML = `
                     <div style="width:100%; height:100%; background:#000; position:relative; overflow:hidden; display:flex; justify-content:center;">
                         <iframe
@@ -147,7 +147,7 @@ ClipQ.Player = (() => {
             return;
         }
 
-        const embedUrl = provider.getEmbedUrl(clip.clipId);
+        const embedUrl = provider.getEmbedUrl(clip.clipId, clip.url);
 
         if (clip.provider === 'tiktok') {
             playerArea.innerHTML = `
