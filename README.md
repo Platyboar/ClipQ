@@ -1,6 +1,6 @@
 # ClipQ 🎬
 
-**ClipQ** is a lightweight, self-hosted Clip Queue for Twitch streamers. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
+**ClipQ** is a lightweight, self-hosted Clip Queue for Twitch streamers. Developed with the help of Google Antigravity. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
 
 ## Features
 
@@ -13,13 +13,14 @@
 - 📋 **Clip Memory** — Prevents duplicate clips from being re-queued
 - 📜 **History** — Browse previously watched clips
 - 🚫 **Moderation** — Blocked users/streamers, auto-removal on timeout/ban
-- ▶️ **Autoplay** — Automatically advance to the next clip
+- ◀️ **Autoplay** — Automatically advance to the next clip
 
 ## Getting Started
 
 ### Prerequisites
 
 - [Python 3.8+](https://www.python.org/downloads/) (with `pip`)
+  > **Note for Windows users:** Running the app via `start.bat` will automatically verify your Python installation. If Python is missing or older than 3.8, it will silently download and install Python 3.12 for you.
 - A [Twitch account](https://www.twitch.tv/)
 
 ### Installation

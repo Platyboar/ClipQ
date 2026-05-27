@@ -72,7 +72,7 @@ ClipQ.App = (() => {
 
         container.innerHTML = langs.map(lang => `
             <button class="language-btn" data-lang="${lang.code}">
-                <span class="lang-flag">${lang.flag}</span>
+                <img class="lang-flag" src="${lang.flag}" alt="${lang.name}">
                 <span>${lang.name}</span>
             </button>
         `).join('');
@@ -328,7 +328,7 @@ ClipQ.App = (() => {
                     if (roles.isBroadcaster) {
                         badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" title="Streamer" alt="Streamer">';
                     } else if (roles.isLeadMod) {
-                        badge = '<img class="badge-role" src="https://img.icons8.com/color/18/swords.png" title="Lead-Moderator" alt="Lead-Moderator">';
+                        badge = '<img class="badge-role" src="https://img.icons8.com/color/48/crossed-swords.png" title="Lead-Moderator" alt="Lead-Moderator">';
                     } else if (roles.isMod) {
                         badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" title="Moderator" alt="Moderator">';
                     } else if (roles.isVip) {

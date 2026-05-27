@@ -318,9 +318,17 @@ a:hover { text-decoration:underline; }
 .language-selector { display:flex; flex-direction:column; align-items:center; gap:16px; animation:fadeIn .3s ease-out; }
 .language-prompt { color:var(--color-text-dim); font-size:var(--font-size-lg); font-weight:500; }
 .language-options { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-.language-btn { display:flex; align-items:center; gap:8px; padding:14px 28px; background:rgba(255,255,255,.05); color:var(--color-text); font-size:var(--font-size-lg); font-weight:500; border:1px solid var(--color-border); border-radius:var(--border-radius); cursor:pointer; transition:all .2s; }
+.language-btn { display:flex; align-items:center; gap:12px; padding:14px 28px; background:rgba(255,255,255,.05); color:var(--color-text); font-size:var(--font-size-lg); font-weight:500; border:1px solid var(--color-border); border-radius:var(--border-radius); cursor:pointer; transition:all .2s; }
 .language-btn:hover { background:rgba(255,255,255,.1); border-color:var(--color-accent); transform:translateY(-2px); box-shadow:0 4px 16px rgba(192,57,43,.2); }
-.language-btn .lang-flag { font-size:24px; }
+.language-btn .lang-flag {
+  width: 28px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
 .language-selector.fade-out { opacity:0; transform:translateY(-10px); transition:all .3s ease-in; }
 #twitch-login-btn.slide-in { animation:slideUp .4s ease-out; }
 
@@ -337,3 +345,13 @@ a:hover { text-decoration:underline; }
 .role-badge.active:hover { opacity:1; }
 .role-badge.role-all { width:auto; min-width:30px; padding:0 8px; font-size:11px; font-weight:600; color:var(--color-text-dim); }
 .role-badge.role-all.active { color:var(--color-text-bright); }
+
+/* Command examples */
+.cmd-example {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  margin-top: 4px;
+  font-family: monospace;
+  opacity: 0.85;
+  padding-left: 2px;
+}

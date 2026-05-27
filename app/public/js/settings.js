@@ -154,7 +154,7 @@ ClipQ.Settings = (() => {
         ClipQ.I18n.getAvailableLanguages().forEach(lang => {
             const opt = document.createElement('option');
             opt.value = lang.code;
-            opt.textContent = `${lang.flag} ${lang.name}`;
+            opt.textContent = lang.name;
             opt.selected = lang.code === ClipQ.I18n.getLanguage();
             langSelect.appendChild(opt);
         });
@@ -200,6 +200,7 @@ ClipQ.Settings = (() => {
         }
 
         if (ClipQ.Design) ClipQ.Design.populate(s.design);
+        updateCommandExamples();
     }
 
     function readFromUI() {
@@ -248,6 +249,27 @@ ClipQ.Settings = (() => {
 
     function initUI() {
         if (ClipQ.Design) ClipQ.Design.init();
+
+        const titleInput = document.getElementById('set-app-title');
+        if (titleInput) {
+            titleInput.addEventListener('input', () => {
+                const titleEl = document.getElementById('app-title');
+                if (titleEl) {
+                    titleEl.textContent = titleInput.value.trim() || 'ClipQ';
+                }
+            });
+        }
+
+        const prefixInput = document.getElementById('set-cmd-prefix');
+        if (prefixInput) {
+            prefixInput.addEventListener('input', updateCommandExamples);
+        }
+        CMD_KEYS.forEach(key => {
+            const input = document.getElementById(`set-cmd-${key}`);
+            if (input) {
+                input.addEventListener('input', updateCommandExamples);
+            }
+        });
 
         const badgesSwitch = document.getElementById('design-show-badges');
         if (badgesSwitch) {
@@ -330,11 +352,42 @@ ClipQ.Settings = (() => {
         });
     }
 
+    function updateCommandExamples() {
+        const prefix = document.getElementById('set-cmd-prefix').value.trim();
+        const suffixes = {
+            next: '',
+            push: ' https://clips.twitch.tv/...',
+            open: '',
+            close: '',
+            clear: '',
+            purgememory: '',
+            autoplay: ' off',
+            limit: ' 5',
+            remove: ' all',
+            providers: ' twitch off'
+        };
+
+        for (const key of CMD_KEYS) {
+            const input = document.getElementById(`set-cmd-${key}`);
+            const exampleEl = document.getElementById(`example-cmd-${key}`);
+            if (input && exampleEl) {
+                const cmdWord = input ? input.value.trim() : '';
+                if (cmdWord) {
+                    exampleEl.textContent = `${prefix} ${cmdWord}${suffixes[key]}`;
+                } else {
+                    exampleEl.textContent = '';
+                }
+            }
+        }
+    }
+
     function closeModal(keepDesign) {
         if (ClipQ.Design) ClipQ.Design.closePicker();
         if (!keepDesign) {
             if (ClipQ.Design) ClipQ.Design.revertToOriginal();
-            load();
+            const s = load();
+            const titleEl = document.getElementById('app-title');
+            if (titleEl) titleEl.textContent = s.appTitle || 'ClipQ';
             if (ClipQ.App.renderQueueList) ClipQ.App.renderQueueList();
         }
         document.getElementById('settings-overlay').classList.add('hidden');

@@ -29,7 +29,12 @@ except Exception as e:
 
 
 PORT = 8000
-PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public')
+
+import sys
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    PUBLIC_DIR = os.path.join(sys._MEIPASS, 'public')
+else:
+    PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public')
 
 
 class ClipQHandler(http.server.SimpleHTTPRequestHandler):

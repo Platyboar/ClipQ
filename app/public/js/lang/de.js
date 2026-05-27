@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('de', {
     _name: 'Deutsch',
-    _flag: '🇩🇪',
+    _flag: 'https://flagcdn.com/de.svg',
 
     // Login page
     'login.subtitle': 'Clip Queue für deinen Stream',
