@@ -4,67 +4,68 @@
 window.ClipQ = window.ClipQ || {};
 
 ClipQ.Design = (() => {
+    const t = (key, params) => ClipQ.I18n.t(key, params);
     // ─── Configuration ───────────────────────────────────
 
     const COLOR_GROUPS = [
         {
-            label: 'Hintergründe',
+            labelKey: 'design.group.backgrounds',
             items: [
-                { var: '--color-bg', label: 'App' },
-                { var: '--color-menubar', label: 'Menüleiste' },
-                { var: '--color-player-bg', label: 'Player' },
-                { var: '--color-facecam-bg', label: 'Facecam' },
-                { var: '--color-chat-bg', label: 'Chat' },
-                { var: '--color-queue-bg', label: 'Queue' },
-                { var: '--color-queue-item', label: 'Kachel' },
-                { var: '--color-queue-item-hover', label: 'Kachel Hover' },
-                { var: '--color-info-bg', label: 'Info-Leiste' },
-                { var: '--color-ad-bg', label: 'Ad-Bereich' },
-                { var: '--color-settings-bg', label: 'Einstellungen' },
+                { var: '--color-bg', labelKey: 'design.color.app' },
+                { var: '--color-menubar', labelKey: 'design.color.menubar' },
+                { var: '--color-player-bg', labelKey: 'design.color.player' },
+                { var: '--color-facecam-bg', labelKey: 'design.color.facecam' },
+                { var: '--color-chat-bg', labelKey: 'design.color.chat' },
+                { var: '--color-queue-bg', labelKey: 'design.color.queue' },
+                { var: '--color-queue-item', labelKey: 'design.color.tile' },
+                { var: '--color-queue-item-hover', labelKey: 'design.color.tile_hover' },
+                { var: '--color-info-bg', labelKey: 'design.color.infobar' },
+                { var: '--color-ad-bg', labelKey: 'design.color.ad' },
+                { var: '--color-settings-bg', labelKey: 'design.color.settings' },
             ]
         },
         {
-            label: 'Rahmen',
+            labelKey: 'design.group.borders',
             items: [
-                { var: '--color-border', label: 'Standard' },
-                { var: '--color-border-player', label: 'Player' },
-                { var: '--color-border-facecam', label: 'Facecam' },
-                { var: '--color-border-chat', label: 'Chat' },
-                { var: '--color-border-queue', label: 'Queue' },
-                { var: '--color-border-info', label: 'Info' },
+                { var: '--color-border', labelKey: 'design.color.standard' },
+                { var: '--color-border-player', labelKey: 'design.color.player' },
+                { var: '--color-border-facecam', labelKey: 'design.color.facecam' },
+                { var: '--color-border-chat', labelKey: 'design.color.chat' },
+                { var: '--color-border-queue', labelKey: 'design.color.queue' },
+                { var: '--color-border-info', labelKey: 'design.color.info' },
             ]
         },
         {
-            label: 'Akzent',
+            labelKey: 'design.group.accent',
             items: [
-                { var: '--color-accent', label: 'Akzent' },
-                { var: '--color-accent-hover', label: 'Hover' },
-                { var: '--color-accent-glow', label: 'Glow', hasAlpha: true },
-                { var: '--color-accent-secondary', label: 'Sekundär' },
+                { var: '--color-accent', labelKey: 'design.color.accent' },
+                { var: '--color-accent-hover', labelKey: 'design.color.hover' },
+                { var: '--color-accent-glow', labelKey: 'design.color.glow', hasAlpha: true },
+                { var: '--color-accent-secondary', labelKey: 'design.color.secondary' },
             ]
         },
         {
-            label: 'Status',
+            labelKey: 'design.group.status',
             items: [
-                { var: '--color-open', label: 'Offen' },
-                { var: '--color-closed', label: 'Geschlossen' },
-                { var: '--color-danger', label: 'Gefahr' },
-                { var: '--color-push-badge', label: 'Badge' },
+                { var: '--color-open', labelKey: 'design.color.open' },
+                { var: '--color-closed', labelKey: 'design.color.closed' },
+                { var: '--color-danger', labelKey: 'design.color.danger' },
+                { var: '--color-push-badge', labelKey: 'design.color.badge' },
             ]
         },
         {
-            label: 'Text',
+            labelKey: 'design.group.text',
             items: [
-                { var: '--color-text', label: 'Standard' },
-                { var: '--color-text-dim', label: 'Gedimmt' },
-                { var: '--color-text-bright', label: 'Hell' },
-                { var: '--color-text-accent', label: 'Akzent' },
+                { var: '--color-text', labelKey: 'design.color.standard' },
+                { var: '--color-text-dim', labelKey: 'design.color.dimmed' },
+                { var: '--color-text-bright', labelKey: 'design.color.bright' },
+                { var: '--color-text-accent', labelKey: 'design.color.accent' },
             ]
         },
         {
-            label: 'Sonstiges',
+            labelKey: 'design.group.misc',
             items: [
-                { var: '--color-overlay', label: 'Overlay', hasAlpha: true },
+                { var: '--color-overlay', labelKey: 'design.color.overlay', hasAlpha: true },
             ]
         }
     ];
@@ -520,17 +521,19 @@ ClipQ.Design = (() => {
         if (container) {
             container.innerHTML = COLOR_GROUPS.map(group => `
                 <div class="design-group">
-                    <div class="design-group-label">${group.label}</div>
+                    <div class="design-group-label">${t(group.labelKey)}</div>
                     <div class="design-swatches">
-                        ${group.items.map(item => `
-                            <div class="color-swatch" data-var="${item.var}" data-alpha="${!!item.hasAlpha}" title="${item.label}: ${item.var}">
+                        ${group.items.map(item => {
+                            const label = t(item.labelKey);
+                            return `
+                            <div class="color-swatch" data-var="${item.var}" data-alpha="${!!item.hasAlpha}" title="${label}: ${item.var}">
                                 <div class="swatch-color-wrap">
                                     <div class="swatch-checker"></div>
                                     <div class="swatch-color" style="background:${DEFAULT_COLORS[item.var]}"></div>
                                 </div>
-                                <span class="swatch-label">${item.label}</span>
+                                <span class="swatch-label">${label}</span>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
             `).join('');
@@ -554,10 +557,10 @@ ClipQ.Design = (() => {
         const setDefaultBtn = document.getElementById('design-set-default-btn');
         if (setDefaultBtn) {
             setDefaultBtn.addEventListener('click', () => {
-                if (confirm('Aktuelle Designwerte als neue Standardwerte (Default) speichern?')) {
+                if (confirm(t('design.confirm_set_default'))) {
                     const currentVals = readValues();
                     localStorage.setItem('clipq_custom_defaults', JSON.stringify(currentVals));
-                    alert('Aktuelle Designwerte wurden als neue Standardwerte gespeichert!\n\n(Bitte klicke anschließend auf "Speichern", um das Design dauerhaft anzuwenden.)');
+                    alert(t('design.alert_set_default'));
                 }
             });
         }
@@ -568,17 +571,17 @@ ClipQ.Design = (() => {
             resetBtn.addEventListener('click', () => {
                 const hasCustom = !!localStorage.getItem('clipq_custom_defaults');
                 if (hasCustom) {
-                    const choice = confirm('Möchtest du auf deine selbst definierten Standardwerte zurücksetzen?\n\n(Klicke "OK" für deine gespeicherten Standardwerte, oder "Abbrechen" um auf das originale rote Auslieferungs-Design zurückzusetzen)');
+                    const choice = confirm(t('design.confirm_reset_custom'));
                     if (choice) {
                         resetToDefaults(true);
                     } else {
-                        if (confirm('Komplett auf das originale rote Auslieferungs-Design zurücksetzen? (Deine gespeicherten Standardwerte werden gelöscht)')) {
+                        if (confirm(t('design.confirm_reset_factory'))) {
                             localStorage.removeItem('clipq_custom_defaults');
                             resetToDefaults(false);
                         }
                     }
                 } else {
-                    if (confirm('Alle Farben und Schriftart auf das originale Auslieferungs-Design zurücksetzen?')) {
+                    if (confirm(t('design.confirm_reset_all'))) {
                         resetToDefaults(false);
                     }
                 }
