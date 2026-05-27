@@ -18,13 +18,29 @@ Developed with the help of Google Antigravity.
 
 ## Getting Started
 
-### Prerequisites
+### Standalone Executable (Windows)
+
+No installation, Python, or external dependencies are required to run ClipQ as a standalone application on Windows.
+
+1. **Download the latest release**: Go to the GitHub Releases section and download `ClipQ.exe`.
+2. **Run `ClipQ.exe`**: Double-click the file.
+   - It will automatically launch the local web server.
+   - It will open your default web browser to `http://localhost:8000`.
+3. **Connect with Twitch** and start managing your clip queue!
+
+---
+
+### Running from Source / Development
+
+If you prefer to run ClipQ from source or are on a non-Windows platform:
+
+#### Prerequisites
 
 - [Python 3.8+](https://www.python.org/downloads/) (with `pip`)
-  > **Note for Windows users:** Running the app via `start.bat` will automatically verify your Python installation. If Python is missing or older than 3.8, it will silently download and install Python 3.12 for you.
+  > **Note for Windows source users:** Running the app via `start.bat` will automatically verify your Python installation. If Python is missing or older than 3.8, it will silently download and install Python 3.12 for you.
 - A [Twitch account](https://www.twitch.tv/)
 
-### Installation
+#### Installation & Startup
 
 1. **Download or clone** this repository:
    ```bash
@@ -40,13 +56,7 @@ Developed with the help of Google Antigravity.
    Or simply double-click `start.bat` on Windows.
 
 3. **Open in your browser:**
-   ```
-   http://localhost:8000
-   ```
-
-4. **Connect with Twitch** and start watching clips!
-
-> `yt-dlp` is installed/updated automatically on startup for Instagram and TikTok video playback.
+   Open `http://localhost:8000` in your web browser.
 
 ## Chat Commands
 
