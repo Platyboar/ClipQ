@@ -95,6 +95,7 @@ ClipQ.I18n.register('de', {
 
     // Settings — Commands
     'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn Prefix <code>!queue</code> und Next <code>next</code>, dann wird <code>!queuenext</code> erkannt.',
+    'settings.commands.example_label': 'Bsp.:',
     'settings.commands.prefix': 'Command-Prefix',
     'settings.commands.next': 'Nächster Clip',
     'settings.commands.push': 'Clip an 1. Stelle pushen',

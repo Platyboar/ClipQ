@@ -354,6 +354,7 @@ ClipQ.Settings = (() => {
 
     function updateCommandExamples() {
         const prefix = document.getElementById('set-cmd-prefix').value.trim();
+        const exampleLabel = ClipQ.I18n.t('settings.commands.example_label') || 'Ex:';
         const suffixes = {
             next: '',
             push: ' https://clips.twitch.tv/...',
@@ -373,7 +374,7 @@ ClipQ.Settings = (() => {
             if (input && exampleEl) {
                 const cmdWord = input ? input.value.trim() : '';
                 if (cmdWord) {
-                    exampleEl.textContent = `${prefix} ${cmdWord}${suffixes[key]}`;
+                    exampleEl.textContent = `${exampleLabel} ${prefix} ${cmdWord}${suffixes[key]}`;
                 } else {
                     exampleEl.textContent = '';
                 }
