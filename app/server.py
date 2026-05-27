@@ -9,23 +9,34 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-# Check/install/upgrade yt-dlp automatically on startup
-try:
-    import subprocess
-    import sys
-    print("Checking for yt-dlp updates...")
-    # Attempt to upgrade yt-dlp using pip
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"], 
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    import yt_dlp
-    print("yt-dlp is up to date!")
-except Exception as e:
-    # If the network request fails or upgrade fails, try importing the existing local installation
+import sys
+import os
+
+# Check/install/upgrade yt-dlp automatically on startup (only if not running as compiled EXE)
+is_frozen = getattr(sys, 'frozen', False)
+if not is_frozen:
+    try:
+        import subprocess
+        print("Checking for yt-dlp updates...")
+        # Attempt to upgrade yt-dlp using pip
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"], 
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        import yt_dlp
+        print("yt-dlp is up to date!")
+    except Exception as e:
+        # If the network request fails or upgrade fails, try importing the existing local installation
+        try:
+            import yt_dlp
+            print("Update check failed (possibly offline), using locally installed version of yt-dlp.")
+        except ImportError:
+            print(f"Error: yt-dlp is not installed and automatic installation failed: {e}")
+else:
+    print("Running as compiled EXE. Skipping yt-dlp auto-update check.")
     try:
         import yt_dlp
-        print("Update check failed (possibly offline), using locally installed version of yt-dlp.")
+        print("yt-dlp loaded successfully from bundle!")
     except ImportError:
-        print(f"Error: yt-dlp is not installed and automatic installation failed: {e}")
+        print("Error: yt-dlp could not be imported from bundle!")
 
 
 PORT = 8000

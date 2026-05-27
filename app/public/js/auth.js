@@ -71,6 +71,7 @@ ClipQ.Auth = (() => {
     function logout() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem('clipq_language');
         window.location.reload();
     }
 
