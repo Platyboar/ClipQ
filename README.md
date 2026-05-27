@@ -1,6 +1,7 @@
 # ClipQ 🎬
 
-**ClipQ** is a lightweight, self-hosted Clip Queue for Twitch streamers. Developed with the help of Google Antigravity. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
+**ClipQ** is a lightweight, self-hosted Clip Queue for Twitch streamers. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
+Developed with the help of Google Antigravity.
 
 ## Features
 
