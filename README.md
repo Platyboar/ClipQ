@@ -9,7 +9,7 @@ Developed with the help of Google Antigravity.
 - 💬 **Chat Integration** — Viewers submit clips by pasting links in chat
 - 🔧 **Chat Commands** — Moderators (and configurable roles) can control the queue via chat
 - 🛡️ **Role-Based Permissions** — Configure which roles (Broadcaster, Lead Mod, Mod, VIP, All) can use each command
-- 🌍 **Multi-Language** — English and German included, easily extendable
+- 🌍 **Multi-Language** — English, German, Spanish, Russian, Portuguese, French, Japanese, and Italian included (Spanish, Russian, Portuguese, French, Japanese, and Italian were translated using AI; easily extendable)
 - 🎨 **Customizable Design** — Colors, fonts, and layout are fully customizable
 - 📋 **Clip Memory** — Prevents duplicate clips from being re-queued
 - 📜 **History** — Browse previously watched clips
