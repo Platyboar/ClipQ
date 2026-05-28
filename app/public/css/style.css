@@ -421,12 +421,13 @@ a:hover { text-decoration:underline; }
   transform: scale(1.15);
 }
 
-/* Width Control Items */
+/* Width & Height Control Items Labels */
 .width-control-item {
   margin-top: 12px;
 }
 
-.width-control-item .form-label {
+.width-control-item .form-label,
+.height-slider-container .form-label {
   font-size: 13px;
   color: var(--color-text-dim);
   font-weight: 500;

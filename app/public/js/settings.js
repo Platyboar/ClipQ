@@ -493,7 +493,16 @@ ClipQ.Settings = (() => {
         ['lock-facecam', 'lock-chat-ad', 'lock-queue'].forEach(id => {
             const el = document.getElementById(`layout-${id}`);
             if (el) {
-                el.addEventListener('change', triggerLiveLayoutApply);
+                el.addEventListener('change', () => {
+                    if (id === 'lock-facecam') {
+                        const slider = document.getElementById('layout-facecam-height');
+                        if (slider) slider.disabled = el.checked;
+                    } else if (id === 'lock-queue') {
+                        const slider = document.getElementById('layout-queue-height');
+                        if (slider) slider.disabled = el.checked;
+                    }
+                    triggerLiveLayoutApply();
+                });
             }
         });
 
@@ -711,11 +720,19 @@ ClipQ.Settings = (() => {
         if (qHeightValEl) qHeightValEl.textContent = `${qHeight}%`;
 
         const lockFcEl = document.getElementById('layout-lock-facecam');
-        if (lockFcEl) lockFcEl.checked = !!layout.lockFacecam;
+        if (lockFcEl) {
+            lockFcEl.checked = !!layout.lockFacecam;
+            const slider = document.getElementById('layout-facecam-height');
+            if (slider) slider.disabled = lockFcEl.checked;
+        }
         const lockCaEl = document.getElementById('layout-lock-chat-ad');
         if (lockCaEl) lockCaEl.checked = !!layout.lockChatAd;
         const lockQEl = document.getElementById('layout-lock-queue');
-        if (lockQEl) lockQEl.checked = !!layout.lockQueue;
+        if (lockQEl) {
+            lockQEl.checked = !!layout.lockQueue;
+            const slider = document.getElementById('layout-queue-height');
+            if (slider) slider.disabled = lockQEl.checked;
+        }
 
         setToggleState('layout-show-facecam', layout.showFacecam !== false);
         setToggleState('layout-show-chat', layout.showChat !== false);
