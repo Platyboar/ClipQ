@@ -20,7 +20,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&family=Raleway:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=13">
 </head>
 
 <body>
@@ -102,8 +102,7 @@
                 <div id="queue-section">
                     <div class="queue-header">
                         <span><span data-i18n="queue.title">Queue</span> (<span id="queue-count">0</span>)</span>
-                        <button id="queue-clear-btn" class="btn-ghost"
-                            style="padding:4px 10px;font-size:11px;" data-i18n="queue.clear_btn">Clear</button>
+                        <button id="queue-clear-btn" class="btn-ghost btn-clear" data-i18n="queue.clear_btn">Clear</button>
                     </div>
                     <div class="queue-items" id="queue-list"></div>
                 </div>
@@ -112,7 +111,7 @@
             <!-- Info Bar -->
             <section id="info-bar">
                 <div class="clip-details" id="clip-details">
-                    <div style="color:var(--color-text-dim)" data-i18n="player.no_clip">No clip loaded</div>
+                    <div class="clip-placeholder" data-i18n="player.no_clip">No clip loaded</div>
                 </div>
                 <div class="player-controls">
                     <div class="autoplay-toggle" id="btn-autoplay" title="Autoplay">
@@ -142,10 +141,10 @@
                 <button class="tab active" data-stab="general" data-i18n="settings.tab.general">General</button>
                 <button class="tab" data-stab="queue" data-i18n="settings.tab.queue">Clip Queue</button>
                 <button class="tab" data-stab="commands" data-i18n="settings.tab.commands">Commands</button>
-                <button class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
-                <button class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
                 <button class="tab" data-stab="design" data-i18n="settings.tab.design">Design</button>
                 <button class="tab" data-stab="layout" data-i18n="settings.tab.layout">Layout</button>
+                <button class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
+                <button class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
             </div>
             <div class="modal-body">
                 <!-- General Tab -->
@@ -163,9 +162,15 @@
                         <input class="form-input" id="set-app-title" maxlength="30" data-i18n-placeholder="settings.general.app_title_placeholder">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="set-channel" data-i18n="settings.general.channel">Twitch Channel</label>
+                        <label class="form-label" data-i18n="settings.general.channel">Twitch Channel</label>
                         <div class="form-hint" data-i18n="settings.general.channel_hint">Chat channel to join</div>
-                        <input class="form-input" id="set-channel" data-i18n-placeholder="settings.general.channel_placeholder">
+                        <div class="channel-text-group">
+                            <span class="channel-name-text" id="set-channel-text"></span>
+                            <button class="btn btn-danger" id="settings-logout" data-i18n="menu.logout">Logout</button>
+                        </div>
+                    </div>
+                    <div class="settings-action-bar">
+                        <button class="btn btn-danger" id="settings-reset" data-i18n="settings.general.reset">Reset to Factory Settings</button>
                     </div>
                 </div>
                 <!-- Queue Tab -->
@@ -211,7 +216,7 @@ moobot</textarea>
                     <div class="form-hint" style="margin-bottom:16px" data-i18n-html="settings.commands.hint">
                         Chat commands for the stream. Not case-sensitive.<br>
                         Example: If prefix is <code>!queue</code> and next is <code>next</code>, then
-                        <code>!queuenext</code> is recognized.
+                        <code>!queue next</code> is recognized.
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="set-cmd-prefix" data-i18n="settings.commands.prefix">Command Prefix</label>
@@ -359,27 +364,6 @@ moobot</textarea>
                         <div class="cmd-example" id="example-cmd-providers"></div>
                     </div>
                 </div>
-                <!-- History Tab -->
-                <div class="settings-tab-content" id="stab-history">
-                    <div class="form-group">
-                        <label class="form-label" for="set-history-retention" data-i18n="settings.history.retention">Retention (Days)</label>
-                        <div class="form-hint" data-i18n="settings.history.retention_hint">How long watched clips stay in history (0 = unlimited). Does not affect Clip Memory.</div>
-                        <input class="form-input" id="set-history-retention" type="number" min="0" value="0">
-                    </div>
-                    <div class="form-group">
-                        <p style="margin:12px 0" id="history-count-text" data-i18n-html="settings.history.count">You have <strong id="history-count">0</strong> clips in history.</p>
-                        <p class="form-hint" data-i18n="settings.history.purge_hint">Clearing only removes the history display, not the Clip Memory.</p>
-                        <button class="btn btn-danger" id="purge-history-btn" data-i18n="settings.history.purge_btn">Clear History</button>
-                    </div>
-                </div>
-                <!-- Memory Tab -->
-                <div class="settings-tab-content" id="stab-memory">
-                    <div class="form-group">
-                        <p class="form-hint" data-i18n="settings.memory.hint">Clip Memory stores URLs of all watched clips to prevent them from being re-queued.</p>
-                        <p style="margin:12px 0" id="memory-count-text" data-i18n-html="settings.memory.count">You have <strong id="memory-count">0</strong> clips in memory.</p>
-                        <button class="btn btn-danger" id="purge-memory-btn" data-i18n="settings.memory.purge_btn">Clear Memory</button>
-                    </div>
-                </div>
                 <!-- Design Tab -->
                 <div class="settings-tab-content" id="stab-design">
                     <div class="form-group">
@@ -408,8 +392,7 @@ moobot</textarea>
                         </select>
                     </div>
                     <div id="design-colors-container"></div>
-                    <div class="form-group"
-                        style="margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border);display:flex;gap:10px;">
+                    <div class="form-group settings-action-bar">
                         <button class="btn btn-primary" id="design-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
                         <button class="btn btn-danger" id="design-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
                     </div>
@@ -433,36 +416,94 @@ moobot</textarea>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="layout-player-width" data-i18n="settings.layout.player_width">Player Width</label>
-                        <div class="form-hint" data-i18n="settings.layout.player_width_hint">Adjust the width of the video player relative to the sidebar</div>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <input type="range" class="form-input" id="layout-player-width" min="50" max="85" value="70" style="flex:1; padding:0; height:auto;">
-                            <span id="layout-player-width-val" style="min-width:40px; font-weight:bold; text-align:right;">70%</span>
+                        <span class="form-label" data-i18n="settings.layout.widths">Component Widths</span>
+                        <div class="form-hint" data-i18n="settings.layout.widths_hint">Adjust widths of the player and sidebar components</div>
+                        
+                        <div class="width-control-item">
+                            <label class="form-label" for="layout-player-width" data-i18n="settings.layout.player_width">Player Width</label>
+                            <div class="slider-row">
+                                <input type="range" class="form-input" id="layout-player-width" min="50" max="90" value="70">
+                                <span id="layout-player-width-val" class="slider-value">70%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="width-control-item">
+                            <label class="form-label" for="layout-chat-width" data-i18n="settings.layout.chat_width">Chat Width</label>
+                            <div class="slider-row">
+                                <input type="range" class="form-input" id="layout-chat-width" min="10" max="90" value="60">
+                                <span id="layout-chat-width-val" class="slider-value">60%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <span class="form-label" data-i18n="settings.layout.heights">Component Heights</span>
+                        <div class="form-hint" data-i18n="settings.layout.heights_hint">Adjust heights and lock sizes of sidebar components</div>
+                        
+                        <div class="height-control-row">
+                            <div class="height-slider-container">
+                                <label class="form-label" for="layout-facecam-height" data-i18n="settings.layout.facecam_height">Facecam Height</label>
+                                <div class="slider-row">
+                                    <input type="range" class="form-input" id="layout-facecam-height" min="10" max="80" value="40">
+                                    <span id="layout-facecam-height-val" class="slider-value">40%</span>
+                                </div>
+                            </div>
+                            <div class="lock-checkbox-container">
+                                <label class="lock-label">
+                                    <input type="checkbox" id="layout-lock-facecam">
+                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="height-control-row">
+                            <div class="height-slider-container">
+                                <label class="form-label" for="layout-queue-height" data-i18n="settings.layout.queue_height">Queue Height</label>
+                                <div class="slider-row">
+                                    <input type="range" class="form-input" id="layout-queue-height" min="10" max="80" value="35">
+                                    <span id="layout-queue-height-val" class="slider-value">35%</span>
+                                </div>
+                            </div>
+                            <div class="lock-checkbox-container">
+                                <label class="lock-label">
+                                    <input type="checkbox" id="layout-lock-queue">
+                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="height-control-row lock-only-row">
+                            <span class="form-label" data-i18n="settings.layout.chat_ad_lock">Lock Chat/Ad Height</span>
+                            <div class="lock-checkbox-container">
+                                <label class="lock-label">
+                                    <input type="checkbox" id="layout-lock-chat-ad">
+                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <span class="form-label" data-i18n="settings.layout.visibility">Component Visibility</span>
                         <div class="form-hint" data-i18n="settings.layout.visibility_hint">Show or hide individual sidebar components</div>
                         
-                        <div class="toggle-row" style="margin-top:10px;">
+                        <div class="toggle-row">
                             <div>
                                 <span class="form-label" data-i18n="settings.layout.show_facecam">Show Facecam Box</span>
                             </div>
                             <div class="toggle-switch active" id="layout-show-facecam"></div>
                         </div>
-                        <div class="toggle-row" style="margin-top:10px;">
+                        <div class="toggle-row">
                             <div>
                                 <span class="form-label" data-i18n="settings.layout.show_chat">Show Chat Box</span>
                             </div>
                             <div class="toggle-switch active" id="layout-show-chat"></div>
                         </div>
-                        <div class="toggle-row" style="margin-top:10px;">
+                        <div class="toggle-row">
                             <div>
                                 <span class="form-label" data-i18n="settings.layout.show_ad">Show Ad Box</span>
                             </div>
                             <div class="toggle-switch active" id="layout-show-ad"></div>
                         </div>
-                        <div class="toggle-row" style="margin-top:10px;">
+                        <div class="toggle-row">
                             <div>
                                 <span class="form-label" data-i18n="settings.layout.show_queue">Show Queue Box</span>
                             </div>
@@ -472,44 +513,74 @@ moobot</textarea>
                     <div class="form-group" id="layout-ordering-group">
                         <span class="form-label" data-i18n="settings.layout.ordering">Component Order</span>
                         <div class="form-hint" data-i18n="settings.layout.ordering_hint">Determine the vertical position of each active component in the sidebar</div>
-                        <div id="layout-ordering-list" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+                        <div id="layout-ordering-list" class="ordering-list">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
-                    <div class="form-group" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border);display:flex;gap:10px;">
+                    <div class="form-group settings-action-bar">
                         <button class="btn btn-primary" id="layout-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
                         <button class="btn btn-danger" id="layout-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
+                    </div>
+                </div>
+                <!-- History Tab -->
+                <div class="settings-tab-content" id="stab-history">
+                    <div class="form-group">
+                        <label class="form-label" for="set-history-retention" data-i18n="settings.history.retention">Retention (Days)</label>
+                        <div class="form-hint" data-i18n="settings.history.retention_hint">How long watched clips stay in history (0 = unlimited). Does not affect Clip Memory.</div>
+                        <input class="form-input" id="set-history-retention" type="number" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <p class="settings-count-text" id="history-count-text">You have <strong id="history-count">0</strong> clips in history.</p>
+                        <p class="form-hint" data-i18n="settings.history.purge_hint">Clearing only removes the history display, not the Clip Memory.</p>
+                        <button class="btn btn-danger" id="purge-history-btn" data-i18n="settings.history.purge_btn">Clear History</button>
+                    </div>
+                </div>
+                <!-- Memory Tab -->
+                <div class="settings-tab-content" id="stab-memory">
+                    <div class="form-group">
+                        <p class="form-hint" data-i18n="settings.memory.hint">Clip Memory stores URLs of all watched clips to prevent them from being re-queued.</p>
+                        <p class="settings-count-text" id="memory-count-text">You have <strong id="memory-count">0</strong> clips in memory.</p>
+                        <button class="btn btn-danger" id="purge-memory-btn" data-i18n="settings.memory.purge_btn">Clear Memory</button>
+                    </div>
+                    <div class="form-group settings-group-divider">
+                        <span class="form-label" data-i18n="settings.memory.bypass_title">Bypass Clip Memory</span>
+                        <div class="form-hint" data-i18n="settings.memory.bypass_hint">Allow these roles to queue clips that are already in the memory</div>
+                        <div class="cmd-roles memory-bypass-roles" id="memory-bypass-roles">
+                            <button class="role-badge" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
+                            <button class="role-badge" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" id="settings-cancel" data-i18n="settings.cancel">Cancel</button>
                 <button class="btn btn-primary" id="settings-save" data-i18n="settings.save">Save</button>
+                <button class="btn btn-primary" id="settings-save-close" data-i18n="settings.save_close">Save + Close</button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="/js/tmi.min.js"></script>
-    <script src="/js/i18n.js?v=10"></script>
-    <script src="/js/lang/de.js?v=12"></script>
-    <script src="/js/lang/en.js?v=12"></script>
-    <script src="/js/lang/es.js?v=12"></script>
-    <script src="/js/lang/ru.js?v=12"></script>
-    <script src="/js/lang/pt.js?v=12"></script>
-    <script src="/js/lang/fr.js?v=12"></script>
-    <script src="/js/lang/ja.js?v=12"></script>
-    <script src="/js/lang/it.js?v=12"></script>
-    <script src="/js/providers.js?v=11"></script>
-    <script src="/js/memory.js?v=10"></script>
-    <script src="/js/layout.js?v=12"></script>
-    <script src="/js/settings.js?v=12"></script>
-    <script src="/js/design.js?v=9"></script>
-    <script src="/js/auth.js?v=10"></script>
-    <script src="/js/queue.js?v=10"></script>
-    <script src="/js/player.js?v=11"></script>
-    <script src="/js/chat.js?v=10"></script>
-    <script src="/js/app.js?v=11"></script>
+    <script src="/js/i18n.js?v=13"></script>
+    <script src="/js/lang/de.js?v=13"></script>
+    <script src="/js/lang/en.js?v=13"></script>
+    <script src="/js/lang/es.js?v=13"></script>
+    <script src="/js/lang/ru.js?v=13"></script>
+    <script src="/js/lang/pt.js?v=13"></script>
+    <script src="/js/lang/fr.js?v=13"></script>
+    <script src="/js/lang/ja.js?v=13"></script>
+    <script src="/js/lang/it.js?v=13"></script>
+    <script src="/js/providers.js?v=13"></script>
+    <script src="/js/memory.js?v=13"></script>
+    <script src="/js/layout.js?v=13"></script>
+    <script src="/js/settings.js?v=13"></script>
+    <script src="/js/design.js?v=13"></script>
+    <script src="/js/auth.js?v=13"></script>
+    <script src="/js/queue.js?v=13"></script>
+    <script src="/js/player.js?v=13"></script>
+    <script src="/js/chat.js?v=13"></script>
+    <script src="/js/app.js?v=13"></script>
 </body>
 
 </html>

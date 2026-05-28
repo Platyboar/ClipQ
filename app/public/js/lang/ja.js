@@ -62,6 +62,7 @@ ClipQ.I18n.register('ja', {
     'settings.title': '設定',
     'settings.cancel': 'キャンセル',
     'settings.save': '保存',
+    'settings.save_close': '保存して閉じる',
 
     // Settings tabs
     'settings.tab.general': '一般',
@@ -80,6 +81,8 @@ ClipQ.I18n.register('ja', {
     'settings.general.channel': 'Twitchチャンネル',
     'settings.general.channel_hint': '参加するチャットチャンネル',
     'settings.general.channel_placeholder': 'your_channel',
+    'settings.general.reset': '工場出荷時の設定に戻す',
+    'settings.general.confirm_reset': '本当にすべての設定を工場出荷時のデフォルトに戻しますか？アプリが再読み込みされます。',
 
     // Settings — Queue
     'settings.queue.providers': '対応プラットフォーム',
@@ -94,7 +97,7 @@ ClipQ.I18n.register('ja', {
     'settings.queue.blocked_users_hint': '1行に1ユーザー名。これらのユーザーからのメッセージは無視されます。',
 
     // Settings — Commands
-    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!queue</code> でコマンドが <code>next</code> の場合、<code>!queuenext</code> が認識されます。',
+    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!queue</code> でコマンドが <code>next</code> の場合、<code>!queue next</code> が認識されます。',
     'settings.commands.example_label': '例:',
     'settings.commands.prefix': 'コマンドプレフィックス',
     'settings.commands.next': '次のクリップ',
@@ -122,6 +125,8 @@ ClipQ.I18n.register('ja', {
     'settings.memory.count': '現在メモリには <strong>{count}</strong> 件のクリップがあります。',
     'settings.memory.purge_btn': 'メモリをクリア',
     'settings.memory.confirm_purge': 'クリップメモリをクリアしますか？',
+    'settings.memory.bypass_title': 'クリップメモリをバイパス',
+    'settings.memory.bypass_hint': 'メモリに既に存在するクリップの追加をこれらのロールに許可します',
 
     // Settings — Design
     'settings.design.show_badges': 'バッジを表示',
@@ -156,6 +161,7 @@ ClipQ.I18n.register('ja', {
     'design.color.hover': 'ホバー',
     'design.color.glow': '発光',
     'design.color.secondary': 'サブ',
+    'design.color.gradient': 'グラデーション',
     'design.color.open': 'オープン',
     'design.color.closed': 'クローズ',
     'design.color.danger': '危険',
@@ -182,8 +188,17 @@ ClipQ.I18n.register('ja', {
     'settings.layout.sidebar_position_hint': 'サイドバーをプレイヤーの右側にするか左側にするか選択',
     'settings.layout.position_right': 'プレイヤーの右側',
     'settings.layout.position_left': 'プレイヤーの左側',
+    'settings.layout.widths': 'コンポーネントの幅',
+    'settings.layout.widths_hint': 'プレイヤーとサイドバーコンポーネントの幅を調整',
     'settings.layout.player_width': 'プレイヤーの幅',
     'settings.layout.player_width_hint': 'サイドバーに対するプレイヤーの幅を調整',
+    'settings.layout.chat_width': 'チャットの幅',
+    'settings.layout.chat_width_hint': '広告枠に対するチャットの幅を調整',
+    'settings.layout.heights': 'コンポーネントの高さ',
+    'settings.layout.heights_hint': 'サイドバーの各要素の高さを調整してサイズをロック',
+    'settings.layout.facecam_height': 'フェイスカムの高さ',
+    'settings.layout.queue_height': 'キューの高さ',
+    'settings.layout.chat_ad_lock': 'チャット/広告の高さをロック',
     'settings.layout.visibility': 'コンポーネントの表示設定',
     'settings.layout.visibility_hint': 'サイドバー内の各要素を表示・非表示',
     'settings.layout.show_facecam': 'フェイスカムを表示',

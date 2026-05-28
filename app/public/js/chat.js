@@ -185,6 +185,8 @@ ClipQ.Chat = (() => {
         const msg = message.trim().toLowerCase();
 
         if (!msg.startsWith(prefix)) return false;
+        // Enforce that the command prefix is followed by whitespace (e.g., !queue next instead of !queuenext)
+        if (msg.length <= prefix.length || !/\s/.test(msg.charAt(prefix.length))) return false;
         const afterPrefix = msg.substring(prefix.length).trim();
         const parts = afterPrefix.split(/\s+/);
         const cmd = parts[0] || '';

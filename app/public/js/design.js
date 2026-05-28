@@ -40,8 +40,9 @@ ClipQ.Design = (() => {
             items: [
                 { var: '--color-accent', labelKey: 'design.color.accent' },
                 { var: '--color-accent-hover', labelKey: 'design.color.hover' },
-                { var: '--color-accent-glow', labelKey: 'design.color.glow', hasAlpha: true },
+                { var: '--color-accent-glow', labelKey: 'design.color.glow' },
                 { var: '--color-accent-secondary', labelKey: 'design.color.secondary' },
+                { var: '--color-accent-gradient', labelKey: 'design.color.gradient' },
             ]
         },
         {
@@ -65,42 +66,43 @@ ClipQ.Design = (() => {
         {
             labelKey: 'design.group.misc',
             items: [
-                { var: '--color-overlay', labelKey: 'design.color.overlay', hasAlpha: true },
+                { var: '--color-overlay', labelKey: 'design.color.overlay' },
             ]
         }
     ];
 
     const DEFAULT_COLORS = {
-        '--color-bg': '#0d0d0d',
-        '--color-menubar': '#161616',
-        '--color-player-bg': '#000000',
-        '--color-facecam-bg': '#101010',
-        '--color-chat-bg': '#101010',
-        '--color-queue-bg': '#101010',
-        '--color-queue-item': '#1a1a1a',
-        '--color-queue-item-hover': '#222222',
-        '--color-info-bg': '#101010',
-        '--color-ad-bg': '#101010',
-        '--color-settings-bg': '#141414',
+        '--color-bg': 'rgba(13,13,13,1)',
+        '--color-menubar': 'rgba(22,22,22,1)',
+        '--color-player-bg': 'rgba(0,0,0,1)',
+        '--color-facecam-bg': 'rgba(16,16,16,1)',
+        '--color-chat-bg': 'rgba(16,16,16,1)',
+        '--color-queue-bg': 'rgba(16,16,16,1)',
+        '--color-queue-item': 'rgba(26,26,26,1)',
+        '--color-queue-item-hover': 'rgba(34,34,34,1)',
+        '--color-info-bg': 'rgba(16,16,16,1)',
+        '--color-ad-bg': 'rgba(16,16,16,1)',
+        '--color-settings-bg': 'rgba(20,20,20,1)',
         '--color-overlay': 'rgba(0,0,0,0.3)',
-        '--color-border': '#222222',
-        '--color-border-facecam': '#2a1a1a',
-        '--color-border-chat': '#1e1e1e',
-        '--color-border-queue': '#1c1c1c',
-        '--color-border-player': '#2a1a1a',
-        '--color-border-info': '#2a1a1a',
-        '--color-accent': '#c0392b',
-        '--color-accent-hover': '#e04030',
+        '--color-border': 'rgba(34,34,34,1)',
+        '--color-border-facecam': 'rgba(42,26,26,1)',
+        '--color-border-chat': 'rgba(30,30,30,1)',
+        '--color-border-queue': 'rgba(28,28,28,1)',
+        '--color-border-player': 'rgba(42,26,26,1)',
+        '--color-border-info': 'rgba(42,26,26,1)',
+        '--color-accent': 'rgba(192,57,43,1)',
+        '--color-accent-hover': 'rgba(224,64,48,1)',
         '--color-accent-glow': 'rgba(192,57,43,0.3)',
-        '--color-accent-secondary': '#8e1a1a',
-        '--color-open': '#2ecc71',
-        '--color-closed': '#e74c3c',
-        '--color-push-badge': '#e67e22',
-        '--color-danger': '#e74c3c',
-        '--color-text': '#cccccc',
-        '--color-text-dim': '#666666',
-        '--color-text-bright': '#ffffff',
-        '--color-text-accent': '#e88080',
+        '--color-accent-secondary': 'rgba(142,26,26,1)',
+        '--color-accent-gradient': 'rgba(255,107,107,1)',
+        '--color-open': 'rgba(46,204,113,1)',
+        '--color-closed': 'rgba(231,76,60,1)',
+        '--color-push-badge': 'rgba(230,126,34,1)',
+        '--color-danger': 'rgba(231,76,60,1)',
+        '--color-text': 'rgba(204,204,204,1)',
+        '--color-text-dim': 'rgba(102,102,102,1)',
+        '--color-text-bright': 'rgba(255,255,255,1)',
+        '--color-text-accent': 'rgba(232,128,128,1)',
     };
 
     const FONTS = [
@@ -121,7 +123,7 @@ ClipQ.Design = (() => {
     let pickerPopup = null;
     let activeSwatch = null;
     let activeVar = null;
-    let activeHasAlpha = false;
+
     let currentHSV = { h: 0, s: 0, v: 0 };
     let currentAlpha = 1;
     let dragging = null; // 'ring' | 'square' | null
@@ -199,10 +201,8 @@ ClipQ.Design = (() => {
 
     function formatColor(r, g, b, a) {
         r = Math.round(r); g = Math.round(g); b = Math.round(b);
-        if (a !== undefined && a < 1) {
-            return `rgba(${r},${g},${b},${parseFloat(a.toFixed(2))})`;
-        }
-        return rgbToHex(r, g, b);
+        a = (a !== undefined) ? parseFloat(a.toFixed(2)) : 1;
+        return `rgba(${r},${g},${b},${a})`;
     }
 
     // ─── Canvas Drawing ───────────────────────────────────
@@ -355,7 +355,7 @@ ClipQ.Design = (() => {
     }
 
     function updateAlphaTrack(rgb) {
-        if (!pickerPopup || !activeHasAlpha) return;
+        if (!pickerPopup) return;
         const track = pickerPopup.querySelector('.cp-alpha');
         if (track) {
             track.style.background =
@@ -367,7 +367,7 @@ ClipQ.Design = (() => {
 
     function applyCurrentColor() {
         const rgb = hsvToRgb(currentHSV.h, currentHSV.s, currentHSV.v);
-        const colorStr = formatColor(rgb.r, rgb.g, rgb.b, activeHasAlpha ? currentAlpha : 1);
+        const colorStr = formatColor(rgb.r, rgb.g, rgb.b, currentAlpha);
         if (activeVar) {
             document.documentElement.style.setProperty(activeVar, colorStr);
         }
@@ -380,12 +380,11 @@ ClipQ.Design = (() => {
 
     // ─── Picker Popup ─────────────────────────────────────
 
-    function openPicker(swatchEl, cssVar, hasAlpha) {
+    function openPicker(swatchEl, cssVar) {
         closePicker();
 
         activeSwatch = swatchEl;
         activeVar = cssVar;
-        activeHasAlpha = hasAlpha;
         swatchEl.classList.add('swatch-active');
 
         // Read current color from inline style or computed style
@@ -402,13 +401,11 @@ ClipQ.Design = (() => {
         popup.className = 'color-picker-popup';
         popup.innerHTML = `
             <canvas class="cp-canvas" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}"></canvas>
-            ${hasAlpha ? `
                 <div class="cp-alpha-row">
                     <label>Opacity</label>
                     <input type="range" class="cp-alpha" min="0" max="1" step="0.01" value="${currentAlpha}">
                     <span class="cp-alpha-val">${Math.round(currentAlpha * 100)}%</span>
                 </div>
-            ` : ''}
             <div class="cp-inputs">
                 <div class="cp-hex-group">
                     <label>HEX</label>
@@ -433,7 +430,7 @@ ClipQ.Design = (() => {
         // Initial draw
         const canvas = popup.querySelector('.cp-canvas');
         drawPicker(canvas);
-        if (hasAlpha) updateAlphaTrack(parsed);
+        updateAlphaTrack(parsed);
 
         // ─ Canvas events ─
         canvas.addEventListener('mousedown', (e) => {
@@ -449,7 +446,7 @@ ClipQ.Design = (() => {
         popup.querySelector('.cp-r').addEventListener('input', syncFromRGB);
         popup.querySelector('.cp-g').addEventListener('input', syncFromRGB);
         popup.querySelector('.cp-b').addEventListener('input', syncFromRGB);
-        if (hasAlpha) popup.querySelector('.cp-alpha').addEventListener('input', syncFromAlpha);
+        popup.querySelector('.cp-alpha').addEventListener('input', syncFromAlpha);
 
         // ─ Global drag events ─
         document.addEventListener('mousemove', onPickerDrag);
@@ -515,23 +512,23 @@ ClipQ.Design = (() => {
 
     // ─── Public API ───────────────────────────────────────
 
-    function init() {
+    function renderSwatches() {
         // Generate color swatches dynamically
         const container = document.getElementById('design-colors-container');
         if (container) {
             container.innerHTML = COLOR_GROUPS.map(group => `
                 <div class="design-group">
-                    <div class="design-group-label">${t(group.labelKey)}</div>
+                    <div class="design-group-label" data-i18n="${group.labelKey}">${t(group.labelKey)}</div>
                     <div class="design-swatches">
                         ${group.items.map(item => {
                             const label = t(item.labelKey);
                             return `
-                            <div class="color-swatch" data-var="${item.var}" data-alpha="${!!item.hasAlpha}" title="${label}: ${item.var}">
+                            <div class="color-swatch" data-var="${item.var}" title="${label}: ${item.var}">
                                 <div class="swatch-color-wrap">
                                     <div class="swatch-checker"></div>
                                     <div class="swatch-color" style="background:${DEFAULT_COLORS[item.var]}"></div>
                                 </div>
-                                <span class="swatch-label">${label}</span>
+                                <span class="swatch-label" data-i18n="${item.labelKey}">${label}</span>
                             </div>
                         `}).join('')}
                     </div>
@@ -539,19 +536,23 @@ ClipQ.Design = (() => {
             `).join('');
         }
 
+        // Swatch click handlers
+        document.querySelectorAll('#stab-design .color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openPicker(swatch, swatch.dataset.var);
+            });
+        });
+    }
+
+    function init() {
+        renderSwatches();
+
         // Font dropdown
         const fontSelect = document.getElementById('design-font-select');
         if (fontSelect) {
             fontSelect.addEventListener('change', () => applyFont(fontSelect.value));
         }
-
-        // Swatch click handlers
-        document.querySelectorAll('#stab-design .color-swatch').forEach(swatch => {
-            swatch.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openPicker(swatch, swatch.dataset.var, swatch.dataset.alpha === 'true');
-            });
-        });
 
         // Set Default button
         const setDefaultBtn = document.getElementById('design-set-default-btn');
@@ -703,5 +704,5 @@ ClipQ.Design = (() => {
         if (fontSelect) fontSelect.value = fontName;
     }
 
-    return { init, populate, readValues, saveOriginalValues, revertToOriginal, applyAll, closePicker };
+    return { init, populate, readValues, saveOriginalValues, revertToOriginal, applyAll, closePicker, renderSwatches };
 })();

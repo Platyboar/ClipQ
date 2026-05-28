@@ -26,3 +26,8 @@ build/
 
 # Gemini
 .gemini/
+
+# Scratch & Backups
+scratch/
+* - Kopie/
+

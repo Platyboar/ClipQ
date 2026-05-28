@@ -82,7 +82,17 @@ ClipQ.Queue = (() => {
         }
 
         if (ClipQ.Settings.isUserBlocked(submitter)) return 'blocked';
-        if (ClipQ.Memory.has(clipData.url)) return 'memory';
+
+        let bypassMemory = false;
+        if (isBroadcaster) {
+            bypassMemory = true;
+        } else if (isLeadMod && settings.memory?.bypassRoles?.leadMod) {
+            bypassMemory = true;
+        } else if (isMod && settings.memory?.bypassRoles?.mod) {
+            bypassMemory = true;
+        }
+
+        if (!bypassMemory && ClipQ.Memory.has(clipData.url)) return 'memory';
 
         if (settings.ageLimitDays > 0 && clipData.meta && clipData.meta.createdAt) {
             const clipDate = new Date(clipData.meta.createdAt);
@@ -111,7 +121,7 @@ ClipQ.Queue = (() => {
             existing.pushCount = existing.submitters.length;
             sortByPush();
             notifyUpdate();
-            return isPushed ? 'added' : 'pushed';
+            return isPushed ? 'pushed' : 'added';
         }
 
         if (currentPlaying && (currentPlaying.url === clipData.url || (currentPlaying.clipId && currentPlaying.clipId === clipData.clipId))) {
@@ -127,7 +137,7 @@ ClipQ.Queue = (() => {
         if (msgId) msgIds[msgId] = submitter;
 
         items.push({
-            id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            id: Date.now() + '_' + Math.random().toString(36).substring(2, 7),
             provider: clipData.provider,
             url: clipData.url,
             clipId: clipData.clipId,

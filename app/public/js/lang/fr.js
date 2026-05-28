@@ -62,6 +62,7 @@ ClipQ.I18n.register('fr', {
     'settings.title': 'Paramètres',
     'settings.cancel': 'Annuler',
     'settings.save': 'Enregistrer',
+    'settings.save_close': 'Enregistrer + Fermer',
 
     // Settings tabs
     'settings.tab.general': 'Général',
@@ -80,6 +81,8 @@ ClipQ.I18n.register('fr', {
     'settings.general.channel': 'Chaîne Twitch',
     'settings.general.channel_hint': 'Chaîne de chat à rejoindre',
     'settings.general.channel_placeholder': 'votre_chaine',
+    'settings.general.reset': "Rétablir les paramètres d'usine",
+    'settings.general.confirm_reset': "Voulez-vous vraiment rétablir tous les paramètres d'usine ? L'application va redémarrer.",
 
     // Settings — Queue
     'settings.queue.providers': 'Fournisseurs de clips',
@@ -94,7 +97,7 @@ ClipQ.I18n.register('fr', {
     'settings.queue.blocked_users_hint': 'Un nom par ligne. Les messages de ces utilisateurs seront ignorés.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!queue</code> et le mot-clé suivant <code>next</code>, alors <code>!queuenext</code> est reconnu.',
+    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!queue</code> et le mot-clé suivant <code>next</code>, alors <code>!queue next</code> est reconnu.',
     'settings.commands.example_label': 'Ex :',
     'settings.commands.prefix': 'Préfixe de commande',
     'settings.commands.next': 'Clip suivant',
@@ -122,6 +125,8 @@ ClipQ.I18n.register('fr', {
     'settings.memory.count': 'Vous avez <strong>{count}</strong> clips en mémoire.',
     'settings.memory.purge_btn': 'Vider la mémoire',
     'settings.memory.confirm_purge': 'Voulez-vous vraiment vider la mémoire de clips ?',
+    'settings.memory.bypass_title': 'Contourner la mémoire de clips',
+    'settings.memory.bypass_hint': 'Autoriser ces rôles à ajouter des clips déjà dans la mémoire à la file d\'attente',
 
     // Settings — Design
     'settings.design.show_badges': 'Afficher les badges',
@@ -156,6 +161,7 @@ ClipQ.I18n.register('fr', {
     'design.color.hover': 'Survol',
     'design.color.glow': 'Brillance',
     'design.color.secondary': 'Secondaire',
+    'design.color.gradient': 'Dégradé',
     'design.color.open': 'Ouvert',
     'design.color.closed': 'Fermé',
     'design.color.danger': 'Danger',
@@ -182,8 +188,17 @@ ClipQ.I18n.register('fr', {
     'settings.layout.sidebar_position_hint': 'Choisissez si la barre latérale est à droite ou à gauche du lecteur',
     'settings.layout.position_right': 'À droite du lecteur',
     'settings.layout.position_left': 'À gauche du lecteur',
+    'settings.layout.widths': 'Largeurs des composants',
+    'settings.layout.widths_hint': 'Ajustez les largeurs du lecteur et des composants de la barre latérale',
     'settings.layout.player_width': 'Largeur du lecteur',
     'settings.layout.player_width_hint': 'Ajustez la largeur du lecteur vidéo par rapport à la barre latérale',
+    'settings.layout.chat_width': 'Largeur du tchat',
+    'settings.layout.chat_width_hint': 'Ajustez la largeur du tchat par rapport à la boîte de pub',
+    'settings.layout.heights': 'Hauteurs des composants',
+    'settings.layout.heights_hint': 'Ajustez les hauteurs et verrouillez les tailles des composants de la barre latérale',
+    'settings.layout.facecam_height': 'Hauteur de la Facecam',
+    'settings.layout.queue_height': 'Hauteur de la file d\'attente',
+    'settings.layout.chat_ad_lock': 'Verrouiller la hauteur Chat/Pub',
     'settings.layout.visibility': 'Visibilité des composants',
     'settings.layout.visibility_hint': 'Activer/désactiver des composants individuels de la barre latérale',
     'settings.layout.show_facecam': 'Afficher la boîte Facecam',

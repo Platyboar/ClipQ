@@ -62,6 +62,7 @@ ClipQ.I18n.register('ru', {
     'settings.title': 'Настройки',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить',
+    'settings.save_close': 'Сохранить + Закрыть',
 
     // Settings tabs
     'settings.tab.general': 'Общие',
@@ -80,6 +81,8 @@ ClipQ.I18n.register('ru', {
     'settings.general.channel': 'Канал Twitch',
     'settings.general.channel_hint': 'Канал чата для подключения',
     'settings.general.channel_placeholder': 'ваш_канал',
+    'settings.general.reset': 'Сбросить до заводских настроек',
+    'settings.general.confirm_reset': 'Действительно сбросить все настройки до заводских? Приложение будет перезагружено.',
 
     // Settings — Queue
     'settings.queue.providers': 'Провайдеры клипов',
@@ -94,7 +97,7 @@ ClipQ.I18n.register('ru', {
     'settings.queue.blocked_users_hint': 'Одно имя на строку. Сообщения этих пользователей будут игнорироваться.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Команды чата для стрима. Регистр не важен.<br>Пример: Если префикс <code>!queue</code> и команда <code>next</code>, то распознается <code>!queuenext</code>.',
+    'settings.commands.hint': 'Команды чата для стрима. Регистр не важен.<br>Пример: Если префикс <code>!queue</code> и команда <code>next</code>, то распознается <code>!queue next</code>.',
     'settings.commands.example_label': 'Прим:',
     'settings.commands.prefix': 'Префикс команды',
     'settings.commands.next': 'Следующий клип',
@@ -122,6 +125,8 @@ ClipQ.I18n.register('ru', {
     'settings.memory.count': 'В памяти <strong>{count}</strong> клипов.',
     'settings.memory.purge_btn': 'Очистить память',
     'settings.memory.confirm_purge': 'Действительно очистить память клипов?',
+    'settings.memory.bypass_title': 'Обход памяти клипов',
+    'settings.memory.bypass_hint': 'Разрешить этим ролям добавлять в очередь клипы, которые уже есть в памяти',
 
     // Settings — Design
     'settings.design.show_badges': 'Показывать значки',
@@ -156,6 +161,7 @@ ClipQ.I18n.register('ru', {
     'design.color.hover': 'Наведение',
     'design.color.glow': 'Свечение',
     'design.color.secondary': 'Вторичный',
+    'design.color.gradient': 'Градиент',
     'design.color.open': 'Открыто',
     'design.color.closed': 'Закрыто',
     'design.color.danger': 'Опасность',
@@ -182,8 +188,17 @@ ClipQ.I18n.register('ru', {
     'settings.layout.sidebar_position_hint': 'Выберите, где будет находиться боковая панель: справа или слева от плеера',
     'settings.layout.position_right': 'Справа от плеера',
     'settings.layout.position_left': 'Слева от плеера',
+    'settings.layout.widths': 'Ширина компонентов',
+    'settings.layout.widths_hint': 'Настройте ширину плеера и компонентов боковой панели',
     'settings.layout.player_width': 'Ширина плеера',
     'settings.layout.player_width_hint': 'Настройте ширину видеоплеера относительно боковой панели',
+    'settings.layout.chat_width': 'Ширина чата',
+    'settings.layout.chat_width_hint': 'Настройте ширину чата относительно рекламного блока',
+    'settings.layout.heights': 'Высота компонентов',
+    'settings.layout.heights_hint': 'Настройте высоту и заблокируйте размеры компонентов боковой панели',
+    'settings.layout.facecam_height': 'Высота веб-камеры',
+    'settings.layout.queue_height': 'Высота очереди',
+    'settings.layout.chat_ad_lock': 'Заблокировать высоту чата/рекламы',
     'settings.layout.visibility': 'Видимость компонентов',
     'settings.layout.visibility_hint': 'Включение/выключение отдельных компонентов боковой панели',
     'settings.layout.show_facecam': 'Показать веб-камеру',

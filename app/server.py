@@ -5,13 +5,12 @@ Serves static files and provides an oEmbed proxy endpoint.
 import http.server
 import json
 import os
+import re
+import sys
 import urllib.request
 import urllib.parse
 import urllib.error
 import webbrowser
-
-import sys
-import os
 
 # Check/install/upgrade yt-dlp automatically on startup (only if not running as compiled EXE)
 is_frozen = getattr(sys, 'frozen', False)
@@ -42,8 +41,7 @@ else:
 
 PORT = 8000
 
-import sys
-if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+if is_frozen and hasattr(sys, '_MEIPASS'):
     PUBLIC_DIR = os.path.join(sys._MEIPASS, 'public')
 else:
     PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public')
@@ -81,7 +79,6 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     html = resp.read().decode('utf-8', errors='ignore')
                 
-                import re
                 match = re.search(r'itemprop="datePublished" content="([^"]+)"', html)
                 date = match.group(1) if match else ""
                 
@@ -93,6 +90,7 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
@@ -116,16 +114,15 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         # Proxy image endpoint to bypass CORS and Referrer checks
         if parsed.path == '/api/proxy-image':
-            url = None
-            if 'url=' in self.path:
-                url_encoded = self.path.split('url=', 1)[1]
-                url = urllib.parse.unquote(url_encoded)
+            params = urllib.parse.parse_qs(parsed.query)
+            url = params.get('url', [None])[0]
             if not url:
                 self.send_error(400, 'Missing url parameter')
                 return
@@ -145,16 +142,15 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         # Video URL and Metadata extraction via yt-dlp
         if parsed.path == '/api/video-url':
-            url = None
-            if 'url=' in self.path:
-                url_encoded = self.path.split('url=', 1)[1]
-                url = urllib.parse.unquote(url_encoded)
+            params = urllib.parse.parse_qs(parsed.query)
+            url = params.get('url', [None])[0]
             if not url:
                 self.send_error(400, 'Missing url parameter')
                 return

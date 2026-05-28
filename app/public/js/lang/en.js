@@ -62,6 +62,7 @@ ClipQ.I18n.register('en', {
     'settings.title': 'Settings',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save',
+    'settings.save_close': 'Save + Close',
 
     // Settings tabs
     'settings.tab.general': 'General',
@@ -80,6 +81,8 @@ ClipQ.I18n.register('en', {
     'settings.general.channel': 'Twitch Channel',
     'settings.general.channel_hint': 'Chat channel to join',
     'settings.general.channel_placeholder': 'your_channel',
+    'settings.general.reset': 'Reset to Factory Settings',
+    'settings.general.confirm_reset': 'Really reset all settings to factory defaults? The app will reload.',
 
     // Settings — Queue
     'settings.queue.providers': 'Clip Providers',
@@ -94,7 +97,7 @@ ClipQ.I18n.register('en', {
     'settings.queue.blocked_users_hint': 'One name per line. Messages from these users will be ignored.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If prefix is <code>!queue</code> and next is <code>next</code>, then <code>!queuenext</code> is recognized.',
+    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If prefix is <code>!queue</code> and next is <code>next</code>, then <code>!queue next</code> is recognized.',
     'settings.commands.example_label': 'Ex:',
     'settings.commands.prefix': 'Command Prefix',
     'settings.commands.next': 'Next Clip',
@@ -122,6 +125,8 @@ ClipQ.I18n.register('en', {
     'settings.memory.count': 'You have <strong>{count}</strong> clips in memory.',
     'settings.memory.purge_btn': 'Clear Memory',
     'settings.memory.confirm_purge': 'Really clear Clip Memory?',
+    'settings.memory.bypass_title': 'Bypass Clip Memory',
+    'settings.memory.bypass_hint': 'Allow these roles to queue clips that are already in the memory',
 
     // Settings — Design
     'settings.design.show_badges': 'Show Badges',
@@ -156,6 +161,7 @@ ClipQ.I18n.register('en', {
     'design.color.hover': 'Hover',
     'design.color.glow': 'Glow',
     'design.color.secondary': 'Secondary',
+    'design.color.gradient': 'Gradient',
     'design.color.open': 'Open',
     'design.color.closed': 'Closed',
     'design.color.danger': 'Danger',
@@ -182,8 +188,17 @@ ClipQ.I18n.register('en', {
     'settings.layout.sidebar_position_hint': 'Choose whether the sidebar is on the right or left of the player',
     'settings.layout.position_right': 'Right of Player',
     'settings.layout.position_left': 'Left of Player',
+    'settings.layout.widths': 'Component Widths',
+    'settings.layout.widths_hint': 'Adjust the widths of the player and sidebar components',
     'settings.layout.player_width': 'Player Width',
     'settings.layout.player_width_hint': 'Adjust the width of the video player relative to the sidebar',
+    'settings.layout.chat_width': 'Chat Width',
+    'settings.layout.chat_width_hint': 'Adjust the width of the chat relative to the ad box',
+    'settings.layout.heights': 'Component Heights',
+    'settings.layout.heights_hint': 'Adjust heights and lock sizes of sidebar components',
+    'settings.layout.facecam_height': 'Facecam Height',
+    'settings.layout.queue_height': 'Queue Height',
+    'settings.layout.chat_ad_lock': 'Lock Chat/Ad Height',
     'settings.layout.visibility': 'Component Visibility',
     'settings.layout.visibility_hint': 'Toggle individual sidebar components',
     'settings.layout.show_facecam': 'Show Facecam Box',

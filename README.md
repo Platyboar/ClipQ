@@ -92,6 +92,20 @@ All commands use a configurable prefix (default: `!queue`).
 - **Chat:** [tmi.js](https://tmijs.com/) (Twitch IRC)
 - **Auth:** Twitch OAuth Implicit Grant Flow
 
+## Changelog
+
+### v1.1.0
+
+- 📐 **Advanced Layout Controls** — Adjust component heights (Facecam, Queue) with individual lock controls and smart auto-distribution of space.
+- 🔀 **Dynamic Reordering** — Reorder sidebar elements (Facecam, Chat + Ad, Queue) between Top, Middle, and Bottom slots.
+- 📺 **Read-only Channel & Logout** — Channel name in settings is now read-only and styled as prominent text, with an adjacent "Logout" button.
+- 🛡️ **Clip Memory Bypass** — Selectively allow Lead Mods and/or Mods to bypass Clip Memory restrictions.
+- 💬 **Strict Space-Separated Commands** — Commands now strictly require a whitespace after the prefix (e.g. `!queue next` works, while `!queuenext` is ignored).
+- 🌍 **Fully Localized Design & Layout** — Modal width increased to 780px to accommodate text-heavy languages, with automatic translation of design color swatches, tooltips, and layout options.
+- 🧩 **Smart Sidebar Auto-Hide** — The entire sidebar hides cleanly if all its sub-components are disabled.
+- 🛠️ **Refactoring & Fixes** — Consolidated redundant settings code, resolved console warnings (`substr` replacement), and fixed `{count}` i18n substitution issues.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+

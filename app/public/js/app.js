@@ -2,7 +2,6 @@
  * app.js — Main application controller
  * Supports: i18n, login language selector, app title, command-exposed functions.
  */
-console.log('[ClipQ] app.js loaded — version 9');
 window.ClipQ = window.ClipQ || {};
 
 // Provider icon URLs (small favicons)

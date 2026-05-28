@@ -10,6 +10,7 @@ ClipQ.Settings = (() => {
     const DEFAULT_ROLES = { broadcaster: true, leadMod: true, mod: true, vip: false, all: false };
 
     let currentLayoutOrder = ['chat_ad', 'facecam', 'queue'];
+    let currentHeightPercent = { facecam: 40, queue: 35, chat_ad: 25 };
 
     const DEFAULTS = {
         channel: '',
@@ -33,6 +34,9 @@ ClipQ.Settings = (() => {
             remove:      { word: 'remove',      roles: { ...DEFAULT_ROLES } },
             providers:   { word: 'providers',   roles: { ...DEFAULT_ROLES } },
         },
+        memory: {
+            bypassRoles: { leadMod: true, mod: false }
+        },
         design: { colors: {}, fontFamily: 'Inter', showBadges: true },
         layout: {
             infoPosition: 'below',
@@ -42,12 +46,75 @@ ClipQ.Settings = (() => {
             showAd: true,
             showQueue: true,
             playerWidth: 70,
+            chatWidth: 60,
+            facecamHeightPercent: 40,
+            chatAdHeightPercent: 25,
+            queueHeightPercent: 35,
+            lockFacecam: false,
+            lockChatAd: false,
+            lockQueue: false,
             order: ['chat_ad', 'facecam', 'queue']
         }
     };
 
     /** All command keys (excluding 'prefix') */
     const CMD_KEYS = ['next', 'push', 'open', 'close', 'clear', 'purgememory', 'autoplay', 'limit', 'remove', 'providers'];
+
+    /** Layout toggle element IDs */
+    const LAYOUT_TOGGLES = ['facecam', 'chat', 'ad', 'queue'];
+
+    /** Read the active state of a toggle-switch element, defaulting to true */
+    function getToggleState(id) {
+        const el = document.getElementById(id);
+        return el ? el.classList.contains('active') : true;
+    }
+
+    /** Set the active state of a toggle-switch element */
+    function setToggleState(id, active) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('active', active);
+    }
+
+    /** Read all layout-related elements into a config object */
+    function readLayoutFromUI() {
+        const infoPosEl = document.getElementById('layout-info-position');
+        const sidebarPosEl = document.getElementById('layout-sidebar-position');
+        const playerWidthEl = document.getElementById('layout-player-width');
+        const chatWidthEl = document.getElementById('layout-chat-width');
+        const fcHeightEl = document.getElementById('layout-facecam-height');
+        const qHeightEl = document.getElementById('layout-queue-height');
+        const lockFcEl = document.getElementById('layout-lock-facecam');
+        const lockCaEl = document.getElementById('layout-lock-chat-ad');
+        const lockQEl = document.getElementById('layout-lock-queue');
+
+        // We also need the chatAdHeightPercent value. 
+        // In the UI we only have sliders for facecam and queue. Chat/Ad is computed dynamically.
+        // But to make sure it's saved correctly, we read the current slider values and compute chatAdHeightPercent
+        // as 100 - facecam - queue, or we can just read the value from our current state/cache if we want.
+        // Wait, it is best to read the sliders, and let the Chat/Ad height be 100 - facecam - queue.
+        // Let's compute:
+        const fcVal = fcHeightEl ? (parseInt(fcHeightEl.value) || 40) : 40;
+        const qVal = qHeightEl ? (parseInt(qHeightEl.value) || 35) : 35;
+        const caVal = 100 - fcVal - qVal;
+
+        return {
+            infoPosition: infoPosEl ? infoPosEl.value : 'below',
+            sidebarPosition: sidebarPosEl ? sidebarPosEl.value : 'right',
+            playerWidth: playerWidthEl ? (parseInt(playerWidthEl.value) || 70) : 70,
+            chatWidth: chatWidthEl ? (parseInt(chatWidthEl.value) || 60) : 60,
+            facecamHeightPercent: fcVal,
+            chatAdHeightPercent: caVal,
+            queueHeightPercent: qVal,
+            lockFacecam: lockFcEl ? lockFcEl.checked : false,
+            lockChatAd: lockCaEl ? lockCaEl.checked : false,
+            lockQueue: lockQEl ? lockQEl.checked : false,
+            showFacecam: getToggleState('layout-show-facecam'),
+            showChat: getToggleState('layout-show-chat'),
+            showAd: getToggleState('layout-show-ad'),
+            showQueue: getToggleState('layout-show-queue'),
+            order: currentLayoutOrder
+        };
+    }
 
     let current = null;
 
@@ -98,6 +165,10 @@ ClipQ.Settings = (() => {
                 providers: { ...DEFAULTS.providers, ...(saved?.providers || {}) },
                 commands: migrateCommands(saved?.commands),
                 blockedStreamers: saved?.blockedStreamers || DEFAULTS.blockedStreamers,
+                memory: {
+                    ...DEFAULTS.memory,
+                    ...(saved?.memory || {})
+                },
                 design: {
                     ...DEFAULTS.design,
                     ...(saved?.design || {}),
@@ -162,7 +233,8 @@ ClipQ.Settings = (() => {
         if (ClipQ.Design) ClipQ.Design.saveOriginalValues();
 
         // General
-        document.getElementById('set-channel').value = s.channel || '';
+        const channelText = document.getElementById('set-channel-text');
+        if (channelText) channelText.textContent = s.channel || '';
         document.getElementById('set-app-title').value = s.appTitle || 'ClipQ';
 
         // Language dropdown
@@ -203,6 +275,16 @@ ClipQ.Settings = (() => {
                 });
             }
         }
+        
+        // Memory bypass roles
+        const memoryRolesContainer = document.getElementById('memory-bypass-roles');
+        if (memoryRolesContainer) {
+            const bypassRoles = s.memory?.bypassRoles || DEFAULTS.memory.bypassRoles;
+            memoryRolesContainer.querySelectorAll('.role-badge').forEach(badge => {
+                const role = badge.dataset.role;
+                badge.classList.toggle('active', !!bypassRoles[role]);
+            });
+        }
 
         // History & Memory counts
         const memCount = ClipQ.Memory.count();
@@ -220,28 +302,7 @@ ClipQ.Settings = (() => {
 
         // Layout
         if (s.layout) {
-            document.getElementById('layout-info-position').value = s.layout.infoPosition || 'below';
-            document.getElementById('layout-sidebar-position').value = s.layout.sidebarPosition || 'right';
-            
-            const playerWidth = s.layout.playerWidth || 70;
-            document.getElementById('layout-player-width').value = playerWidth;
-            const widthValEl = document.getElementById('layout-player-width-val');
-            if (widthValEl) widthValEl.textContent = `${playerWidth}%`;
-
-            const facecamToggle = document.getElementById('layout-show-facecam');
-            if (facecamToggle) facecamToggle.classList.toggle('active', s.layout.showFacecam !== false);
-
-            const chatToggle = document.getElementById('layout-show-chat');
-            if (chatToggle) chatToggle.classList.toggle('active', s.layout.showChat !== false);
-
-            const adToggle = document.getElementById('layout-show-ad');
-            if (adToggle) adToggle.classList.toggle('active', s.layout.showAd !== false);
-
-            const queueToggle = document.getElementById('layout-show-queue');
-            if (queueToggle) queueToggle.classList.toggle('active', s.layout.showQueue !== false);
-
-            currentLayoutOrder = s.layout.order ? [...s.layout.order] : ['chat_ad', 'facecam', 'queue'];
-            renderOrderingUI();
+            applyLayoutToUI(s.layout);
         }
 
         updateCommandExamples();
@@ -273,7 +334,7 @@ ClipQ.Settings = (() => {
         }
 
         return {
-            channel: document.getElementById('set-channel').value.trim(),
+            channel: get().channel,
             appTitle: document.getElementById('set-app-title').value.trim() || 'ClipQ',
             providers,
             userClipLimit: parseInt(document.getElementById('set-user-clip-limit').value) || 0,
@@ -282,22 +343,23 @@ ClipQ.Settings = (() => {
             blockedUsers: document.getElementById('set-blocked-users').value.split('\n').map(u => u.trim()).filter(Boolean),
             blockedStreamers: document.getElementById('set-blocked-streamers').value.split('\n').map(u => u.trim()).filter(Boolean),
             commands,
+            memory: (() => {
+                const bypassRoles = {};
+                const memoryRolesContainer = document.getElementById('memory-bypass-roles');
+                if (memoryRolesContainer) {
+                    memoryRolesContainer.querySelectorAll('.role-badge').forEach(badge => {
+                        bypassRoles[badge.dataset.role] = badge.classList.contains('active');
+                    });
+                }
+                return { bypassRoles };
+            })(),
             design: (() => {
                 const designVals = ClipQ.Design ? ClipQ.Design.readValues() : { colors: {}, fontFamily: 'Inter' };
                 const badgesSwitch = document.getElementById('design-show-badges');
                 designVals.showBadges = badgesSwitch ? badgesSwitch.classList.contains('active') : true;
                 return designVals;
             })(),
-            layout: {
-                infoPosition: document.getElementById('layout-info-position') ? document.getElementById('layout-info-position').value : 'below',
-                sidebarPosition: document.getElementById('layout-sidebar-position') ? document.getElementById('layout-sidebar-position').value : 'right',
-                playerWidth: document.getElementById('layout-player-width') ? (parseInt(document.getElementById('layout-player-width').value) || 70) : 70,
-                showFacecam: document.getElementById('layout-show-facecam') ? document.getElementById('layout-show-facecam').classList.contains('active') : true,
-                showChat: document.getElementById('layout-show-chat') ? document.getElementById('layout-show-chat').classList.contains('active') : true,
-                showAd: document.getElementById('layout-show-ad') ? document.getElementById('layout-show-ad').classList.contains('active') : true,
-                showQueue: document.getElementById('layout-show-queue') ? document.getElementById('layout-show-queue').classList.contains('active') : true,
-                order: currentLayoutOrder
-            }
+            layout: readLayoutFromUI()
         };
     }
 
@@ -393,6 +455,15 @@ ClipQ.Settings = (() => {
             });
         }
 
+        const chatWidthInput = document.getElementById('layout-chat-width');
+        if (chatWidthInput) {
+            chatWidthInput.addEventListener('input', () => {
+                const widthValEl = document.getElementById('layout-chat-width-val');
+                if (widthValEl) widthValEl.textContent = `${chatWidthInput.value}%`;
+                triggerLiveLayoutApply();
+            });
+        }
+
         const layoutToggles = ['facecam', 'chat', 'ad', 'queue'];
         layoutToggles.forEach(type => {
             const toggle = document.getElementById(`layout-show-${type}`);
@@ -405,6 +476,27 @@ ClipQ.Settings = (() => {
             }
         });
 
+        const facecamHeightInput = document.getElementById('layout-facecam-height');
+        if (facecamHeightInput) {
+            facecamHeightInput.addEventListener('input', () => {
+                distributeChange('facecam', parseInt(facecamHeightInput.value));
+            });
+        }
+
+        const queueHeightInput = document.getElementById('layout-queue-height');
+        if (queueHeightInput) {
+            queueHeightInput.addEventListener('input', () => {
+                distributeChange('queue', parseInt(queueHeightInput.value));
+            });
+        }
+
+        ['lock-facecam', 'lock-chat-ad', 'lock-queue'].forEach(id => {
+            const el = document.getElementById(`layout-${id}`);
+            if (el) {
+                el.addEventListener('change', triggerLiveLayoutApply);
+            }
+        });
+
         const layoutSetDefaultBtn = document.getElementById('layout-set-default-btn');
         if (layoutSetDefaultBtn) {
             layoutSetDefaultBtn.addEventListener('click', () => {
@@ -413,6 +505,13 @@ ClipQ.Settings = (() => {
                         infoPosition: document.getElementById('layout-info-position').value,
                         sidebarPosition: document.getElementById('layout-sidebar-position').value,
                         playerWidth: parseInt(document.getElementById('layout-player-width').value) || 70,
+                        chatWidth: parseInt(document.getElementById('layout-chat-width').value) || 60,
+                        facecamHeightPercent: parseInt(document.getElementById('layout-facecam-height').value) || 40,
+                        chatAdHeightPercent: 100 - (parseInt(document.getElementById('layout-facecam-height').value) || 40) - (parseInt(document.getElementById('layout-queue-height').value) || 35),
+                        queueHeightPercent: parseInt(document.getElementById('layout-queue-height').value) || 35,
+                        lockFacecam: document.getElementById('layout-lock-facecam').checked,
+                        lockChatAd: document.getElementById('layout-lock-chat-ad').checked,
+                        lockQueue: document.getElementById('layout-lock-queue').checked,
                         showFacecam: document.getElementById('layout-show-facecam').classList.contains('active'),
                         showChat: document.getElementById('layout-show-chat').classList.contains('active'),
                         showAd: document.getElementById('layout-show-ad').classList.contains('active'),
@@ -448,32 +547,16 @@ ClipQ.Settings = (() => {
                 }
 
                 if (targetLayout) {
-                    // Update UI Controls
-                    document.getElementById('layout-info-position').value = targetLayout.infoPosition || 'below';
-                    document.getElementById('layout-sidebar-position').value = targetLayout.sidebarPosition || 'right';
-                    
-                    const playerWidth = targetLayout.playerWidth || 70;
-                    document.getElementById('layout-player-width').value = playerWidth;
-                    const widthValEl = document.getElementById('layout-player-width-val');
-                    if (widthValEl) widthValEl.textContent = `${playerWidth}%`;
-
-                    const facecamToggle = document.getElementById('layout-show-facecam');
-                    if (facecamToggle) facecamToggle.classList.toggle('active', targetLayout.showFacecam !== false);
-
-                    const chatToggle = document.getElementById('layout-show-chat');
-                    if (chatToggle) chatToggle.classList.toggle('active', targetLayout.showChat !== false);
-
-                    const adToggle = document.getElementById('layout-show-ad');
-                    if (adToggle) adToggle.classList.toggle('active', targetLayout.showAd !== false);
-
-                    const queueToggle = document.getElementById('layout-show-queue');
-                    if (queueToggle) queueToggle.classList.toggle('active', targetLayout.showQueue !== false);
-
-                    currentLayoutOrder = targetLayout.order ? [...targetLayout.order] : ['chat_ad', 'facecam', 'queue'];
-                    
-                    renderOrderingUI();
+                    applyLayoutToUI(targetLayout);
                     triggerLiveLayoutApply();
                 }
+            });
+        }
+
+        const settingsLogoutBtn = document.getElementById('settings-logout');
+        if (settingsLogoutBtn) {
+            settingsLogoutBtn.addEventListener('click', () => {
+                ClipQ.Auth.logout();
             });
         }
 
@@ -481,38 +564,26 @@ ClipQ.Settings = (() => {
         document.getElementById('settings-cancel').addEventListener('click', closeModal);
 
         document.getElementById('settings-save').addEventListener('click', () => {
-            const newSettings = readFromUI();
-            const oldChannel = get().channel;
-            save(newSettings);
+            applyAndSave();
+        });
 
-            // Apply language change
-            const selectedLang = document.getElementById('set-language').value;
-            if (selectedLang !== ClipQ.I18n.getLanguage()) {
-                ClipQ.I18n.setLanguage(selectedLang);
-            }
-
-            // Apply app title
-            const titleEl = document.getElementById('app-title');
-            if (titleEl) titleEl.textContent = newSettings.appTitle || 'ClipQ';
-
-            // Apply layout changes
-            if (newSettings.layout && window.ClipQ && window.ClipQ.Layout) {
-                window.ClipQ.Layout.apply(newSettings.layout);
-            }
-
+        document.getElementById('settings-save-close').addEventListener('click', () => {
+            applyAndSave();
             closeModal(true);
-
-            // Run history cleanup with new retention setting
-            ClipQ.Queue.cleanupHistory();
-
-            if (newSettings.channel !== oldChannel && ClipQ.Chat) {
-                ClipQ.Chat.reconnect(newSettings.channel);
-            }
         });
 
-        document.getElementById('settings-overlay').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('settings-overlay')) closeModal();
-        });
+        const settingsResetBtn = document.getElementById('settings-reset');
+        if (settingsResetBtn) {
+            settingsResetBtn.addEventListener('click', () => {
+                if (confirm(ClipQ.I18n.t('settings.general.confirm_reset'))) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem('clipq_custom_defaults');
+                    localStorage.removeItem('clipq_layout_custom_defaults');
+                    localStorage.removeItem('clipq_autoplay');
+                    window.location.reload();
+                }
+            });
+        }
     }
 
     function updateCommandExamples() {
@@ -545,6 +616,43 @@ ClipQ.Settings = (() => {
         }
     }
 
+    /**
+     * Apply all current settings from the UI without closing the modal.
+     * Used by both 'Save' and 'Save + Close' buttons.
+     */
+    function applyAndSave() {
+        const newSettings = readFromUI();
+        const oldChannel = get().channel;
+        save(newSettings);
+
+        // Apply language change
+        const selectedLang = document.getElementById('set-language').value;
+        if (selectedLang !== ClipQ.I18n.getLanguage()) {
+            ClipQ.I18n.setLanguage(selectedLang);
+            if (ClipQ.Design && ClipQ.Design.renderSwatches) {
+                ClipQ.Design.renderSwatches();
+            }
+        }
+
+        // Apply app title
+        const titleEl = document.getElementById('app-title');
+        if (titleEl) titleEl.textContent = newSettings.appTitle || 'ClipQ';
+
+        // Apply layout changes
+        if (newSettings.layout && window.ClipQ && window.ClipQ.Layout) {
+            window.ClipQ.Layout.apply(newSettings.layout);
+        }
+
+        // Run history cleanup with new retention setting
+        ClipQ.Queue.cleanupHistory();
+
+        if (newSettings.channel !== oldChannel && ClipQ.Chat) {
+            ClipQ.Chat.reconnect(newSettings.channel);
+        }
+
+        populateUI();
+    }
+
     function closeModal(keepDesign) {
         if (ClipQ.Design) ClipQ.Design.closePicker();
         if (!keepDesign) {
@@ -561,27 +669,61 @@ ClipQ.Settings = (() => {
     }
 
     function triggerLiveLayoutApply() {
-        const infoPosEl = document.getElementById('layout-info-position');
-        const sidebarPosEl = document.getElementById('layout-sidebar-position');
-        const playerWidthEl = document.getElementById('layout-player-width');
-        const facecamToggle = document.getElementById('layout-show-facecam');
-        const chatToggle = document.getElementById('layout-show-chat');
-        const adToggle = document.getElementById('layout-show-ad');
-        const queueToggle = document.getElementById('layout-show-queue');
-
-        const config = {
-            infoPosition: infoPosEl ? infoPosEl.value : 'below',
-            sidebarPosition: sidebarPosEl ? sidebarPosEl.value : 'right',
-            playerWidth: playerWidthEl ? (parseInt(playerWidthEl.value) || 70) : 70,
-            showFacecam: facecamToggle ? facecamToggle.classList.contains('active') : true,
-            showChat: chatToggle ? chatToggle.classList.contains('active') : true,
-            showAd: adToggle ? adToggle.classList.contains('active') : true,
-            showQueue: queueToggle ? queueToggle.classList.contains('active') : true,
-            order: currentLayoutOrder
-        };
+        const config = readLayoutFromUI();
         if (window.ClipQ && window.ClipQ.Layout) {
             window.ClipQ.Layout.apply(config);
         }
+    }
+
+    /**
+     * Apply a layout config object to the settings UI controls.
+     * Used by populateUI and layout reset to avoid code duplication.
+     */
+    function applyLayoutToUI(layout) {
+        currentHeightPercent.facecam = layout.facecamHeightPercent || 40;
+        currentHeightPercent.queue = layout.queueHeightPercent || 35;
+        currentHeightPercent.chat_ad = layout.chatAdHeightPercent || (100 - currentHeightPercent.facecam - currentHeightPercent.queue);
+
+        document.getElementById('layout-info-position').value = layout.infoPosition || 'below';
+        document.getElementById('layout-sidebar-position').value = layout.sidebarPosition || 'right';
+
+        const playerWidth = layout.playerWidth || 70;
+        document.getElementById('layout-player-width').value = playerWidth;
+        const widthValEl = document.getElementById('layout-player-width-val');
+        if (widthValEl) widthValEl.textContent = `${playerWidth}%`;
+
+        const chatWidth = layout.chatWidth || 60;
+        const chatWidthInput = document.getElementById('layout-chat-width');
+        if (chatWidthInput) chatWidthInput.value = chatWidth;
+        const chatWidthValEl = document.getElementById('layout-chat-width-val');
+        if (chatWidthValEl) chatWidthValEl.textContent = `${chatWidth}%`;
+
+        const fcHeight = layout.facecamHeightPercent || 40;
+        const fcHeightInput = document.getElementById('layout-facecam-height');
+        if (fcHeightInput) fcHeightInput.value = fcHeight;
+        const fcHeightValEl = document.getElementById('layout-facecam-height-val');
+        if (fcHeightValEl) fcHeightValEl.textContent = `${fcHeight}%`;
+
+        const qHeight = layout.queueHeightPercent || 35;
+        const qHeightInput = document.getElementById('layout-queue-height');
+        if (qHeightInput) qHeightInput.value = qHeight;
+        const qHeightValEl = document.getElementById('layout-queue-height-val');
+        if (qHeightValEl) qHeightValEl.textContent = `${qHeight}%`;
+
+        const lockFcEl = document.getElementById('layout-lock-facecam');
+        if (lockFcEl) lockFcEl.checked = !!layout.lockFacecam;
+        const lockCaEl = document.getElementById('layout-lock-chat-ad');
+        if (lockCaEl) lockCaEl.checked = !!layout.lockChatAd;
+        const lockQEl = document.getElementById('layout-lock-queue');
+        if (lockQEl) lockQEl.checked = !!layout.lockQueue;
+
+        setToggleState('layout-show-facecam', layout.showFacecam !== false);
+        setToggleState('layout-show-chat', layout.showChat !== false);
+        setToggleState('layout-show-ad', layout.showAd !== false);
+        setToggleState('layout-show-queue', layout.showQueue !== false);
+
+        currentLayoutOrder = layout.order ? [...layout.order] : ['chat_ad', 'facecam', 'queue'];
+        renderOrderingUI();
     }
 
     function renderOrderingUI() {
@@ -696,6 +838,97 @@ ClipQ.Settings = (() => {
             row.appendChild(btnGroup);
             listContainer.appendChild(row);
         });
+    }
+
+    function distributeChange(changedKey, newValue) {
+        const oldFcVal = currentHeightPercent.facecam;
+        const oldQVal = currentHeightPercent.queue;
+        const oldCaVal = currentHeightPercent.chat_ad;
+        
+        const locks = {
+            facecam: document.getElementById('layout-lock-facecam')?.checked || false,
+            chat_ad: document.getElementById('layout-lock-chat-ad')?.checked || false,
+            queue: document.getElementById('layout-lock-queue')?.checked || false
+        };
+        const active = {
+            facecam: getToggleState('layout-show-facecam'),
+            chat_ad: getToggleState('layout-show-chat') || getToggleState('layout-show-ad'),
+            queue: getToggleState('layout-show-queue')
+        };
+
+        const currentValues = {
+            facecam: oldFcVal,
+            chat_ad: oldCaVal,
+            queue: oldQVal
+        };
+
+        const oldValue = currentValues[changedKey];
+        const delta = newValue - oldValue;
+        if (delta === 0) return;
+
+        const receiverKeys = Object.keys(active).filter(k => k !== changedKey && active[k] && !locks[k]);
+
+        if (receiverKeys.length === 0) {
+            updateSliderUI(changedKey, oldValue);
+            return;
+        }
+
+        let remainingDelta = delta;
+        const newValues = { ...currentValues };
+        newValues[changedKey] = newValue;
+
+        let attempts = 0;
+        let pool = [...receiverKeys];
+        while (Math.abs(remainingDelta) > 0.01 && pool.length > 0 && attempts < 5) {
+            attempts++;
+            const share = remainingDelta / pool.length;
+            let nextPool = [];
+
+            for (const rKey of pool) {
+                let val = newValues[rKey] - share;
+                if (val < 10) {
+                    remainingDelta -= (newValues[rKey] - 10);
+                    newValues[rKey] = 10;
+                } else if (val > 80) {
+                    remainingDelta -= (newValues[rKey] - 80);
+                    newValues[rKey] = 80;
+                } else {
+                    newValues[rKey] = val;
+                    remainingDelta -= share;
+                    nextPool.push(rKey);
+                }
+            }
+            pool = nextPool;
+        }
+
+        if (Math.abs(remainingDelta) > 0.01) {
+            newValues[changedKey] -= remainingDelta;
+        }
+
+        const finalSum = newValues.facecam + newValues.chat_ad + newValues.queue;
+        if (finalSum !== 100) {
+            const adjustKey = receiverKeys[0] || changedKey;
+            newValues[adjustKey] += (100 - finalSum);
+        }
+
+        // Cache the newly calculated heights
+        currentHeightPercent.facecam = Math.round(newValues.facecam);
+        currentHeightPercent.queue = Math.round(newValues.queue);
+        currentHeightPercent.chat_ad = Math.round(newValues.chat_ad);
+
+        updateSliderUI('facecam', currentHeightPercent.facecam);
+        updateSliderUI('queue', currentHeightPercent.queue);
+
+        triggerLiveLayoutApply();
+    }
+
+    function updateSliderUI(key, value) {
+        const slider = document.getElementById(`layout-${key}-height`);
+        if (slider) {
+            slider.value = value;
+            const valEl = document.getElementById(`layout-${key}-height-val`);
+            if (valEl) valEl.textContent = `${value}%`;
+        }
     }
 
     return { load, save, get, isUserBlocked, isStreamerBlocked, hasCommandPermission, initUI, populateUI, CMD_KEYS };

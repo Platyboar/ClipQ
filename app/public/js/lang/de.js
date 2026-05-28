@@ -12,7 +12,7 @@ ClipQ.I18n.register('de', {
 
     // Navigation
     'nav.queue': 'Queue',
-    'nav.history': 'History',
+    'nav.history': 'Verlauf',
 
     // Queue status
     'queue.status.open': 'Offen',
@@ -62,6 +62,7 @@ ClipQ.I18n.register('de', {
     'settings.title': 'Einstellungen',
     'settings.cancel': 'Abbrechen',
     'settings.save': 'Speichern',
+    'settings.save_close': 'Speichern + Schließen',
 
     // Settings tabs
     'settings.tab.general': 'Allgemein',
@@ -80,6 +81,8 @@ ClipQ.I18n.register('de', {
     'settings.general.channel': 'Twitch Channel',
     'settings.general.channel_hint': 'Chat-Kanal dem beigetreten wird',
     'settings.general.channel_placeholder': 'dein_kanal',
+    'settings.general.reset': 'Auf Werkseinstellungen zurücksetzen',
+    'settings.general.confirm_reset': 'Möchtest du wirklich alle Einstellungen auf Werkseinstellungen zurücksetzen? Die App wird neu geladen.',
 
     // Settings — Queue
     'settings.queue.providers': 'Clip-Anbieter',
@@ -94,7 +97,7 @@ ClipQ.I18n.register('de', {
     'settings.queue.blocked_users_hint': 'Ein Name pro Zeile. Nachrichten dieser User werden ignoriert.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn Prefix <code>!queue</code> und Next <code>next</code>, dann wird <code>!queuenext</code> erkannt.',
+    'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn Prefix <code>!queue</code> und Next <code>next</code>, dann wird <code>!queue next</code> erkannt.',
     'settings.commands.example_label': 'Bsp.:',
     'settings.commands.prefix': 'Command-Prefix',
     'settings.commands.next': 'Nächster Clip',
@@ -122,6 +125,8 @@ ClipQ.I18n.register('de', {
     'settings.memory.count': 'Du hast <strong>{count}</strong> Clips in der Memory.',
     'settings.memory.purge_btn': 'Memory leeren',
     'settings.memory.confirm_purge': 'Clip Memory wirklich leeren?',
+    'settings.memory.bypass_title': 'Clip-Memory umgehen',
+    'settings.memory.bypass_hint': 'Erlaube diesen Rollen, bereits gespielte Clips erneut in die Queue einzureihen',
 
     // Settings — Design
     'settings.design.show_badges': 'Zeige Badges',
@@ -156,6 +161,7 @@ ClipQ.I18n.register('de', {
     'design.color.hover': 'Hover',
     'design.color.glow': 'Glow',
     'design.color.secondary': 'Sekundär',
+    'design.color.gradient': 'Verlauf',
     'design.color.open': 'Offen',
     'design.color.closed': 'Geschlossen',
     'design.color.danger': 'Gefahr',
@@ -182,8 +188,17 @@ ClipQ.I18n.register('de', {
     'settings.layout.sidebar_position_hint': 'Wähle, ob die Sidebar rechts oder links vom Player ist',
     'settings.layout.position_right': 'Rechts vom Player',
     'settings.layout.position_left': 'Links vom Player',
+    'settings.layout.widths': 'Kachelbreiten',
+    'settings.layout.widths_hint': 'Passe die Breiten des Players und der Sidebar-Kacheln an',
     'settings.layout.player_width': 'Player-Breite',
     'settings.layout.player_width_hint': 'Passe die Breite des Videoplayers im Verhältnis zur Sidebar an',
+    'settings.layout.chat_width': 'Chat-Breite',
+    'settings.layout.chat_width_hint': 'Passe die Breite des Chats im Verhältnis zur Ad-Box an',
+    'settings.layout.heights': 'Kachelhöhen',
+    'settings.layout.heights_hint': 'Passe die Höhen der Sidebar-Komponenten an und sperre sie',
+    'settings.layout.facecam_height': 'Facecam-Höhe',
+    'settings.layout.queue_height': 'Queue-Höhe',
+    'settings.layout.chat_ad_lock': 'Chat/Werbung-Höhe sperren',
     'settings.layout.visibility': 'Sichtbarkeit der Komponenten',
     'settings.layout.visibility_hint': 'Einzelne Sidebar-Komponenten ein- oder ausblenden',
     'settings.layout.show_facecam': 'Facecam-Box anzeigen',
