@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('pt', {
     _name: 'Português',
-    _flag: 'https://flagcdn.com/pt.svg',
+    _flag: 'https://flagcdn.com/w80/pt.png',
 
     // Login page
     'login.subtitle': 'Fila de clips para a tua transmissão',
@@ -23,20 +23,26 @@ ClipQ.I18n.register('pt', {
     'menu.logout': '↪ Sair',
 
     // Player
-    'player.empty_icon': '🎬',
     'player.waiting': 'A aguardar clips...',
     'player.no_clip': 'Nenhum clip carregado',
     'player.previous': '← Anterior',
     'player.start': '▶ Iniciar',
     'player.next': 'Seguinte →',
     'player.auto': 'Auto',
+    'player.autoplay_title': 'Reprodução automática',
     'player.loading_instagram': 'A carregar vídeo do Instagram...',
     'player.submitted_by': 'Enviado por:',
     'player.visit_channel': 'Visitar {channel}',
 
+    // Roles
+    'roles.broadcaster': 'Streamer',
+    'roles.lead_mod': 'Moderador principal',
+    'roles.mod': 'Moderador',
+    'roles.vip': 'VIP',
+
     // Time formatting
     'time.minutes_ago': 'há {count} min',
-    'time.hours_ago': 'há {count} hr',
+    'time.hours_ago': 'há {count} h',
     'time.day_ago': 'há {count} dia',
     'time.days_ago': 'há {count} dias',
     'time.week_ago': 'há {count} semana',
@@ -57,6 +63,10 @@ ClipQ.I18n.register('pt', {
 
     // History
     'history.empty': 'Ainda não foram vistos clips.',
+    'history.delete': 'Remover do histórico',
+    'history.confirm_delete': 'Desejas realmente remover este clip do histórico?',
+    'history.confirm_yes': 'Sim',
+    'history.confirm_cancel': 'Cancelar',
 
     // Settings modal
     'settings.title': 'Configurações',
@@ -79,10 +89,9 @@ ClipQ.I18n.register('pt', {
     'settings.general.app_title_hint': 'Altera o título exibido no canto superior esquerdo (máx. 30 caracteres)',
     'settings.general.app_title_placeholder': 'ClipQ',
     'settings.general.channel': 'Canal da Twitch',
-    'settings.general.channel_hint': 'Canal de chat para aderir',
-    'settings.general.channel_placeholder': 'o_teu_canal',
+    'settings.general.channel_hint': 'Canal de chat ao qual se ligar',
     'settings.general.reset': 'Restaurar configurações de fábrica',
-    'settings.general.confirm_reset': 'Realmente restaurar todas as configurações para os padrões de fábrica? O aplicativo será recarregado.',
+    'settings.general.confirm_reset': 'Desejas realmente restaurar todas as configurações para os padrões de fábrica? A aplicação será recarregada.',
 
     // Settings — Queue
     'settings.queue.providers': 'Plataformas de clips',
@@ -97,19 +106,19 @@ ClipQ.I18n.register('pt', {
     'settings.queue.blocked_users_hint': 'Um nome por linha. Mensagens destes utilizadores serão ignoradas.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Comandos de chat para a transmissão. Não distingue maiúsculas de minúsculas.<br>Exemplo: Se o prefixo for <code>!queue</code> e a ação for <code>next</code>, então <code>!queue next</code> é reconhecido.',
+    'settings.commands.hint': 'Comandos de chat para a transmissão. Não distingue maiúsculas de minúsculas.<br>Exemplo: Se o prefixo for <code>!queue</code> e «Próximo clip» for <code>next</code>, então <code>!queue next</code> é reconhecido.',
     'settings.commands.example_label': 'Ex:',
-    'settings.commands.prefix': 'Prefijo do comando',
+    'settings.commands.prefix': 'Prefixo do comando',
     'settings.commands.next': 'Próximo clip',
     'settings.commands.push': 'Priorizar clip no #1',
     'settings.commands.open': 'Abrir fila',
     'settings.commands.close': 'Fechar fila',
     'settings.commands.clear': 'Limpar fila',
     'settings.commands.purgememory': 'Limpar memória de clips',
-    'settings.commands.autoplay': 'Autoplay ligado/desligado',
+    'settings.commands.autoplay': 'Ligar/desligar Autoplay',
     'settings.commands.limit': 'Definir limite de clips',
     'settings.commands.remove': 'Remover clip',
-    'settings.commands.providers': 'Plataforma ligada/desligada',
+    'settings.commands.providers': 'Ligar/desligar plataforma',
     'settings.commands.role_all': 'Todos',
 
     // Settings — History
@@ -126,7 +135,7 @@ ClipQ.I18n.register('pt', {
     'settings.memory.purge_btn': 'Limpar memória',
     'settings.memory.confirm_purge': 'Desejas realmente limpar a memória de clips?',
     'settings.memory.bypass_title': 'Ignorar memória de clips',
-    'settings.memory.bypass_hint': 'Permitir que estes cargos adicionem à fila clipes já presentes na memória',
+    'settings.memory.bypass_hint': 'Permitir que estes cargos adicionem à fila clips já presentes na memória',
 
     // Settings — Design
     'settings.design.show_badges': 'Mostrar insígnias',
@@ -152,13 +161,13 @@ ClipQ.I18n.register('pt', {
     'design.color.chat': 'Chat',
     'design.color.queue': 'Fila',
     'design.color.tile': 'Mosaico',
-    'design.color.tile_hover': 'Mosaico em foco',
+    'design.color.tile_hover': 'Mosaico ao passar o rato',
     'design.color.infobar': 'Barra de informações',
     'design.color.ad': 'Área de anúncios',
     'design.color.settings': 'Configurações',
     'design.color.standard': 'Padrão',
     'design.color.accent': 'Acento',
-    'design.color.hover': 'Foco',
+    'design.color.hover': 'Ao passar o rato',
     'design.color.glow': 'Brilho',
     'design.color.secondary': 'Secundário',
     'design.color.gradient': 'Gradiente',
@@ -170,46 +179,48 @@ ClipQ.I18n.register('pt', {
     'design.color.bright': 'Brilhante',
     'design.color.overlay': 'Sobreposição',
     'design.color.info': 'Informações',
+    'design.color.opacity': 'Opacidade',
 
     // Design — Confirm Dialogs
     'design.confirm_set_default': 'Guardar os valores de design atuais como novos padrões?',
-    'design.alert_set_default': 'Os valores de design atuais foram guardados como novos padrões!\n\n(Clica em \"Guardar\" depois para aplicar o design permanentemente).',
-    'design.confirm_reset_custom': 'Desejas repor os teus padrões personalizados guardados?\n\n(Clica em \"OK\" para os teus padrões guardados, ou \"Cancelar\" para repor o design vermelho original de fábrica).',
+    'design.alert_set_default': 'Os valores de design atuais foram guardados como novos padrões!\n\n(Clica em "Guardar" depois para aplicar o design permanentemente).',
+    'design.confirm_reset_custom': 'Desejas repor os teus padrões personalizados guardados?\n\n(Clica em "OK" para os teus padrões guardados, ou "Cancelar" para repor o design vermelho original de fábrica).',
     'design.confirm_reset_factory': 'Repor completamente o design vermelho original de fábrica? (Os teus padrões guardados serão eliminados).',
-    'design.confirm_reset_all': 'Repor todas as cores e fontes para o design de fábrica original?',
+    'design.confirm_reset_all': 'Repor todas as cores e a fonte para o design de fábrica original?',
 
     // Settings tabs & Layout tab
     'settings.tab.layout': 'Layout',
     'settings.layout.info_position': 'Posição da barra de informações',
-    'settings.layout.info_position_hint': 'Escolha se a barra de informações fica abaixo ou acima do reprodutor',
+    'settings.layout.info_position_hint': 'Escolhe se a barra de informações fica abaixo ou acima do reprodutor',
     'settings.layout.position_below': 'Abaixo do reprodutor',
     'settings.layout.position_above': 'Acima do reprodutor',
     'settings.layout.sidebar_position': 'Posição da barra lateral',
-    'settings.layout.sidebar_position_hint': 'Escolha se a barra lateral fica à direita ou à esquerda do reprodutor',
+    'settings.layout.sidebar_position_hint': 'Escolhe se a barra lateral fica à direita ou à esquerda do reprodutor',
     'settings.layout.position_right': 'Direita do reprodutor',
     'settings.layout.position_left': 'Esquerda do reprodutor',
     'settings.layout.widths': 'Larguras dos componentes',
-    'settings.layout.widths_hint': 'Ajuste as larguras do reprodutor e dos componentes da barra lateral',
+    'settings.layout.widths_hint': 'Ajusta as larguras do reprodutor e dos componentes da barra lateral',
     'settings.layout.player_width': 'Largura do reprodutor',
-    'settings.layout.player_width_hint': 'Ajuste a largura do reprodutor de vídeo em relação à barra lateral',
     'settings.layout.chat_width': 'Largura do chat',
-    'settings.layout.chat_width_hint': 'Ajuste a largura do chat em relação à caixa de anúncios',
     'settings.layout.heights': 'Alturas dos componentes',
-    'settings.layout.heights_hint': 'Ajuste as alturas e bloqueie os tamanhos dos componentes da barra lateral',
+    'settings.layout.heights_hint': 'Ajusta as alturas e bloqueia os tamanhos dos componentes da barra lateral',
     'settings.layout.facecam_height': 'Altura da Facecam',
     'settings.layout.queue_height': 'Altura da fila',
     'settings.layout.chat_ad_lock': 'Bloquear altura do Chat/Anúncios',
+    'settings.layout.lock_height': 'Bloquear altura',
     'settings.layout.visibility': 'Visibilidade dos componentes',
-    'settings.layout.visibility_hint': 'Alternar componentes individuais da barra lateral',
-    'settings.layout.show_facecam': 'Mostrar caixa de Facecam',
-    'settings.layout.show_chat': 'Mostrar caixa de chat',
-    'settings.layout.show_ad': 'Mostrar caixa de anúncios',
-    'settings.layout.show_queue': 'Mostrar fila',
+    'settings.layout.visibility_hint': 'Ocultar mantém o espaço; Remover liberta-o para outros componentes',
+    'settings.layout.visibility_hide': 'Ocultar',
+    'settings.layout.visibility_remove': 'Remover',
+    'settings.layout.box_facecam': 'Caixa de Facecam',
+    'settings.layout.box_chat': 'Caixa de chat',
+    'settings.layout.box_ad': 'Caixa de anúncios',
+    'settings.layout.box_queue': 'Caixa de fila',
     'settings.layout.ordering': 'Ordem dos componentes',
-    'settings.layout.ordering_hint': 'Escolha a posição vertical de cada componente ativo na barra lateral',
+    'settings.layout.ordering_hint': 'Escolhe a posição vertical de cada componente ativo na barra lateral',
     'settings.layout.pos_top': 'Topo',
     'settings.layout.pos_middle': 'Meio',
-    'settings.layout.pos_bottom': 'Fundo',
+    'settings.layout.pos_bottom': 'Em baixo',
     'settings.layout.block_facecam': 'Facecam',
     'settings.layout.block_chat_ad': 'Chat + Anúncios',
     'settings.layout.block_queue': 'Fila',
@@ -218,4 +229,12 @@ ClipQ.I18n.register('pt', {
     'settings.layout.confirm_reset_custom': 'Desejas repor o teu layout personalizado guardado?\n\n(Clica em "OK" para o teu layout guardado, ou "Cancelar" para repor o layout original de fábrica)',
     'settings.layout.confirm_reset_factory': 'Repor completamente o layout original de fábrica? (O teu layout guardado será eliminado)',
     'settings.layout.confirm_reset_all': 'Repor todo o layout para o layout original de fábrica?',
+
+    // Settings — About
+    'settings.tab.about': 'Sobre',
+    'settings.about.heading': 'Sobre o ClipQ',
+    'settings.about.description': 'Criado por Platyboar com a ajuda do Antigravity.',
+    'settings.about.license': 'Licenciado sob a licença MIT.',
+    'settings.about.issues_hint': 'Encontraste um bug ou problema? Reporta diretamente no GitHub:',
+    'settings.about.report_btn': 'Reportar um problema no GitHub',
 });

@@ -4,17 +4,9 @@
  */
 window.ClipQ = window.ClipQ || {};
 
-// Provider icon URLs (small favicons)
-ClipQ.PROVIDER_ICONS = {
-    twitch: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png',
-    twitch_vod: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png',
-    youtube: 'https://www.youtube.com/favicon.ico',
-    tiktok: 'https://sf-tb-sg.ibytedtos.com/obj/eden-sg/uhtyvueh7nulogpouzhm/tiktok-icon2.png',
-    instagram: 'https://img.icons8.com/color/48/instagram-new.png',
-    default: 'https://cdn-icons-png.flaticon.com/512/2875/2875438.png'
-};
-
 ClipQ.App = (() => {
+    'use strict';
+
     let currentView = 'queue';
     let autoplay = false; // Default: OFF
     const t = (key, params) => ClipQ.I18n.t(key, params);
@@ -28,14 +20,16 @@ ClipQ.App = (() => {
         const token = hashToken || savedToken;
 
         if (token) {
-            const valid = await ClipQ.Auth.validate(token);
-            if (valid) {
+            const authStatus = await ClipQ.Auth.validate(token);
+            if (authStatus && authStatus.valid) {
                 let user = ClipQ.Auth.getUser();
                 if (!user) user = await ClipQ.Auth.fetchUser(token);
                 if (user) {
-                    await startApp(user, token);
+                    await startApp(user);
                     return;
                 }
+            } else if (authStatus && authStatus.unauthorized) {
+                ClipQ.Auth.clearSession();
             }
         }
 
@@ -70,12 +64,17 @@ ClipQ.App = (() => {
         const container = document.getElementById('language-options');
         const langs = ClipQ.I18n.getAvailableLanguages();
 
-        container.innerHTML = langs.map(lang => `
-            <button class="language-btn" data-lang="${lang.code}">
-                <img class="lang-flag" src="${lang.flag}" alt="${lang.name}">
-                <span>${lang.name}</span>
+        container.innerHTML = langs.map(lang => {
+            const rawFlag = typeof lang.flag === 'string' ? lang.flag : '';
+            const safeFlag = ClipQ.sanitizeUrl(rawFlag) || (/^\/(?!\/)/.test(rawFlag) ? rawFlag : '');
+            const safeName = ClipQ.escapeHtml(lang.name);
+            return `
+            <button type="button" class="language-btn" data-lang="${ClipQ.escapeHtml(lang.code)}">
+                ${safeFlag ? `<img class="lang-flag" src="${ClipQ.escapeHtml(safeFlag)}" alt="${safeName}">` : ''}
+                <span>${safeName}</span>
             </button>
-        `).join('');
+        `;
+        }).join('');
 
         container.querySelectorAll('.language-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -96,11 +95,14 @@ ClipQ.App = (() => {
         });
     }
 
-    async function startApp(user, token) {
+    async function startApp(user) {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
 
-        document.getElementById('user-avatar').src = user.avatar;
+        const avatarEl = document.getElementById('user-avatar');
+        const safeAvatar = ClipQ.sanitizeUrl(user.avatar);
+        if (safeAvatar) avatarEl.src = safeAvatar;
+        else avatarEl.removeAttribute('src');
         document.getElementById('user-name').textContent = user.displayName;
 
         const settings = ClipQ.Settings.load();
@@ -113,7 +115,11 @@ ClipQ.App = (() => {
         const titleEl = document.getElementById('app-title');
         if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';
 
-        autoplay = localStorage.getItem('clipq_autoplay') === 'true';
+        try {
+            autoplay = localStorage.getItem('clipq_autoplay') === 'true';
+        } catch {
+            autoplay = false;
+        }
         updateAutoplayUI();
 
         // Apply i18n to DOM after app screen is shown
@@ -143,12 +149,11 @@ ClipQ.App = (() => {
     function setupNavigation() {
         document.querySelectorAll('.menu-tabs .tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.menu-tabs .tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.menu-tabs .tab').forEach(tabEl => tabEl.classList.remove('active'));
                 tab.classList.add('active');
                 currentView = tab.dataset.tab;
 
                 document.getElementById('queue-view').classList.toggle('hidden', currentView !== 'queue');
-                document.getElementById('queue-view').style.display = currentView === 'queue' ? 'grid' : 'none';
                 document.getElementById('history-view').classList.toggle('hidden', currentView !== 'history');
 
                 if (currentView === 'history') renderHistory();
@@ -168,6 +173,62 @@ ClipQ.App = (() => {
         document.getElementById('queue-clear-btn').addEventListener('click', () => {
             if (confirm(t('queue.confirm_clear'))) ClipQ.Queue.clear();
         });
+
+        // Delegate queue list clicks and keyboard activation once on the container.
+        const queueContainer = document.getElementById('queue-list');
+        if (queueContainer) {
+            bindThumbFallback(queueContainer);
+            const playFromElement = (el) => {
+                const newClip = ClipQ.Queue.extractAndPlay(el.dataset.id);
+                if (newClip) { ClipQ.Player.playClip(newClip); updateNextButton(); }
+            };
+            queueContainer.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.queue-item-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const row = deleteBtn.closest('.queue-item');
+                    if (row) ClipQ.Queue.removeById(row.dataset.id);
+                    return;
+                }
+                const itemEl = e.target.closest('.queue-item');
+                if (itemEl) playFromElement(itemEl);
+            });
+            queueContainer.addEventListener('keydown', (e) => {
+                if (e.target.closest('.queue-item-delete')) return;
+                const itemEl = e.target.closest('.queue-item');
+                if (itemEl && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    playFromElement(itemEl);
+                }
+            });
+        }
+
+        const historyGrid = document.getElementById('history-grid');
+        if (historyGrid) {
+            bindThumbFallback(historyGrid);
+            historyGrid.addEventListener('click', async (e) => {
+                const deleteBtn = e.target.closest('.history-item-delete');
+                if (!deleteBtn) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const id = deleteBtn.closest('.history-item')?.dataset.id;
+                if (!id) return;
+                const confirmed = await ClipQ.confirmAction({
+                    message: t('history.confirm_delete'),
+                    yesLabel: t('history.confirm_yes'),
+                    cancelLabel: t('history.confirm_cancel')
+                });
+                if (!confirmed) return;
+                const result = ClipQ.Queue.removeHistoryById(id);
+                if (result.removed) {
+                    if (result.clearedActivePlayback) {
+                        ClipQ.Player.showEmpty();
+                        updateNextButton();
+                    }
+                    renderHistory();
+                }
+            });
+        }
     }
 
     /** Handle "Start" vs "Next" button */
@@ -185,25 +246,32 @@ ClipQ.App = (() => {
 
     function updateNextButton() {
         const btn = document.getElementById('btn-next');
-        if (ClipQ.Player.getCurrent()) {
-            btn.textContent = t('player.next');
-        } else {
-            btn.textContent = t('player.start');
+        btn.textContent = t(ClipQ.Player.getCurrent() ? 'player.next' : 'player.start');
+    }
+
+    function applyAutoplayState(state) {
+        autoplay = !!state;
+        try {
+            localStorage.setItem('clipq_autoplay', autoplay);
+        } catch { /* ignore storage quota errors */ }
+        if (!autoplay && ClipQ.Player && ClipQ.Player.clearAutoplayTimeout) {
+            ClipQ.Player.clearAutoplayTimeout();
         }
+        updateAutoplayUI();
+        console.log(`[App] Autoplay set to: ${autoplay ? 'ON' : 'OFF'}`);
     }
 
     function setupAutoplay() {
         document.getElementById('btn-autoplay').addEventListener('click', () => {
-            autoplay = !autoplay;
-            localStorage.setItem('clipq_autoplay', autoplay);
-            updateAutoplayUI();
-            console.log(`[App] Autoplay: ${autoplay ? 'ON' : 'OFF'}`);
+            applyAutoplayState(!autoplay);
         });
     }
 
     function updateAutoplayUI() {
         const sw = document.getElementById('autoplay-switch');
         if (sw) sw.classList.toggle('active', autoplay);
+        const btn = document.getElementById('btn-autoplay');
+        if (btn) btn.setAttribute('aria-pressed', String(autoplay));
     }
 
     function setupQueueToggle() {
@@ -218,22 +286,27 @@ ClipQ.App = (() => {
         const toggle = document.getElementById('user-menu-toggle');
         const dropdown = document.getElementById('user-dropdown');
 
+        const setDropdownOpen = (isOpen) => {
+            dropdown.classList.toggle('hidden', !isOpen);
+            toggle.setAttribute('aria-expanded', String(isOpen));
+        };
+
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.classList.toggle('hidden');
+            setDropdownOpen(dropdown.classList.contains('hidden'));
         });
 
-        document.addEventListener('click', () => dropdown.classList.add('hidden'));
+        document.addEventListener('click', () => setDropdownOpen(false));
         dropdown.addEventListener('click', (e) => e.stopPropagation());
 
         document.getElementById('dropdown-settings').addEventListener('click', () => {
-            dropdown.classList.add('hidden');
+            setDropdownOpen(false);
             ClipQ.Settings.populateUI();
             document.getElementById('settings-overlay').classList.remove('hidden');
         });
 
         document.getElementById('dropdown-logout').addEventListener('click', () => {
-            dropdown.classList.add('hidden');
+            setDropdownOpen(false);
             ClipQ.Auth.logout();
         });
     }
@@ -244,27 +317,24 @@ ClipQ.App = (() => {
         const btnClosed = document.getElementById('btn-closed');
         btnOpen.classList.toggle('active-open', open);
         btnClosed.classList.toggle('active-closed', !open);
-        btnOpen.classList.remove('active-closed');
-        btnClosed.classList.remove('active-open');
+        btnOpen.setAttribute('aria-pressed', String(open));
+        btnClosed.setAttribute('aria-pressed', String(!open));
         console.log(`[App] Queue is now ${open ? 'OPEN' : 'CLOSED'}`);
     }
 
-    function nextClip() {
-        const next = ClipQ.Queue.next();
-        if (next) {
-            ClipQ.Player.playClip(next);
-        } else {
-            ClipQ.Player.showEmpty();
-        }
+    function advanceClip(archive = true) {
+        const next = archive ? ClipQ.Queue.next() : ClipQ.Queue.skipCurrent();
+        if (next) ClipQ.Player.playClip(next);
+        else ClipQ.Player.showEmpty();
         updateNextButton();
     }
 
+    function nextClip() { advanceClip(true); }
+    function skipUnavailableClip() { advanceClip(false); }
+
     /** Set autoplay state (called by chat command) */
     function setAutoplay(state) {
-        autoplay = !!state;
-        localStorage.setItem('clipq_autoplay', autoplay);
-        updateAutoplayUI();
-        console.log(`[App] Autoplay set to: ${autoplay ? 'ON' : 'OFF'}`);
+        applyAutoplayState(state);
     }
 
     /** Set clip limit (called by chat command) */
@@ -278,7 +348,7 @@ ClipQ.App = (() => {
     /** Toggle a provider on/off (called by chat command) */
     function setProvider(providerName, enabled) {
         const settings = ClipQ.Settings.get();
-        if (settings.providers.hasOwnProperty(providerName)) {
+        if (Object.prototype.hasOwnProperty.call(settings.providers, providerName)) {
             settings.providers[providerName] = enabled;
             ClipQ.Settings.save(settings);
             console.log(`[App] Provider "${providerName}" set to: ${enabled ? 'ON' : 'OFF'}`);
@@ -288,9 +358,51 @@ ClipQ.App = (() => {
     }
 
     function getProviderIcon(provider) {
-        const url = ClipQ.PROVIDER_ICONS[provider];
+        const url = ClipQ.sanitizeUrl(ClipQ.PROVIDER_ICONS[provider]);
         if (!url) return '';
-        return `<div class="queue-provider-icon"><img src="${url}" alt="${provider}"></div>`;
+        return `<div class="queue-provider-icon"><img src="${ClipQ.escapeHtml(url)}" alt="${ClipQ.escapeHtml(provider)}"></div>`;
+    }
+
+    function buildRoleBadge(roles) {
+        if (!roles) return '';
+        const roleDefs = [
+            ['isBroadcaster', 'broadcaster', 'roles.broadcaster'],
+            ['isLeadMod', 'leadMod', 'roles.lead_mod'],
+            ['isMod', 'mod', 'roles.mod'],
+            ['isVip', 'vip', 'roles.vip']
+        ];
+        const match = roleDefs.find(([flag]) => roles[flag]);
+        if (!match) return '';
+        const [, badgeKey, i18nKey] = match;
+        const badgeUrl = ClipQ.sanitizeUrl(ClipQ.ROLE_BADGES[badgeKey]);
+        if (!badgeUrl) return '';
+        const label = ClipQ.escapeHtml(t(i18nKey));
+        return `<img class="badge-role" src="${ClipQ.escapeHtml(badgeUrl)}" title="${label}" alt="${label}">`;
+    }
+
+    function bindThumbFallback(container) {
+        container.addEventListener('error', (e) => {
+            const img = e.target;
+            if (img?.tagName !== 'IMG') return;
+            const fallback = img.dataset.fallbackLogo;
+            if (!fallback || img.dataset.fallbackApplied) return;
+            img.dataset.fallbackApplied = '1';
+            img.classList.add('platform-logo');
+            img.src = fallback;
+        }, true);
+    }
+
+    function renderClipThumbnail(item, baseClass) {
+        const meta = item.meta || {};
+        const fallbackLogo = ClipQ.sanitizeUrl(ClipQ.PROVIDER_THUMB_FALLBACKS?.[item.provider] || '');
+        const rawThumb = item.provider === 'instagram' ? fallbackLogo : (meta.thumbnail || fallbackLogo);
+        const safeThumb = ClipQ.sanitizeUrl(rawThumb);
+        const isLogo = safeThumb && safeThumb === fallbackLogo;
+        const thumbClass = isLogo ? `${baseClass} platform-logo` : baseClass;
+        const fallbackAttr = fallbackLogo && !isLogo ? ` data-fallback-logo="${ClipQ.escapeHtml(fallbackLogo)}"` : '';
+        return safeThumb
+            ? `<img class="${thumbClass}" src="${ClipQ.escapeHtml(safeThumb)}"${fallbackAttr} alt="">`
+            : `<div class="${baseClass} clip-placeholder">🎬</div>`;
     }
 
     function renderQueueList() {
@@ -303,115 +415,85 @@ ClipQ.App = (() => {
         countTabEl.textContent = items.length > 0 ? `(${items.length})` : '';
 
         if (items.length === 0) {
-            container.innerHTML = `<div class="queue-empty">${t('queue.empty_message')}</div>`;
+            const emptyMsgHtml = t('queue.empty_message')
+                .split(/<br\s*\/?>/i)
+                .map(ClipQ.escapeHtml)
+                .join('<br>');
+            container.innerHTML = `<div class="queue-empty">${emptyMsgHtml}</div>`;
             return;
         }
+
+        const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+        const showBadges = ClipQ.Settings.get().design.showBadges !== false;
 
         container.innerHTML = items.map(item => {
             const meta = item.meta || {};
-            let thumb = meta.thumbnail || '';
-            let thumbClass = 'queue-thumb';
-            if (item.provider === 'instagram') {
-                thumb = 'https://img.icons8.com/color/512/instagram-new.png';
-                thumbClass += ' instagram-logo';
-            }
+            const thumbMarkup = renderClipThumbnail(item, 'queue-thumb');
             const icon = getProviderIcon(item.provider);
 
-            // Delete SVG icon (Trash)
-            const trashIcon = `<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-
-            const showBadges = ClipQ.Settings.get().design.showBadges !== false;
-            const submittersList = item.submitters.map(sub => {
-                let badge = '';
-                if (showBadges && item.submitterRoles && item.submitterRoles[sub]) {
-                    const roles = item.submitterRoles[sub];
-                    if (roles.isBroadcaster) {
-                        badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" title="Streamer" alt="Streamer">';
-                    } else if (roles.isLeadMod) {
-                        badge = '<img class="badge-role" src="https://assets.help.twitch.tv/article/img/000002212-07.png" title="Lead-Moderator" alt="Lead-Moderator">';
-                    } else if (roles.isMod) {
-                        badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" title="Moderator" alt="Moderator">';
-                    } else if (roles.isVip) {
-                        badge = '<img class="badge-role" src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" title="VIP" alt="VIP">';
-                    }
-                }
-                return `${badge}${sub}`;
+            const submittersList = (item.submitters || []).map(sub => {
+                const badge = (showBadges && item.submitterRoles) ? buildRoleBadge(item.submitterRoles[sub]) : '';
+                return `${badge}${ClipQ.escapeHtml(sub)}`;
             }).join(', ');
 
+            const pushCount = Math.max(0, ClipQ.intOrDefault(item.pushCount, 0));
+            const pushBadge = pushCount > 1
+                ? (() => {
+                    const m = 1 + Math.min(9, pushCount - 1) * (1.5 / 9);
+                    return `<span class="queue-item-badge" style="font-size:${12 * m}px; padding:${3 * m}px ${8 * m}px; border-radius:${4 * m}px">${pushCount}x</span>`;
+                })()
+                : '';
+
             return `
-                <div class="queue-item" data-id="${item.id}" title="${t('queue.click_to_play')}">
+                <div class="queue-item" data-id="${ClipQ.escapeHtml(item.id)}" tabindex="0" role="button" title="${ClipQ.escapeHtml(t('queue.click_to_play'))}">
                     <div class="queue-thumb-wrap">
-                        ${thumb ? `<img class="${thumbClass}" src="${thumb}" alt="">` : `<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--color-text-dim);font-size:22px">🎬</div>`}
+                        ${thumbMarkup}
                         ${icon}
                     </div>
                     <div class="queue-item-info">
-                        <div class="queue-item-title">${meta.title || 'Clip'}</div>
-                        <div class="queue-item-channel">${meta.channel || item.provider} • ${submittersList}${item.isPushed ? ` • <span class="badge-pushed">${t('queue.pushed')}</span>` : ''}</div>
+                        <div class="queue-item-title">${ClipQ.escapeHtml(meta.title || 'Clip')}</div>
+                        <div class="queue-item-channel">${ClipQ.escapeHtml(meta.channel || item.provider)} • ${submittersList}${item.isPushed ? ` • <span class="badge-pushed">${ClipQ.escapeHtml(t('queue.pushed'))}</span>` : ''}</div>
                     </div>
-                    ${(() => {
-                        if (item.pushCount <= 1) return '';
-                        const m = 1 + Math.min(9, item.pushCount - 1) * (1.5 / 9);
-                        return `<span class="queue-item-badge" style="font-size:${12*m}px; padding:${3*m}px ${8*m}px; border-radius:${4*m}px">${item.pushCount}x</span>`;
-                    })()}
-                    <button class="queue-item-delete" title="${t('queue.delete')}">${trashIcon}</button>
+                    ${pushBadge}
+                    <button type="button" class="queue-item-delete" title="${ClipQ.escapeHtml(t('queue.delete'))}" aria-label="${ClipQ.escapeHtml(t('queue.delete'))}">${trashIcon}</button>
                 </div>
             `;
         }).join('');
-
-        // Handle delete clicks
-        container.querySelectorAll('.queue-item-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.closest('.queue-item').dataset.id;
-                ClipQ.Queue.removeById(id);
-            });
-        });
-
-        // Handle item clicks for direct play
-        container.querySelectorAll('.queue-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const id = item.dataset.id;
-                const newClip = ClipQ.Queue.extractAndPlay(id);
-                if (newClip) {
-                    ClipQ.Player.playClip(newClip);
-                    updateNextButton();
-                }
-            });
-        });
     }
 
     function renderHistory() {
+        const view = document.getElementById('history-view');
+        if (view && view.classList.contains('hidden')) return;
+
         const hist = ClipQ.Queue.getHistory();
         const grid = document.getElementById('history-grid');
-
         if (hist.length === 0) {
-            grid.innerHTML = `<div style="color:var(--color-text-dim);padding:40px;text-align:center">${t('history.empty')}</div>`;
+            grid.innerHTML = `<div class="history-empty">${ClipQ.escapeHtml(t('history.empty'))}</div>`;
             return;
         }
 
+        const deleteTitle = ClipQ.escapeHtml(t('history.delete'));
+        const closeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
         grid.innerHTML = hist.slice().reverse().map(item => {
             const meta = item.meta || {};
-            let thumb = meta.thumbnail || '';
-            let thumbClass = 'history-thumb';
-            if (item.provider === 'instagram') {
-                thumb = 'https://img.icons8.com/color/512/instagram-new.png';
-                thumbClass += ' instagram-logo';
-            }
-            return `
-                <a class="history-item" href="${item.url}" target="_blank" rel="noopener">
-                    ${thumb ? `<img class="${thumbClass}" src="${thumb}" alt="">` : `<div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--color-border);font-size:32px">🎬</div>`}
-                    <div class="history-info">
-                        <div class="history-title">${meta.title || 'Clip'}</div>
-                        <div class="history-channel">${meta.channel || item.provider}</div>
-                    </div>
-                </a>
-            `;
+            const rawUrl = ClipQ.Providers?.getCanonicalUrl
+                ? ClipQ.Providers.getCanonicalUrl(item.provider, item.clipId, item.url)
+                : item.url;
+            const safeUrl = ClipQ.sanitizeUrl(rawUrl);
+            const inner = `${renderClipThumbnail(item, 'history-thumb')}<div class="history-info"><div class="history-title">${ClipQ.escapeHtml(meta.title || 'Clip')}</div><div class="history-channel">${ClipQ.escapeHtml(meta.channel || item.provider)}</div></div>`;
+            const body = safeUrl
+                ? `<a class="history-item-link" href="${ClipQ.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
+                : inner;
+            return `<div class="history-item" data-id="${ClipQ.escapeHtml(item.id || '')}">${body}<button type="button" class="history-item-delete" title="${deleteTitle}" aria-label="${deleteTitle}">${closeIcon}</button></div>`;
         }).join('');
     }
 
     function isAutoplay() { return autoplay; }
 
-    return { init, nextClip, setQueueOpen, isAutoplay, setAutoplay, setClipLimit, setProvider, renderQueueList };
-})();
+    document.addEventListener('DOMContentLoaded', () => ClipQ.App.init());
 
-document.addEventListener('DOMContentLoaded', () => ClipQ.App.init());
+    return {
+        init, nextClip, skipUnavailableClip, setQueueOpen, isAutoplay, setAutoplay,
+        setClipLimit, setProvider, renderQueueList, renderHistory, updateNextButton
+    };
+})();

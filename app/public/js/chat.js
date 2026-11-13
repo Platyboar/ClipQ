@@ -3,13 +3,22 @@
  * Status shown as colored ring around user avatar.
  * Health-check pings server + IRC every 5 seconds.
  * Supports: role-based command permissions, chat moderation events,
- * new commands (next, purgememory, autoplay, limit, remove, providers).
+ * commands (next, push, open, close, clear, purgememory, autoplay, limit, remove, providers).
  */
 window.ClipQ = window.ClipQ || {};
 
 ClipQ.Chat = (() => {
+    'use strict';
+
     let client = null;
     let healthInterval = null;
+
+    function stopHealthCheck() {
+        if (healthInterval) {
+            clearInterval(healthInterval);
+            healthInterval = null;
+        }
+    }
 
     function setConnected(connected) {
         const ring = document.getElementById('avatar-ring');
@@ -17,6 +26,7 @@ ClipQ.Chat = (() => {
     }
 
     async function connect(channel) {
+        stopHealthCheck();
         if (!channel) {
             console.error('[Chat] ✗ No channel specified!');
             setConnected(false);
@@ -30,12 +40,15 @@ ClipQ.Chat = (() => {
         }
 
         if (client) {
-            try { client.disconnect(); } catch (e) { /* ignore */ }
+            try {
+                if (typeof client.removeAllListeners === 'function') client.removeAllListeners();
+                client.disconnect();
+            } catch { /* ignore */ }
         }
 
         console.log(`[Chat] Connecting to #${channel}...`);
 
-        client = new tmi.client({
+        const activeClient = new tmi.client({
             options: { skipUpdatingEmotesets: true, debug: false },
             connection: { secure: true, reconnect: true },
             identity: {
@@ -44,42 +57,47 @@ ClipQ.Chat = (() => {
             },
             channels: [channel]
         });
+        client = activeClient;
 
-        client.on('message', onMessage);
+        activeClient.on('message', onMessage);
 
         // Chat moderation events
-        client.on('messagedeleted', onMessageDeleted);
-        client.on('timeout', onTimeout);
-        client.on('ban', onBan);
+        activeClient.on('messagedeleted', onMessageDeleted);
+        activeClient.on('timeout', onTimeout);
+        activeClient.on('ban', onBan);
 
-        client.on('connected', (addr, port) => {
+        activeClient.on('connected', (addr, port) => {
+            if (activeClient !== client) return;
             console.log(`[Chat] ✓ Connected to IRC (${addr}:${port})`);
         });
 
-        client.on('join', (ch, username, self) => {
+        activeClient.on('join', (ch, username, self) => {
+            if (activeClient !== client) return;
             if (self) {
                 console.log(`[Chat] ✓ Joined ${ch} — listening for clips`);
                 setConnected(true);
             }
         });
 
-        client.on('disconnected', (reason) => {
+        activeClient.on('disconnected', (reason) => {
+            if (activeClient !== client) return;
             console.warn('[Chat] ✗ Disconnected:', reason);
             setConnected(false);
         });
 
-        client.on('reconnect', () => {
+        activeClient.on('reconnect', () => {
+            if (activeClient !== client) return;
             console.log('[Chat] ↻ Reconnecting...');
         });
 
         try {
-            await client.connect();
+            await activeClient.connect();
         } catch (e) {
+            if (activeClient !== client) return;
             console.error('[Chat] ✗ Connection failed:', e);
             setConnected(false);
         }
 
-        // Start health check every 5 seconds
         startHealthCheck();
     }
 
@@ -105,10 +123,6 @@ ClipQ.Chat = (() => {
 
     // ==================== CHAT MODERATION EVENTS ====================
 
-    /**
-     * A specific message was deleted (by mod or bot).
-     * Remove the associated clip from the queue if it has a matching msg-id.
-     */
     function onMessageDeleted(channel, username, deletedMessage, userstate) {
         const targetMsgId = userstate['target-msg-id'];
         console.log(`[Chat] 🗑 Message deleted from "${username}" (msg-id: ${targetMsgId})`);
@@ -118,21 +132,12 @@ ClipQ.Chat = (() => {
         }
     }
 
-    /**
-     * A user was timed out.
-     * Smart removal: if the user is the only submitter → remove clip.
-     * If there are multiple submitters → only remove the user's name.
-     */
-    function onTimeout(channel, username, reason, duration, userstate) {
+    function onTimeout(channel, username, reason, duration) {
         console.log(`[Chat] ⏱ User "${username}" timed out for ${duration}s`);
         ClipQ.Queue.removeSubmitter(username);
     }
 
-    /**
-     * A user was banned.
-     * Same smart removal logic as timeout.
-     */
-    function onBan(channel, username, reason, userstate) {
+    function onBan(channel, username) {
         console.log(`[Chat] 🚫 User "${username}" banned`);
         ClipQ.Queue.removeSubmitter(username);
     }
@@ -140,37 +145,31 @@ ClipQ.Chat = (() => {
     // ==================== MESSAGE HANDLING ====================
 
     function onMessage(channel, userstate, message, self) {
+        if (self) return;
+
         const username = userstate['display-name'] || userstate.username || 'unknown';
-        const msgId = userstate.id || null; // tmi.js provides message ID
+        const login = (userstate.username || username).toLowerCase();
+        const msgId = userstate.id || null;
 
         console.log(`[Chat] ${username}: ${message.substring(0, 100)}`);
 
-        const isBroadcaster = userstate.badges && userstate.badges.broadcaster === '1';
-        const isLeadMod = userstate.badges && (userstate.badges.lead_moderator === '1' || userstate.badges['lead-moderator'] === '1');
-        const isMod = userstate.mod === true || isBroadcaster || isLeadMod;
-        const isVip = userstate.badges && userstate.badges.vip === '1';
+        const badges = userstate.badges;
+        const hasBadge = (key) => Boolean(badges && badges[key] && badges[key] !== '0');
+        const isBroadcaster = hasBadge('broadcaster');
+        const isLeadMod = hasBadge('lead_moderator') || hasBadge('lead-moderator');
+        const isMod = !isBroadcaster && !isLeadMod && (userstate.mod === true || hasBadge('moderator'));
+        const isVip = hasBadge('vip');
 
         const userRoles = { isBroadcaster, isLeadMod, isMod, isVip };
 
-        // Handle commands — now role-based per command
-        const commandResult = handleCommand(message, username, userRoles);
-        if (commandResult === 'push') {
-            // Push command: add clip at priority position
-            handleClipUrl(message, {
-                name: username,
-                isMod, isLeadMod, isVip, isBroadcaster,
-                isPushed: true,
-                msgId
-            });
-            return;
-        }
+        const commandResult = handleCommand(message, username, login, userRoles);
         if (commandResult === 'handled') return;
 
-        // Regular message — check for clip URLs
         handleClipUrl(message, {
             name: username,
+            login,
             isMod, isLeadMod, isVip, isBroadcaster,
-            isPushed: false,
+            isPushed: commandResult === 'push',
             msgId
         });
     }
@@ -179,73 +178,75 @@ ClipQ.Chat = (() => {
      * Handle chat commands with role-based permissions.
      * @returns {'handled'|'push'|false}
      */
-    function handleCommand(message, username, userRoles) {
+    function handleCommand(message, username, login, userRoles) {
         const settings = ClipQ.Settings.get();
-        const prefix = settings.commands.prefix.toLowerCase();
-        const msg = message.trim().toLowerCase();
+        const prefix = (settings.commands.prefix || '').trim().toLowerCase();
+        if (!prefix) return false;
+
+        const rawTrimmed = message.trim();
+        const msg = rawTrimmed.toLowerCase();
 
         if (!msg.startsWith(prefix)) return false;
         // Enforce that the command prefix is followed by whitespace (e.g., !queue next instead of !queuenext)
         if (msg.length <= prefix.length || !/\s/.test(msg.charAt(prefix.length))) return false;
-        const afterPrefix = msg.substring(prefix.length).trim();
+
+        const rawAfterPrefix = rawTrimmed.substring(prefix.length).trim();
+        const afterPrefix = rawAfterPrefix.toLowerCase();
         const parts = afterPrefix.split(/\s+/);
         const cmd = parts[0] || '';
         const arg1 = parts[1] || '';
         const arg2 = parts[2] || '';
 
-        // Helper to get command word
-        const cmdWord = (key) => (settings.commands[key]?.word || key).toLowerCase();
+        const cmdWord = (key) => (settings.commands[key]?.word || '').trim().toLowerCase();
         const hasPermission = (key) => ClipQ.Settings.hasCommandPermission(key, userRoles);
 
-        // next (skip)
-        if (cmd === cmdWord('next')) {
+        const matchesCmd = (key) => {
+            const word = cmdWord(key);
+            return Boolean(word) && cmd === word;
+        };
+
+        if (matchesCmd('next')) {
             if (!hasPermission('next')) return false;
             console.log(`[Cmd] ${username}: next`);
             ClipQ.App.nextClip();
             return 'handled';
         }
 
-        // push
-        if (cmd === cmdWord('push')) {
+        if (matchesCmd('push')) {
             if (!hasPermission('push')) return false;
             console.log(`[Cmd] ${username}: push`);
             return 'push';
         }
 
-        // open
-        if (cmd === cmdWord('open')) {
+        if (matchesCmd('open')) {
             if (!hasPermission('open')) return false;
             console.log(`[Cmd] ${username}: open`);
             ClipQ.App.setQueueOpen(true);
             return 'handled';
         }
 
-        // close
-        if (cmd === cmdWord('close')) {
+        if (matchesCmd('close')) {
             if (!hasPermission('close')) return false;
             console.log(`[Cmd] ${username}: close`);
             ClipQ.App.setQueueOpen(false);
             return 'handled';
         }
 
-        // clear
-        if (cmd === cmdWord('clear')) {
+        if (matchesCmd('clear')) {
             if (!hasPermission('clear')) return false;
             console.log(`[Cmd] ${username}: clear`);
             ClipQ.Queue.clear();
             return 'handled';
         }
 
-        // purgememory
-        if (cmd === cmdWord('purgememory')) {
+        if (matchesCmd('purgememory')) {
             if (!hasPermission('purgememory')) return false;
             console.log(`[Cmd] ${username}: purgememory`);
             ClipQ.Memory.purge();
             return 'handled';
         }
 
-        // autoplay [on/off]
-        if (cmd === cmdWord('autoplay')) {
+        if (matchesCmd('autoplay')) {
             if (!hasPermission('autoplay')) return false;
             if (arg1 === 'on') {
                 console.log(`[Cmd] ${username}: autoplay on`);
@@ -257,51 +258,43 @@ ClipQ.Chat = (() => {
             return 'handled';
         }
 
-        // limit [number]
-        if (cmd === cmdWord('limit')) {
+        if (matchesCmd('limit')) {
             if (!hasPermission('limit')) return false;
-            const num = parseInt(arg1);
-            if (!isNaN(num) && num >= 0) {
+            const num = /^\d+$/.test(arg1) ? parseInt(arg1, 10) : NaN;
+            if (!Number.isNaN(num) && num >= 0) {
                 console.log(`[Cmd] ${username}: limit ${num}`);
                 ClipQ.App.setClipLimit(num);
             }
             return 'handled';
         }
 
-        // remove [url] / remove all
-        if (cmd === cmdWord('remove')) {
-            // "remove all" — everyone can remove their own clips
+        if (matchesCmd('remove')) {
             if (arg1 === 'all') {
                 console.log(`[Cmd] ${username}: remove all (own clips)`);
-                ClipQ.Queue.removeSubmitter(username);
+                ClipQ.Queue.removeSubmitter(login || username);
                 return 'handled';
             }
 
-            // "remove [url]" — check if user has permission OR is removing own clip
-            const urlArg = afterPrefix.substring(cmdWord('remove').length).trim();
+            // Preserve original casing for case-sensitive clip IDs (YouTube, Twitch, Instagram)
+            const firstSpaceIdx = rawAfterPrefix.search(/\s/);
+            const urlArg = firstSpaceIdx === -1 ? '' : rawAfterPrefix.slice(firstSpaceIdx).trim();
             if (urlArg) {
                 if (hasPermission('remove')) {
-                    // Privileged user: remove the entire clip
                     console.log(`[Cmd] ${username}: remove (privileged) ${urlArg}`);
                     ClipQ.Queue.removeByUrl(urlArg);
                 } else {
-                    // Regular user: can only remove their own submitted clip
                     console.log(`[Cmd] ${username}: remove (own) ${urlArg}`);
-                    ClipQ.Queue.removeOwnClipByUrl(urlArg, username);
+                    ClipQ.Queue.removeOwnClipByUrl(urlArg, login || username);
                 }
-                return 'handled';
             }
             return 'handled';
         }
 
-        // providers [provider] [on/off]
-        if (cmd === cmdWord('providers')) {
+        if (matchesCmd('providers')) {
             if (!hasPermission('providers')) return false;
-            const providerName = arg1.toLowerCase();
-            const state = arg2.toLowerCase();
-            if (providerName && (state === 'on' || state === 'off')) {
-                console.log(`[Cmd] ${username}: providers ${providerName} ${state}`);
-                ClipQ.App.setProvider(providerName, state === 'on');
+            if (arg1 && (arg2 === 'on' || arg2 === 'off')) {
+                console.log(`[Cmd] ${username}: providers ${arg1} ${arg2}`);
+                ClipQ.App.setProvider(arg1, arg2 === 'on');
             }
             return 'handled';
         }
@@ -311,9 +304,10 @@ ClipQ.Chat = (() => {
 
     async function handleClipUrl(message, submitterInfo) {
         const username = submitterInfo.name;
+        const login = submitterInfo.login || username;
         const settings = ClipQ.Settings.get();
 
-        if (ClipQ.Settings.isUserBlocked(username)) {
+        if (ClipQ.Settings.isUserBlocked(username) || ClipQ.Settings.isUserBlocked(login)) {
             console.log(`[Chat] ⊘ Blocked user "${username}"`);
             return;
         }
@@ -345,6 +339,18 @@ ClipQ.Chat = (() => {
             }
         }
 
+        if (meta && meta.unavailable) {
+            console.log(`[Chat] ⊘ Clip "${parsed.id}" is unavailable — skipped`);
+            return;
+        }
+
+        if (meta && meta.resolvedId) {
+            parsed.id = meta.resolvedId;
+        }
+        if (meta && meta.canonicalUrl) {
+            parsed.url = meta.canonicalUrl;
+        }
+
         if (meta && meta.channel && ClipQ.Settings.isStreamerBlocked(meta.channel)) {
             console.log(`[Chat] ⊘ Blocked streamer "${meta.channel}" (metadata)`);
             return;
@@ -362,9 +368,5 @@ ClipQ.Chat = (() => {
         console.log(`[Queue] → ${result}`);
     }
 
-    async function reconnect(channel) {
-        await connect(channel);
-    }
-
-    return { connect, reconnect };
+    return { connect };
 })();

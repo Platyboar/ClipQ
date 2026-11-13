@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('ja', {
     _name: '日本語',
-    _flag: 'https://flagcdn.com/jp.svg',
+    _flag: 'https://flagcdn.com/w80/jp.png',
 
     // Login page
     'login.subtitle': 'あなたの配信のためのクリップキュー',
@@ -23,16 +23,22 @@ ClipQ.I18n.register('ja', {
     'menu.logout': '↪ ログアウト',
 
     // Player
-    'player.empty_icon': '🎬',
     'player.waiting': 'クリップを待機中...',
     'player.no_clip': 'クリップが読み込まれていません',
     'player.previous': '← 前へ',
     'player.start': '▶ スタート',
     'player.next': '次へ →',
     'player.auto': '自動',
+    'player.autoplay_title': '自動再生',
     'player.loading_instagram': 'Instagram動画を読み込み中...',
     'player.submitted_by': '送信者:',
     'player.visit_channel': '{channel} を開く',
+
+    // Roles
+    'roles.broadcaster': '配信者',
+    'roles.lead_mod': 'リードモデレーター',
+    'roles.mod': 'モデレーター',
+    'roles.vip': 'VIP',
 
     // Time formatting
     'time.minutes_ago': '{count} 分前',
@@ -57,6 +63,10 @@ ClipQ.I18n.register('ja', {
 
     // History
     'history.empty': '再生されたクリップはまだありません。',
+    'history.delete': '履歴から削除',
+    'history.confirm_delete': 'このクリップを本当に履歴から削除しますか？',
+    'history.confirm_yes': 'はい',
+    'history.confirm_cancel': 'キャンセル',
 
     // Settings modal
     'settings.title': '設定',
@@ -80,7 +90,6 @@ ClipQ.I18n.register('ja', {
     'settings.general.app_title_placeholder': 'ClipQ',
     'settings.general.channel': 'Twitchチャンネル',
     'settings.general.channel_hint': '参加するチャットチャンネル',
-    'settings.general.channel_placeholder': 'your_channel',
     'settings.general.reset': '工場出荷時の設定に戻す',
     'settings.general.confirm_reset': '本当にすべての設定を工場出荷時のデフォルトに戻しますか？アプリが再読み込みされます。',
 
@@ -97,7 +106,7 @@ ClipQ.I18n.register('ja', {
     'settings.queue.blocked_users_hint': '1行に1ユーザー名。これらのユーザーからのメッセージは無視されます。',
 
     // Settings — Commands
-    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!queue</code> でコマンドが <code>next</code> の場合、<code>!queue next</code> が認識されます。',
+    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!queue</code> で「次のクリップ」が <code>next</code> の場合、<code>!queue next</code> が認識されます。',
     'settings.commands.example_label': '例:',
     'settings.commands.prefix': 'コマンドプレフィックス',
     'settings.commands.next': '次のクリップ',
@@ -148,7 +157,7 @@ ClipQ.I18n.register('ja', {
     'design.color.app': 'アプリ',
     'design.color.menubar': 'メニューバー',
     'design.color.player': 'プレイヤー',
-    'design.color.facecam': 'フェイスカメラ',
+    'design.color.facecam': 'フェイスカム',
     'design.color.chat': 'チャット',
     'design.color.queue': 'キュー',
     'design.color.tile': 'タイル',
@@ -170,10 +179,11 @@ ClipQ.I18n.register('ja', {
     'design.color.bright': '明るめ',
     'design.color.overlay': 'オーバーレイ',
     'design.color.info': '情報',
+    'design.color.opacity': '不透明度',
 
     // Design — Confirm Dialogs
     'design.confirm_set_default': '現在のデザインを新しいデフォルトとして保存しますか？',
-    'design.alert_set_default': '現在のデザインがデフォルトとして保存されました！\n\n(「保存」をクリックすると永続的に反映されます)。',
+    'design.alert_set_default': '現在のデザインがデフォルトとして保存されました！\n\n（「保存」をクリックすると永続的に反映されます。）',
     'design.confirm_reset_custom': 'カスタム保存されたデフォルトに戻しますか？\n\n(「OK」で保存したデフォルトへ、「キャンセル」でオリジナルの赤色テーマへ戻します)',
     'design.confirm_reset_factory': 'オリジナルの赤色テーマ（出荷状態）に完全にリセットしますか？ (保存されたデフォルトは削除されます)',
     'design.confirm_reset_all': 'すべての配色とフォントを初期状態にリセットしますか？',
@@ -191,31 +201,40 @@ ClipQ.I18n.register('ja', {
     'settings.layout.widths': 'コンポーネントの幅',
     'settings.layout.widths_hint': 'プレイヤーとサイドバーコンポーネントの幅を調整',
     'settings.layout.player_width': 'プレイヤーの幅',
-    'settings.layout.player_width_hint': 'サイドバーに対するプレイヤーの幅を調整',
     'settings.layout.chat_width': 'チャットの幅',
-    'settings.layout.chat_width_hint': '広告枠に対するチャットの幅を調整',
     'settings.layout.heights': 'コンポーネントの高さ',
     'settings.layout.heights_hint': 'サイドバーの各要素の高さを調整してサイズをロック',
     'settings.layout.facecam_height': 'フェイスカムの高さ',
     'settings.layout.queue_height': 'キューの高さ',
     'settings.layout.chat_ad_lock': 'チャット/広告の高さをロック',
+    'settings.layout.lock_height': '高さをロック',
     'settings.layout.visibility': 'コンポーネントの表示設定',
-    'settings.layout.visibility_hint': 'サイドバー内の各要素を表示・非表示',
-    'settings.layout.show_facecam': 'フェイスカムを表示',
-    'settings.layout.show_chat': 'チャットを表示',
-    'settings.layout.show_ad': '広告枠を表示',
-    'settings.layout.show_queue': 'キューを表示',
+    'settings.layout.visibility_hint': '非表示は領域を保持し、削除は他のコンポーネントに領域を解放します',
+    'settings.layout.visibility_hide': '非表示',
+    'settings.layout.visibility_remove': '削除',
+    'settings.layout.box_facecam': 'フェイスカム枠',
+    'settings.layout.box_chat': 'チャット枠',
+    'settings.layout.box_ad': '広告枠',
+    'settings.layout.box_queue': 'キュー枠',
     'settings.layout.ordering': '並び順',
     'settings.layout.ordering_hint': 'サイドバー内のアクティブな各要素の垂直方向の位置を選択',
     'settings.layout.pos_top': '上部',
     'settings.layout.pos_middle': '中央',
     'settings.layout.pos_bottom': '下部',
-    'settings.layout.block_facecam': 'フェイスカメラ',
+    'settings.layout.block_facecam': 'フェイスカム',
     'settings.layout.block_chat_ad': 'チャット＋広告',
     'settings.layout.block_queue': 'キュー',
     'settings.layout.confirm_set_default': '現在のレイアウトをデフォルトとして保存しますか？',
-    'settings.layout.alert_set_default': '現在のレイアウトがデフォルトとして保存されました。\n\n(「保存」をクリックすると永続的に反映されます)。',
+    'settings.layout.alert_set_default': '現在のレイアウトがデフォルトとして保存されました。\n\n（「保存」をクリックすると永続的に反映されます。）',
     'settings.layout.confirm_reset_custom': '保存されたカスタムレイアウトに戻しますか？\n\n(「OK」で保存されたレイアウトへ、「キャンセル」で初期レイアウトへ戻します)',
     'settings.layout.confirm_reset_factory': '完全に初期レイアウト（出荷状態）にリセットしますか？ (保存されたカスタムレイアウトは削除されます)',
     'settings.layout.confirm_reset_all': 'すべてのレイアウト設定を初期状態にリセットしますか？',
+
+    // Settings — About
+    'settings.tab.about': '概要',
+    'settings.about.heading': 'ClipQについて',
+    'settings.about.description': 'Platyboar が Antigravity のサポートを受けて開発しました。',
+    'settings.about.license': 'MIT ライセンスのもとで公開されています。',
+    'settings.about.issues_hint': 'バグや問題を見つけた場合は、GitHub で直接報告してください:',
+    'settings.about.report_btn': 'GitHub で問題を報告',
 });

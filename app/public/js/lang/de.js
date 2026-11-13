@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('de', {
     _name: 'Deutsch',
-    _flag: 'https://flagcdn.com/de.svg',
+    _flag: 'https://flagcdn.com/w80/de.png',
 
     // Login page
     'login.subtitle': 'Clip Queue für deinen Stream',
@@ -23,16 +23,22 @@ ClipQ.I18n.register('de', {
     'menu.logout': '↪ Abmelden',
 
     // Player
-    'player.empty_icon': '🎬',
     'player.waiting': 'Warte auf Clips...',
     'player.no_clip': 'Kein Clip geladen',
     'player.previous': '← Vorheriger',
     'player.start': '▶ Start',
     'player.next': 'Nächster →',
     'player.auto': 'Auto',
+    'player.autoplay_title': 'Autoplay',
     'player.loading_instagram': 'Lade Instagram-Video...',
     'player.submitted_by': 'Eingereicht von:',
     'player.visit_channel': '{channel} besuchen',
+
+    // Roles
+    'roles.broadcaster': 'Streamer',
+    'roles.lead_mod': 'Lead-Moderator',
+    'roles.mod': 'Moderator',
+    'roles.vip': 'VIP',
 
     // Time formatting
     'time.minutes_ago': 'vor {count} Min.',
@@ -57,6 +63,10 @@ ClipQ.I18n.register('de', {
 
     // History
     'history.empty': 'Noch keine Clips angesehen.',
+    'history.delete': 'Aus dem Verlauf entfernen',
+    'history.confirm_delete': 'Möchtest du diesen Clip wirklich aus dem Verlauf löschen?',
+    'history.confirm_yes': 'Ja',
+    'history.confirm_cancel': 'Abbrechen',
 
     // Settings modal
     'settings.title': 'Einstellungen',
@@ -79,25 +89,24 @@ ClipQ.I18n.register('de', {
     'settings.general.app_title_hint': 'Ändere den Schriftzug oben links (max. 30 Zeichen)',
     'settings.general.app_title_placeholder': 'ClipQ',
     'settings.general.channel': 'Twitch Channel',
-    'settings.general.channel_hint': 'Chat-Kanal dem beigetreten wird',
-    'settings.general.channel_placeholder': 'dein_kanal',
+    'settings.general.channel_hint': 'Chat-Kanal, dem beigetreten wird',
     'settings.general.reset': 'Auf Werkseinstellungen zurücksetzen',
     'settings.general.confirm_reset': 'Möchtest du wirklich alle Einstellungen auf Werkseinstellungen zurücksetzen? Die App wird neu geladen.',
 
     // Settings — Queue
     'settings.queue.providers': 'Clip-Anbieter',
-    'settings.queue.providers_hint': 'Wähle welche Plattformen erlaubt sind',
+    'settings.queue.providers_hint': 'Wähle, welche Plattformen erlaubt sind',
     'settings.queue.user_limit': 'User Clip-Limit',
-    'settings.queue.user_limit_hint': 'Maximale Clips die ein einzelner User gleichzeitig in der Queue haben darf (0 = unbegrenzt)',
+    'settings.queue.user_limit_hint': 'Maximale Clips, die ein einzelner User gleichzeitig in der Queue haben darf (0 = unbegrenzt)',
     'settings.queue.age_limit': 'Clip-Alter-Limit (Tage)',
-    'settings.queue.age_limit_hint': 'Clips die älter sind werden abgelehnt (0 = deaktiviert)',
+    'settings.queue.age_limit_hint': 'Clips, die älter sind, werden abgelehnt (0 = deaktiviert)',
     'settings.queue.blocked_streamers': 'Gesperrte Streamer',
     'settings.queue.blocked_streamers_hint': 'Ein Kanalname pro Zeile. Clips von diesen Streamern werden abgelehnt.',
     'settings.queue.blocked_users': 'Gesperrte User',
     'settings.queue.blocked_users_hint': 'Ein Name pro Zeile. Nachrichten dieser User werden ignoriert.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn Prefix <code>!queue</code> und Next <code>next</code>, dann wird <code>!queue next</code> erkannt.',
+    'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn das Prefix <code>!queue</code> und „Nächster Clip“ <code>next</code> ist, wird <code>!queue next</code> erkannt.',
     'settings.commands.example_label': 'Bsp.:',
     'settings.commands.prefix': 'Command-Prefix',
     'settings.commands.next': 'Nächster Clip',
@@ -170,13 +179,14 @@ ClipQ.I18n.register('de', {
     'design.color.bright': 'Hell',
     'design.color.overlay': 'Overlay',
     'design.color.info': 'Info',
+    'design.color.opacity': 'Deckkraft',
 
     // Design — Confirm Dialogs
     'design.confirm_set_default': 'Aktuelle Designwerte als neue Standardwerte (Default) speichern?',
-    'design.alert_set_default': 'Aktuelle Designwerte wurden als neue Standardwerte gespeichert!\n\n(Bitte klicke anschließend auf \"Speichern\", um das Design dauerhaft anzuwenden.)',
-    'design.confirm_reset_custom': 'Möchtest du auf deine selbst definierten Standardwerte zurücksetzen?\n\n(Klicke \"OK\" für deine gespeicherten Standardwerte, oder \"Abbrechen\" um auf das originale rote Auslieferungs-Design zurückzusetzen)',
+    'design.alert_set_default': 'Aktuelle Designwerte wurden als neue Standardwerte gespeichert!\n\n(Bitte klicke anschließend auf "Speichern", um das Design dauerhaft anzuwenden.)',
+    'design.confirm_reset_custom': 'Möchtest du auf deine selbst definierten Standardwerte zurücksetzen?\n\n(Klicke "OK" für deine gespeicherten Standardwerte, oder "Abbrechen", um auf das originale rote Auslieferungs-Design zurückzusetzen)',
     'design.confirm_reset_factory': 'Komplett auf das originale rote Auslieferungs-Design zurücksetzen? (Deine gespeicherten Standardwerte werden gelöscht)',
-    'design.confirm_reset_all': 'Alle Farben und Schriftart auf das originale Auslieferungs-Design zurücksetzen?',
+    'design.confirm_reset_all': 'Alle Farben und die Schriftart auf das originale Auslieferungs-Design zurücksetzen?',
 
     // Settings tabs & Layout tab
     'settings.tab.layout': 'Layout',
@@ -191,20 +201,21 @@ ClipQ.I18n.register('de', {
     'settings.layout.widths': 'Kachelbreiten',
     'settings.layout.widths_hint': 'Passe die Breiten des Players und der Sidebar-Kacheln an',
     'settings.layout.player_width': 'Player-Breite',
-    'settings.layout.player_width_hint': 'Passe die Breite des Videoplayers im Verhältnis zur Sidebar an',
     'settings.layout.chat_width': 'Chat-Breite',
-    'settings.layout.chat_width_hint': 'Passe die Breite des Chats im Verhältnis zur Ad-Box an',
     'settings.layout.heights': 'Kachelhöhen',
     'settings.layout.heights_hint': 'Passe die Höhen der Sidebar-Komponenten an und sperre sie',
     'settings.layout.facecam_height': 'Facecam-Höhe',
     'settings.layout.queue_height': 'Queue-Höhe',
-    'settings.layout.chat_ad_lock': 'Chat/Werbung-Höhe sperren',
+    'settings.layout.chat_ad_lock': 'Chat/Ad-Höhe sperren',
+    'settings.layout.lock_height': 'Höhe sperren',
     'settings.layout.visibility': 'Sichtbarkeit der Komponenten',
-    'settings.layout.visibility_hint': 'Einzelne Sidebar-Komponenten ein- oder ausblenden',
-    'settings.layout.show_facecam': 'Facecam-Box anzeigen',
-    'settings.layout.show_chat': 'Chat-Box anzeigen',
-    'settings.layout.show_ad': 'Ad-Box anzeigen',
-    'settings.layout.show_queue': 'Queue-Box anzeigen',
+    'settings.layout.visibility_hint': 'Ausblenden behält den Platz bei; Entfernen gibt ihn für andere Blöcke frei',
+    'settings.layout.visibility_hide': 'Ausblenden',
+    'settings.layout.visibility_remove': 'Entfernen',
+    'settings.layout.box_facecam': 'Facecam-Box',
+    'settings.layout.box_chat': 'Chat-Box',
+    'settings.layout.box_ad': 'Ad-Box',
+    'settings.layout.box_queue': 'Queue-Box',
     'settings.layout.ordering': 'Reihenfolge der Komponenten',
     'settings.layout.ordering_hint': 'Bestimme die vertikale Position jeder aktiven Komponente in der Sidebar',
     'settings.layout.pos_top': 'Oben',
@@ -215,7 +226,15 @@ ClipQ.I18n.register('de', {
     'settings.layout.block_queue': 'Queue',
     'settings.layout.confirm_set_default': 'Möchtest du das aktuelle Layout als Standardwert speichern?',
     'settings.layout.alert_set_default': 'Das aktuelle Layout wurde als Standardwert gespeichert.\n\n(Bitte klicke anschließend auf "Speichern", um das Layout dauerhaft anzuwenden.)',
-    'settings.layout.confirm_reset_custom': 'Möchtest du auf dein selbst definiertes Standard-Layout zurücksetzen?\n\n(Klicke "OK" für dein gespeichertes Layout, oder "Abbrechen" um auf das originale Standard-Layout zurückzusetzen)',
+    'settings.layout.confirm_reset_custom': 'Möchtest du auf dein selbst definiertes Standard-Layout zurücksetzen?\n\n(Klicke "OK" für dein gespeichertes Layout, oder "Abbrechen", um auf das originale Standard-Layout zurückzusetzen)',
     'settings.layout.confirm_reset_factory': 'Komplett auf das originale Standard-Layout zurücksetzen? (Dein gespeichertes Standard-Layout wird gelöscht)',
     'settings.layout.confirm_reset_all': 'Das gesamte Layout auf das originale Auslieferungs-Layout zurücksetzen?',
+
+    // Settings — About
+    'settings.tab.about': 'Über',
+    'settings.about.heading': 'Über ClipQ',
+    'settings.about.description': 'Erstellt von Platyboar mit Hilfe von Antigravity.',
+    'settings.about.license': 'Lizenziert unter der MIT-Lizenz.',
+    'settings.about.issues_hint': 'Einen Fehler oder ein Problem gefunden? Melde es direkt auf GitHub:',
+    'settings.about.report_btn': 'Problem auf GitHub melden',
 });

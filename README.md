@@ -37,7 +37,7 @@ If you prefer to run ClipQ from source or are on a non-Windows platform:
 #### Prerequisites
 
 - [Python 3.8+](https://www.python.org/downloads/) (with `pip`)
-  > **Note for Windows source users:** Running the app via `start.bat` will automatically verify your Python installation. If Python is missing or older than 3.8, it will silently download and install Python 3.12 for you.
+  > **Note for Windows source users:** Running the app via `app/start.bat` will automatically verify your Python installation. If Python is missing or older than 3.8, it will silently download and install Python 3.12 for you.
 - A [Twitch account](https://www.twitch.tv/)
 
 #### Installation & Startup
@@ -53,7 +53,7 @@ If you prefer to run ClipQ from source or are on a non-Windows platform:
    cd app
    python server.py
    ```
-   Or simply double-click `start.bat` on Windows.
+   Or simply double-click `app/start.bat` on Windows (`app/start-server.bat` or `python server.py --no-browser` restarts only the server without opening another browser tab; `app/update-ytdlp.bat` or `python server.py --update` updates `yt-dlp`).
 
 3. **Open in your browser:**
    Open `http://localhost:8000` in your web browser.
@@ -83,7 +83,8 @@ All commands use a configurable prefix (default: `!queue`).
 1. Create a new file in `app/public/js/lang/` (e.g., `es.js` for Spanish)
 2. Copy the structure from `en.js` or `de.js`
 3. Translate all strings
-4. The language will automatically appear in the settings dropdown
+4. Register the new script tag in `app/public/index.html` after `js/i18n.js`
+5. The language will then appear in the settings dropdown
 
 ## Tech Stack
 
@@ -108,4 +109,3 @@ All commands use a configurable prefix (default: `!queue`).
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-

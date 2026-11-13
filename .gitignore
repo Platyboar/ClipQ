@@ -16,6 +16,7 @@ __pycache__/
 .idea/
 *.swp
 *.swo
+ClipQ.code-workspace
 
 # Build artifacts
 *.zip
@@ -24,10 +25,10 @@ __pycache__/
 dist/
 build/
 
-# Gemini
+# Gemini & Agent Rules
 .gemini/
+AGENTS.md
 
 # Scratch & Backups
 scratch/
 * - Kopie/
-

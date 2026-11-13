@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('en', {
     _name: 'English',
-    _flag: 'https://flagcdn.com/gb.svg',
+    _flag: 'https://flagcdn.com/w80/us.png',
 
     // Login page
     'login.subtitle': 'Clip Queue for your Stream',
@@ -23,16 +23,22 @@ ClipQ.I18n.register('en', {
     'menu.logout': '↪ Logout',
 
     // Player
-    'player.empty_icon': '🎬',
     'player.waiting': 'Waiting for clips...',
     'player.no_clip': 'No clip loaded',
     'player.previous': '← Previous',
     'player.start': '▶ Start',
     'player.next': 'Next →',
     'player.auto': 'Auto',
+    'player.autoplay_title': 'Autoplay',
     'player.loading_instagram': 'Loading Instagram video...',
     'player.submitted_by': 'Submitted by:',
     'player.visit_channel': 'Visit {channel}',
+
+    // Roles
+    'roles.broadcaster': 'Broadcaster',
+    'roles.lead_mod': 'Lead Moderator',
+    'roles.mod': 'Moderator',
+    'roles.vip': 'VIP',
 
     // Time formatting
     'time.minutes_ago': '{count} min ago',
@@ -57,6 +63,10 @@ ClipQ.I18n.register('en', {
 
     // History
     'history.empty': 'No clips watched yet.',
+    'history.delete': 'Remove from history',
+    'history.confirm_delete': 'Do you really want to remove this clip from history?',
+    'history.confirm_yes': 'Yes',
+    'history.confirm_cancel': 'Cancel',
 
     // Settings modal
     'settings.title': 'Settings',
@@ -80,7 +90,6 @@ ClipQ.I18n.register('en', {
     'settings.general.app_title_placeholder': 'ClipQ',
     'settings.general.channel': 'Twitch Channel',
     'settings.general.channel_hint': 'Chat channel to join',
-    'settings.general.channel_placeholder': 'your_channel',
     'settings.general.reset': 'Reset to Factory Settings',
     'settings.general.confirm_reset': 'Really reset all settings to factory defaults? The app will reload.',
 
@@ -97,7 +106,7 @@ ClipQ.I18n.register('en', {
     'settings.queue.blocked_users_hint': 'One name per line. Messages from these users will be ignored.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If prefix is <code>!queue</code> and next is <code>next</code>, then <code>!queue next</code> is recognized.',
+    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If the prefix is <code>!queue</code> and "Next Clip" is <code>next</code>, then <code>!queue next</code> is recognized.',
     'settings.commands.example_label': 'Ex:',
     'settings.commands.prefix': 'Command Prefix',
     'settings.commands.next': 'Next Clip',
@@ -170,11 +179,12 @@ ClipQ.I18n.register('en', {
     'design.color.bright': 'Bright',
     'design.color.overlay': 'Overlay',
     'design.color.info': 'Info',
+    'design.color.opacity': 'Opacity',
 
     // Design — Confirm Dialogs
     'design.confirm_set_default': 'Save current design values as new defaults?',
-    'design.alert_set_default': 'Current design values have been saved as new defaults!\n\n(Please click \"Save\" afterwards to permanently apply the design.)',
-    'design.confirm_reset_custom': 'Do you want to reset to your custom saved defaults?\n\n(Click \"OK\" for your saved defaults, or \"Cancel\" to reset to the original red factory design)',
+    'design.alert_set_default': 'Current design values have been saved as new defaults!\n\n(Please click "Save" afterwards to permanently apply the design.)',
+    'design.confirm_reset_custom': 'Do you want to reset to your custom saved defaults?\n\n(Click "OK" for your saved defaults, or "Cancel" to reset to the original red factory design)',
     'design.confirm_reset_factory': 'Completely reset to the original red factory design? (Your saved defaults will be deleted)',
     'design.confirm_reset_all': 'Reset all colors and font to the original factory design?',
 
@@ -191,20 +201,21 @@ ClipQ.I18n.register('en', {
     'settings.layout.widths': 'Component Widths',
     'settings.layout.widths_hint': 'Adjust the widths of the player and sidebar components',
     'settings.layout.player_width': 'Player Width',
-    'settings.layout.player_width_hint': 'Adjust the width of the video player relative to the sidebar',
     'settings.layout.chat_width': 'Chat Width',
-    'settings.layout.chat_width_hint': 'Adjust the width of the chat relative to the ad box',
     'settings.layout.heights': 'Component Heights',
     'settings.layout.heights_hint': 'Adjust heights and lock sizes of sidebar components',
     'settings.layout.facecam_height': 'Facecam Height',
     'settings.layout.queue_height': 'Queue Height',
     'settings.layout.chat_ad_lock': 'Lock Chat/Ad Height',
+    'settings.layout.lock_height': 'Lock height',
     'settings.layout.visibility': 'Component Visibility',
-    'settings.layout.visibility_hint': 'Toggle individual sidebar components',
-    'settings.layout.show_facecam': 'Show Facecam Box',
-    'settings.layout.show_chat': 'Show Chat Box',
-    'settings.layout.show_ad': 'Show Ad Box',
-    'settings.layout.show_queue': 'Show Queue Box',
+    'settings.layout.visibility_hint': 'Hide preserves layout space; Remove frees it for other components',
+    'settings.layout.visibility_hide': 'Hide',
+    'settings.layout.visibility_remove': 'Remove',
+    'settings.layout.box_facecam': 'Facecam Box',
+    'settings.layout.box_chat': 'Chat Box',
+    'settings.layout.box_ad': 'Ad Box',
+    'settings.layout.box_queue': 'Queue Box',
     'settings.layout.ordering': 'Component Order',
     'settings.layout.ordering_hint': 'Choose the vertical position of each active component in the sidebar',
     'settings.layout.pos_top': 'Top',
@@ -218,4 +229,12 @@ ClipQ.I18n.register('en', {
     'settings.layout.confirm_reset_custom': 'Do you want to reset to your custom saved layout?\n\n(Click "OK" for your saved layout, or "Cancel" to reset to the original factory layout)',
     'settings.layout.confirm_reset_factory': 'Completely reset to the original factory layout? (Your saved custom layout will be deleted)',
     'settings.layout.confirm_reset_all': 'Reset the entire layout to the original factory layout?',
+
+    // Settings — About
+    'settings.tab.about': 'About',
+    'settings.about.heading': 'About ClipQ',
+    'settings.about.description': 'Built by Platyboar with the help of Antigravity.',
+    'settings.about.license': 'Licensed under the MIT License.',
+    'settings.about.issues_hint': 'Found a bug or have an issue? Report it directly on GitHub:',
+    'settings.about.report_btn': 'Report an Issue on GitHub',
 });

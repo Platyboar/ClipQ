@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('fr', {
     _name: 'Français',
-    _flag: 'https://flagcdn.com/fr.svg',
+    _flag: 'https://flagcdn.com/w80/fr.png',
 
     // Login page
     'login.subtitle': 'File d\'attente de clips pour votre stream',
@@ -23,16 +23,22 @@ ClipQ.I18n.register('fr', {
     'menu.logout': '↪ Se déconnecter',
 
     // Player
-    'player.empty_icon': '🎬',
     'player.waiting': 'En attente de clips...',
     'player.no_clip': 'Aucun clip chargé',
     'player.previous': '← Précédent',
     'player.start': '▶ Démarrer',
     'player.next': 'Suivant →',
     'player.auto': 'Auto',
+    'player.autoplay_title': 'Lecture automatique',
     'player.loading_instagram': 'Chargement de la vidéo Instagram...',
     'player.submitted_by': 'Soumis par :',
     'player.visit_channel': 'Visiter {channel}',
+
+    // Roles
+    'roles.broadcaster': 'Streamer',
+    'roles.lead_mod': 'Modérateur principal',
+    'roles.mod': 'Modérateur',
+    'roles.vip': 'VIP',
 
     // Time formatting
     'time.minutes_ago': 'il y a {count} min',
@@ -57,6 +63,10 @@ ClipQ.I18n.register('fr', {
 
     // History
     'history.empty': 'Aucun clip visionné pour le moment.',
+    'history.delete': 'Supprimer de l\'historique',
+    'history.confirm_delete': 'Voulez-vous vraiment supprimer ce clip de l\'historique ?',
+    'history.confirm_yes': 'Oui',
+    'history.confirm_cancel': 'Annuler',
 
     // Settings modal
     'settings.title': 'Paramètres',
@@ -80,7 +90,6 @@ ClipQ.I18n.register('fr', {
     'settings.general.app_title_placeholder': 'ClipQ',
     'settings.general.channel': 'Chaîne Twitch',
     'settings.general.channel_hint': 'Chaîne de chat à rejoindre',
-    'settings.general.channel_placeholder': 'votre_chaine',
     'settings.general.reset': "Rétablir les paramètres d'usine",
     'settings.general.confirm_reset': "Voulez-vous vraiment rétablir tous les paramètres d'usine ? L'application va redémarrer.",
 
@@ -97,7 +106,7 @@ ClipQ.I18n.register('fr', {
     'settings.queue.blocked_users_hint': 'Un nom par ligne. Les messages de ces utilisateurs seront ignorés.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!queue</code> et le mot-clé suivant <code>next</code>, alors <code>!queue next</code> est reconnu.',
+    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!queue</code> et « Clip suivant » est <code>next</code>, alors <code>!queue next</code> est reconnu.',
     'settings.commands.example_label': 'Ex :',
     'settings.commands.prefix': 'Préfixe de commande',
     'settings.commands.next': 'Clip suivant',
@@ -106,10 +115,10 @@ ClipQ.I18n.register('fr', {
     'settings.commands.close': 'Fermer la file d\'attente',
     'settings.commands.clear': 'Vider la file d\'attente',
     'settings.commands.purgememory': 'Vider la mémoire de clips',
-    'settings.commands.autoplay': 'Lecture automatique on/off',
+    'settings.commands.autoplay': 'Activer/désactiver la lecture auto',
     'settings.commands.limit': 'Définir la limite de clips',
     'settings.commands.remove': 'Supprimer le clip',
-    'settings.commands.providers': 'Fournisseur activé/désactivé',
+    'settings.commands.providers': 'Activer/désactiver un fournisseur',
     'settings.commands.role_all': 'Tous',
 
     // Settings — History
@@ -146,10 +155,10 @@ ClipQ.I18n.register('fr', {
 
     // Design — Color Labels
     'design.color.app': 'Application',
-    'design.color.menubar': 'Barra de menu', // (kept menubar)
+    'design.color.menubar': 'Barre de menu',
     'design.color.player': 'Lecteur',
     'design.color.facecam': 'Facecam',
-    'design.color.chat': 'Tchat',
+    'design.color.chat': 'Chat',
     'design.color.queue': 'File',
     'design.color.tile': 'Tuile',
     'design.color.tile_hover': 'Survol tuile',
@@ -170,11 +179,12 @@ ClipQ.I18n.register('fr', {
     'design.color.bright': 'Clair',
     'design.color.overlay': 'Superposition',
     'design.color.info': 'Info',
+    'design.color.opacity': 'Opacité',
 
     // Design — Confirm Dialogs
     'design.confirm_set_default': 'Enregistrer les valeurs de design actuelles comme nouvelles valeurs par défaut ?',
-    'design.alert_set_default': 'Les valeurs de design actuelles ont été enregistrées comme nouvelles valeurs par défaut !\n\n(Veuillez cliquer sur \"Enregistrer\" ensuite pour appliquer le design de manière permanente).',
-    'design.confirm_reset_custom': 'Voulez-vous restaurer vos valeurs par défaut personnalisées enregistrées ?\n\n(Cliquez sur \"OK\" pour vos valeurs enregistrées, ou \"Annuler\" pour restaurer le design rouge d\'origine).',
+    'design.alert_set_default': 'Les valeurs de design actuelles ont été enregistrées comme nouvelles valeurs par défaut !\n\n(Veuillez cliquer sur "Enregistrer" ensuite pour appliquer le design de manière permanente).',
+    'design.confirm_reset_custom': 'Voulez-vous restaurer vos valeurs par défaut personnalisées enregistrées ?\n\n(Cliquez sur "OK" pour vos valeurs enregistrées, ou "Annuler" pour restaurer le design rouge d\'origine).',
     'design.confirm_reset_factory': 'Réinitialiser complètement au design rouge d\'origine ? (Vos valeurs personnalisées seront supprimées).',
     'design.confirm_reset_all': 'Réinitialiser toutes les couleurs et la police au design d\'origine ?',
 
@@ -191,31 +201,40 @@ ClipQ.I18n.register('fr', {
     'settings.layout.widths': 'Largeurs des composants',
     'settings.layout.widths_hint': 'Ajustez les largeurs du lecteur et des composants de la barre latérale',
     'settings.layout.player_width': 'Largeur du lecteur',
-    'settings.layout.player_width_hint': 'Ajustez la largeur du lecteur vidéo par rapport à la barre latérale',
-    'settings.layout.chat_width': 'Largeur du tchat',
-    'settings.layout.chat_width_hint': 'Ajustez la largeur du tchat par rapport à la boîte de pub',
+    'settings.layout.chat_width': 'Largeur du chat',
     'settings.layout.heights': 'Hauteurs des composants',
     'settings.layout.heights_hint': 'Ajustez les hauteurs et verrouillez les tailles des composants de la barre latérale',
     'settings.layout.facecam_height': 'Hauteur de la Facecam',
     'settings.layout.queue_height': 'Hauteur de la file d\'attente',
     'settings.layout.chat_ad_lock': 'Verrouiller la hauteur Chat/Pub',
+    'settings.layout.lock_height': 'Verrouiller la hauteur',
     'settings.layout.visibility': 'Visibilité des composants',
-    'settings.layout.visibility_hint': 'Activer/désactiver des composants individuels de la barre latérale',
-    'settings.layout.show_facecam': 'Afficher la boîte Facecam',
-    'settings.layout.show_chat': 'Afficher la boîte de chat',
-    'settings.layout.show_ad': 'Afficher la boîte de pub',
-    'settings.layout.show_queue': 'Afficher la file d\'attente',
+    'settings.layout.visibility_hint': 'Masquer conserve l\'espace ; Supprimer le libère pour d\'autres composants',
+    'settings.layout.visibility_hide': 'Masquer',
+    'settings.layout.visibility_remove': 'Supprimer',
+    'settings.layout.box_facecam': 'Boîte Facecam',
+    'settings.layout.box_chat': 'Boîte de chat',
+    'settings.layout.box_ad': 'Boîte de pub',
+    'settings.layout.box_queue': 'Boîte de file d\'attente',
     'settings.layout.ordering': 'Ordre des composants',
     'settings.layout.ordering_hint': 'Choisissez la position verticale de chaque composant actif dans la barre latérale',
     'settings.layout.pos_top': 'Haut',
     'settings.layout.pos_middle': 'Milieu',
     'settings.layout.pos_bottom': 'Bas',
     'settings.layout.block_facecam': 'Facecam',
-    'settings.layout.block_chat_ad': 'Tchat + Pub',
+    'settings.layout.block_chat_ad': 'Chat + Pub',
     'settings.layout.block_queue': 'File d\'attente',
     'settings.layout.confirm_set_default': 'Voulez-vous enregistrer la disposition actuelle par défaut ?',
     'settings.layout.alert_set_default': 'La disposition actuelle a été enregistrée par défaut.\n\n(Veuillez cliquer sur "Enregistrer" ensuite pour appliquer la disposition de manière permanente).',
     'settings.layout.confirm_reset_custom': 'Voulez-vous restaurer votre disposition personnalisée enregistrée ?\n\n(Cliquez sur "OK" pour votre disposition enregistrée, ou "Annuler" pour restaurer la disposition d\'origine)',
     'settings.layout.confirm_reset_factory': 'Réinitialiser complètement à la disposition d\'origine ? (Votre disposition personnalisée sera supprimée)',
     'settings.layout.confirm_reset_all': 'Réinitialiser toute la disposition à la disposition d\'origine ?',
+
+    // Settings — About
+    'settings.tab.about': 'À propos',
+    'settings.about.heading': 'À propos de ClipQ',
+    'settings.about.description': 'Créé par Platyboar avec l\'aide d\'Antigravity.',
+    'settings.about.license': 'Sous licence MIT.',
+    'settings.about.issues_hint': 'Vous avez trouvé un bug ou un problème ? Signalez-le directement sur GitHub :',
+    'settings.about.report_btn': 'Signaler un problème sur GitHub',
 });

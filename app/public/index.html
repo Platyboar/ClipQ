@@ -3,14 +3,31 @@
 
 <head>
     <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            fetch('/log-error', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, source, lineno, colno, error: error ? error.stack : null })
+        (function () {
+            function reportError(payload) {
+                try {
+                    fetch('/log-error', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).catch(() => {});
+                } catch (_) {}
+            }
+            window.onerror = function (message, source, lineno, colno, error) {
+                reportError({ message, source, lineno, colno, error: error ? error.stack : null });
+                return false;
+            };
+            window.addEventListener('unhandledrejection', function (event) {
+                const reason = event.reason;
+                reportError({
+                    message: reason && reason.message ? reason.message : String(reason || 'Unhandled rejection'),
+                    source: 'unhandledrejection',
+                    lineno: 0,
+                    colno: 0,
+                    error: reason && reason.stack ? reason.stack : null
+                });
             });
-            return false;
-        };
+        })();
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +37,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&family=Raleway:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=13">
+    <link rel="stylesheet" href="/css/style.css?v=29">
+    <link rel="stylesheet" href="/css/settings.css?v=29">
 </head>
 
 <body>
@@ -39,7 +57,7 @@
         </div>
 
         <!-- Twitch Login Button (hidden until language is selected) -->
-        <button id="twitch-login-btn" class="hidden">
+        <button type="button" id="twitch-login-btn" class="hidden">
             <svg viewBox="0 0 24 24">
                 <path
                     d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
@@ -56,27 +74,27 @@
             <div class="menu-left">
                 <h1 id="app-title">ClipQ</h1>
                 <nav class="menu-tabs">
-                    <button class="tab active" data-tab="queue"><span data-i18n="nav.queue">Queue</span> <span id="queue-count-tab"></span></button>
-                    <button class="tab" data-tab="history" data-i18n="nav.history">History</button>
+                    <button type="button" class="tab active" data-tab="queue"><span data-i18n="nav.queue">Queue</span> <span id="queue-count-tab"></span></button>
+                    <button type="button" class="tab" data-tab="history" data-i18n="nav.history">History</button>
                 </nav>
             </div>
             <div class="menu-right">
                 <div class="queue-status-toggle">
-                    <button class="toggle-btn" data-state="open" id="btn-open" data-i18n="queue.status.open">Open</button>
-                    <button class="toggle-btn active-closed" data-state="closed" id="btn-closed" data-i18n="queue.status.closed">Closed</button>
+                    <button type="button" class="toggle-btn" data-state="open" id="btn-open" data-i18n="queue.status.open" aria-pressed="false">Open</button>
+                    <button type="button" class="toggle-btn active-closed" data-state="closed" id="btn-closed" data-i18n="queue.status.closed" aria-pressed="true">Closed</button>
                 </div>
                 <div class="user-menu-wrapper">
-                    <div class="menu-user" id="user-menu-toggle">
+                    <button type="button" class="menu-user" id="user-menu-toggle" aria-expanded="false">
                         <div class="avatar-ring" id="avatar-ring">
-                            <img id="user-avatar" src="" alt="">
+                            <img id="user-avatar" alt="">
                         </div>
                         <span id="user-name"></span>
                         <span class="dropdown-arrow">▼</span>
-                    </div>
+                    </button>
                     <div class="user-dropdown hidden" id="user-dropdown">
-                        <button id="dropdown-settings" data-i18n="menu.settings">⚙ Settings</button>
+                        <button type="button" id="dropdown-settings" data-i18n="menu.settings">⚙ Settings</button>
                         <hr>
-                        <button id="dropdown-logout" data-i18n="menu.logout">↪ Logout</button>
+                        <button type="button" id="dropdown-logout" data-i18n="menu.logout">↪ Logout</button>
                     </div>
                 </div>
             </div>
@@ -102,7 +120,7 @@
                 <div id="queue-section">
                     <div class="queue-header">
                         <span><span data-i18n="queue.title">Queue</span> (<span id="queue-count">0</span>)</span>
-                        <button id="queue-clear-btn" class="btn-ghost btn-clear" data-i18n="queue.clear_btn">Clear</button>
+                        <button type="button" id="queue-clear-btn" class="btn-ghost btn-clear" data-i18n="queue.clear_btn">Clear</button>
                     </div>
                     <div class="queue-items" id="queue-list"></div>
                 </div>
@@ -114,12 +132,12 @@
                     <div class="clip-placeholder" data-i18n="player.no_clip">No clip loaded</div>
                 </div>
                 <div class="player-controls">
-                    <div class="autoplay-toggle" id="btn-autoplay" title="Autoplay">
-                        <div class="toggle-switch" id="autoplay-switch"></div>
+                    <button type="button" class="autoplay-toggle" id="btn-autoplay" data-i18n-title="player.autoplay_title" title="Autoplay" aria-pressed="false">
+                        <span class="toggle-switch" id="autoplay-switch"></span>
                         <span class="autoplay-label" data-i18n="player.auto">Auto</span>
-                    </div>
-                    <button class="ctrl-btn" id="btn-prev" data-i18n="player.previous">← Previous</button>
-                    <button class="ctrl-btn primary" id="btn-next" data-i18n="player.start">▶ Start</button>
+                    </button>
+                    <button type="button" class="ctrl-btn" id="btn-prev" data-i18n="player.previous">← Previous</button>
+                    <button type="button" class="ctrl-btn primary" id="btn-next" data-i18n="player.start">▶ Start</button>
                 </div>
             </section>
         </div>
@@ -135,16 +153,17 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 data-i18n="settings.title">Settings</h2>
-                <button class="modal-close" id="settings-close">✕</button>
+                <button type="button" class="modal-close" id="settings-close">✕</button>
             </div>
             <div class="modal-tabs">
-                <button class="tab active" data-stab="general" data-i18n="settings.tab.general">General</button>
-                <button class="tab" data-stab="queue" data-i18n="settings.tab.queue">Clip Queue</button>
-                <button class="tab" data-stab="commands" data-i18n="settings.tab.commands">Commands</button>
-                <button class="tab" data-stab="design" data-i18n="settings.tab.design">Design</button>
-                <button class="tab" data-stab="layout" data-i18n="settings.tab.layout">Layout</button>
-                <button class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
-                <button class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
+                <button type="button" class="tab active" data-stab="general" data-i18n="settings.tab.general">General</button>
+                <button type="button" class="tab" data-stab="queue" data-i18n="settings.tab.queue">Clip Queue</button>
+                <button type="button" class="tab" data-stab="commands" data-i18n="settings.tab.commands">Commands</button>
+                <button type="button" class="tab" data-stab="design" data-i18n="settings.tab.design">Design</button>
+                <button type="button" class="tab" data-stab="layout" data-i18n="settings.tab.layout">Layout</button>
+                <button type="button" class="tab" data-stab="history" data-i18n="settings.tab.history">History</button>
+                <button type="button" class="tab" data-stab="memory" data-i18n="settings.tab.memory">Clip Memory</button>
+                <button type="button" class="tab" data-stab="about" data-i18n="settings.tab.about">About</button>
             </div>
             <div class="modal-body">
                 <!-- General Tab -->
@@ -159,18 +178,18 @@
                     <div class="form-group">
                         <label class="form-label" for="set-app-title" data-i18n="settings.general.app_title">App Name</label>
                         <div class="form-hint" data-i18n="settings.general.app_title_hint">Change the title shown in the top left (max. 30 characters)</div>
-                        <input class="form-input" id="set-app-title" maxlength="30" data-i18n-placeholder="settings.general.app_title_placeholder">
+                        <input type="text" class="form-input" id="set-app-title" maxlength="30" data-i18n-placeholder="settings.general.app_title_placeholder">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.general.channel">Twitch Channel</label>
+                        <span class="form-label" data-i18n="settings.general.channel">Twitch Channel</span>
                         <div class="form-hint" data-i18n="settings.general.channel_hint">Chat channel to join</div>
                         <div class="channel-text-group">
                             <span class="channel-name-text" id="set-channel-text"></span>
-                            <button class="btn btn-danger" id="settings-logout" data-i18n="menu.logout">Logout</button>
+                            <button type="button" class="btn btn-danger" id="settings-logout" data-i18n="menu.logout">Logout</button>
                         </div>
                     </div>
                     <div class="settings-action-bar">
-                        <button class="btn btn-danger" id="settings-reset" data-i18n="settings.general.reset">Reset to Factory Settings</button>
+                        <button type="button" class="btn btn-danger" id="settings-reset" data-i18n="settings.general.reset">Reset to Factory Settings</button>
                     </div>
                 </div>
                 <!-- Queue Tab -->
@@ -179,11 +198,11 @@
                         <span class="form-label" data-i18n="settings.queue.providers">Clip Providers</span>
                         <div class="form-hint" data-i18n="settings.queue.providers_hint">Choose which platforms are allowed</div>
                         <div class="provider-toggles">
-                            <button class="provider-chip active" data-provider="twitch">Twitch Clips</button>
-                            <button class="provider-chip active" data-provider="twitch_vod">Twitch VOD</button>
-                            <button class="provider-chip active" data-provider="youtube">YouTube</button>
-                            <button class="provider-chip active" data-provider="tiktok">TikTok</button>
-                            <button class="provider-chip active" data-provider="instagram">Instagram</button>
+                            <button type="button" class="provider-chip active" data-provider="twitch" aria-pressed="true">Twitch Clips</button>
+                            <button type="button" class="provider-chip active" data-provider="twitch_vod" aria-pressed="true">Twitch VOD</button>
+                            <button type="button" class="provider-chip active" data-provider="youtube" aria-pressed="true">YouTube</button>
+                            <button type="button" class="provider-chip active" data-provider="tiktok" aria-pressed="true">TikTok</button>
+                            <button type="button" class="provider-chip active" data-provider="instagram" aria-pressed="true">Instagram</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -213,166 +232,27 @@ moobot</textarea>
                 </div>
                 <!-- Commands Tab -->
                 <div class="settings-tab-content" id="stab-commands">
-                    <div class="form-hint" style="margin-bottom:16px" data-i18n-html="settings.commands.hint">
+                    <div class="form-hint commands-hint" data-i18n-html="settings.commands.hint">
                         Chat commands for the stream. Not case-sensitive.<br>
-                        Example: If prefix is <code>!queue</code> and next is <code>next</code>, then
+                        Example: If the prefix is <code>!queue</code> and "Next Clip" is <code>next</code>, then
                         <code>!queue next</code> is recognized.
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="set-cmd-prefix" data-i18n="settings.commands.prefix">Command Prefix</label>
-                        <input class="form-input" id="set-cmd-prefix" value="!queue">
+                        <input type="text" class="form-input" id="set-cmd-prefix" value="!queue">
                     </div>
-                    <!-- Command rows with role checkboxes -->
-                    <div class="cmd-row form-group" data-cmd="next">
-                        <label class="form-label" for="set-cmd-next" data-i18n="settings.commands.next">Next Clip</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-next" value="next">
-                            <div class="cmd-roles" data-cmd="next">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-next"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="push">
-                        <label class="form-label" for="set-cmd-push" data-i18n="settings.commands.push">Push Clip to #1</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-push" value="push">
-                            <div class="cmd-roles" data-cmd="push">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-push"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="open">
-                        <label class="form-label" for="set-cmd-open" data-i18n="settings.commands.open">Open Queue</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-open" value="open">
-                            <div class="cmd-roles" data-cmd="open">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-open"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="close">
-                        <label class="form-label" for="set-cmd-close" data-i18n="settings.commands.close">Close Queue</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-close" value="close">
-                            <div class="cmd-roles" data-cmd="close">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-close"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="clear">
-                        <label class="form-label" for="set-cmd-clear" data-i18n="settings.commands.clear">Clear Queue</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-clear" value="clear">
-                            <div class="cmd-roles" data-cmd="clear">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-clear"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="purgememory">
-                        <label class="form-label" for="set-cmd-purgememory" data-i18n="settings.commands.purgememory">Purge Clip Memory</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-purgememory" value="purgememory">
-                            <div class="cmd-roles" data-cmd="purgememory">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-purgememory"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="autoplay">
-                        <label class="form-label" for="set-cmd-autoplay" data-i18n="settings.commands.autoplay">Autoplay on/off</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-autoplay" value="autoplay">
-                            <div class="cmd-roles" data-cmd="autoplay">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-autoplay"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="limit">
-                        <label class="form-label" for="set-cmd-limit" data-i18n="settings.commands.limit">Set Clip Limit</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-limit" value="limit">
-                            <div class="cmd-roles" data-cmd="limit">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-limit"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="remove">
-                        <label class="form-label" for="set-cmd-remove" data-i18n="settings.commands.remove">Remove Clip</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-remove" value="remove">
-                            <div class="cmd-roles" data-cmd="remove">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-remove"></div>
-                    </div>
-                    <div class="cmd-row form-group" data-cmd="providers">
-                        <label class="form-label" for="set-cmd-providers" data-i18n="settings.commands.providers">Provider on/off</label>
-                        <div class="cmd-row-inner">
-                            <input class="form-input cmd-word" id="set-cmd-providers" value="providers">
-                            <div class="cmd-roles" data-cmd="providers">
-                                <button class="role-badge active" data-role="broadcaster" title="Broadcaster"><img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt="Broadcaster"></button>
-                                <button class="role-badge active" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                                <button class="role-badge active" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
-                                <button class="role-badge" data-role="vip" title="VIP"><img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1" alt="VIP"></button>
-                                <button class="role-badge role-all" data-role="all"><span data-i18n="settings.commands.role_all">All</span></button>
-                            </div>
-                        </div>
-                        <div class="cmd-example" id="example-cmd-providers"></div>
-                    </div>
+                    <!-- Command rows populated dynamically by settings-commands.js -->
+                    <div id="commands-list"></div>
                 </div>
                 <!-- Design Tab -->
                 <div class="settings-tab-content" id="stab-design">
                     <div class="form-group">
                         <div class="toggle-row">
                             <div>
-                                <span class="form-label" data-i18n="settings.design.show_badges">Show Badges</span>
+                                <span class="form-label" id="design-show-badges-label" data-i18n="settings.design.show_badges">Show Badges</span>
                                 <div class="form-hint" data-i18n="settings.design.show_badges_hint">Show Twitch roles (Moderator, VIP, Streamer) in the queue</div>
                             </div>
-                            <div class="toggle-switch" id="design-show-badges"></div>
+                            <button type="button" class="toggle-switch active" id="design-show-badges" role="switch" aria-checked="true" aria-labelledby="design-show-badges-label"></button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -393,8 +273,8 @@ moobot</textarea>
                     </div>
                     <div id="design-colors-container"></div>
                     <div class="form-group settings-action-bar">
-                        <button class="btn btn-primary" id="design-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
-                        <button class="btn btn-danger" id="design-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
+                        <button type="button" class="btn btn-primary" id="design-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
+                        <button type="button" class="btn btn-danger" id="design-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
                     </div>
                 </div>
                 <!-- Layout Tab -->
@@ -418,7 +298,7 @@ moobot</textarea>
                     <div class="form-group">
                         <span class="form-label" data-i18n="settings.layout.widths">Component Widths</span>
                         <div class="form-hint" data-i18n="settings.layout.widths_hint">Adjust widths of the player and sidebar components</div>
-                        
+
                         <div class="width-control-item">
                             <label class="form-label" for="layout-player-width" data-i18n="settings.layout.player_width">Player Width</label>
                             <div class="slider-row">
@@ -426,7 +306,7 @@ moobot</textarea>
                                 <span id="layout-player-width-val" class="slider-value">70%</span>
                             </div>
                         </div>
-                        
+
                         <div class="width-control-item">
                             <label class="form-label" for="layout-chat-width" data-i18n="settings.layout.chat_width">Chat Width</label>
                             <div class="slider-row">
@@ -438,7 +318,7 @@ moobot</textarea>
                     <div class="form-group">
                         <span class="form-label" data-i18n="settings.layout.heights">Component Heights</span>
                         <div class="form-hint" data-i18n="settings.layout.heights_hint">Adjust heights and lock sizes of sidebar components</div>
-                        
+
                         <div class="height-control-row">
                             <div class="height-slider-container">
                                 <label class="form-label" for="layout-facecam-height" data-i18n="settings.layout.facecam_height">Facecam Height</label>
@@ -450,7 +330,7 @@ moobot</textarea>
                             <div class="lock-checkbox-container">
                                 <label class="lock-label">
                                     <input type="checkbox" id="layout-lock-facecam">
-                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                    <span class="lock-icon" data-i18n-title="settings.layout.lock_height" title="Lock height">🔒</span>
                                 </label>
                             </div>
                         </div>
@@ -466,7 +346,7 @@ moobot</textarea>
                             <div class="lock-checkbox-container">
                                 <label class="lock-label">
                                     <input type="checkbox" id="layout-lock-queue">
-                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                    <span class="lock-icon" data-i18n-title="settings.layout.lock_height" title="Lock height">🔒</span>
                                 </label>
                             </div>
                         </div>
@@ -476,38 +356,30 @@ moobot</textarea>
                             <div class="lock-checkbox-container">
                                 <label class="lock-label">
                                     <input type="checkbox" id="layout-lock-chat-ad">
-                                    <span class="lock-icon" title="Lock height">🔒</span>
+                                    <span class="lock-icon" data-i18n-title="settings.layout.lock_height" title="Lock height">🔒</span>
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <span class="form-label" data-i18n="settings.layout.visibility">Component Visibility</span>
-                        <div class="form-hint" data-i18n="settings.layout.visibility_hint">Show or hide individual sidebar components</div>
-                        
-                        <div class="toggle-row">
-                            <div>
-                                <span class="form-label" data-i18n="settings.layout.show_facecam">Show Facecam Box</span>
-                            </div>
-                            <div class="toggle-switch active" id="layout-show-facecam"></div>
-                        </div>
-                        <div class="toggle-row">
-                            <div>
-                                <span class="form-label" data-i18n="settings.layout.show_chat">Show Chat Box</span>
-                            </div>
-                            <div class="toggle-switch active" id="layout-show-chat"></div>
-                        </div>
-                        <div class="toggle-row">
-                            <div>
-                                <span class="form-label" data-i18n="settings.layout.show_ad">Show Ad Box</span>
-                            </div>
-                            <div class="toggle-switch active" id="layout-show-ad"></div>
-                        </div>
-                        <div class="toggle-row">
-                            <div>
-                                <span class="form-label" data-i18n="settings.layout.show_queue">Show Queue Box</span>
-                            </div>
-                            <div class="toggle-switch active" id="layout-show-queue"></div>
+                        <div class="form-hint" data-i18n="settings.layout.visibility_hint">Hide preserves layout space; Remove frees it for other components</div>
+                        <div class="visibility-grid">
+                            <span></span>
+                            <span class="visibility-col-label" id="vis-col-hide" data-i18n="settings.layout.visibility_hide">Hide</span>
+                            <span class="visibility-col-label" id="vis-col-remove" data-i18n="settings.layout.visibility_remove">Remove</span>
+                            <span class="form-label" id="vis-label-facecam" data-i18n="settings.layout.box_facecam">Facecam Box</span>
+                            <button type="button" class="toggle-switch" id="layout-hide-facecam" role="switch" aria-checked="false" aria-labelledby="vis-col-hide vis-label-facecam" data-i18n-title="settings.layout.visibility_hide" title="Hide"></button>
+                            <button type="button" class="toggle-switch" id="layout-remove-facecam" role="switch" aria-checked="false" aria-labelledby="vis-col-remove vis-label-facecam" data-i18n-title="settings.layout.visibility_remove" title="Remove"></button>
+                            <span class="form-label" id="vis-label-chat" data-i18n="settings.layout.box_chat">Chat Box</span>
+                            <button type="button" class="toggle-switch" id="layout-hide-chat" role="switch" aria-checked="false" aria-labelledby="vis-col-hide vis-label-chat" data-i18n-title="settings.layout.visibility_hide" title="Hide"></button>
+                            <button type="button" class="toggle-switch" id="layout-remove-chat" role="switch" aria-checked="false" aria-labelledby="vis-col-remove vis-label-chat" data-i18n-title="settings.layout.visibility_remove" title="Remove"></button>
+                            <span class="form-label" id="vis-label-ad" data-i18n="settings.layout.box_ad">Ad Box</span>
+                            <button type="button" class="toggle-switch" id="layout-hide-ad" role="switch" aria-checked="false" aria-labelledby="vis-col-hide vis-label-ad" data-i18n-title="settings.layout.visibility_hide" title="Hide"></button>
+                            <button type="button" class="toggle-switch" id="layout-remove-ad" role="switch" aria-checked="false" aria-labelledby="vis-col-remove vis-label-ad" data-i18n-title="settings.layout.visibility_remove" title="Remove"></button>
+                            <span class="form-label" id="vis-label-queue" data-i18n="settings.layout.box_queue">Queue Box</span>
+                            <button type="button" class="toggle-switch" id="layout-hide-queue" role="switch" aria-checked="false" aria-labelledby="vis-col-hide vis-label-queue" data-i18n-title="settings.layout.visibility_hide" title="Hide"></button>
+                            <button type="button" class="toggle-switch" id="layout-remove-queue" role="switch" aria-checked="false" aria-labelledby="vis-col-remove vis-label-queue" data-i18n-title="settings.layout.visibility_remove" title="Remove"></button>
                         </div>
                     </div>
                     <div class="form-group" id="layout-ordering-group">
@@ -518,8 +390,8 @@ moobot</textarea>
                         </div>
                     </div>
                     <div class="form-group settings-action-bar">
-                        <button class="btn btn-primary" id="layout-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
-                        <button class="btn btn-danger" id="layout-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
+                        <button type="button" class="btn btn-primary" id="layout-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
+                        <button type="button" class="btn btn-danger" id="layout-reset-btn" data-i18n="settings.design.reset">Reset to Default</button>
                     </div>
                 </div>
                 <!-- History Tab -->
@@ -530,57 +402,73 @@ moobot</textarea>
                         <input class="form-input" id="set-history-retention" type="number" min="0" value="0">
                     </div>
                     <div class="form-group">
-                        <p class="settings-count-text" id="history-count-text">You have <strong id="history-count">0</strong> clips in history.</p>
+                        <p class="settings-count-text" id="history-count-text">You have <strong>0</strong> clips in history.</p>
                         <p class="form-hint" data-i18n="settings.history.purge_hint">Clearing only removes the history display, not the Clip Memory.</p>
-                        <button class="btn btn-danger" id="purge-history-btn" data-i18n="settings.history.purge_btn">Clear History</button>
+                        <button type="button" class="btn btn-danger" id="purge-history-btn" data-i18n="settings.history.purge_btn">Clear History</button>
                     </div>
                 </div>
                 <!-- Memory Tab -->
                 <div class="settings-tab-content" id="stab-memory">
                     <div class="form-group">
                         <p class="form-hint" data-i18n="settings.memory.hint">Clip Memory stores URLs of all watched clips to prevent them from being re-queued.</p>
-                        <p class="settings-count-text" id="memory-count-text">You have <strong id="memory-count">0</strong> clips in memory.</p>
-                        <button class="btn btn-danger" id="purge-memory-btn" data-i18n="settings.memory.purge_btn">Clear Memory</button>
+                        <p class="settings-count-text" id="memory-count-text">You have <strong>0</strong> clips in memory.</p>
+                        <button type="button" class="btn btn-danger" id="purge-memory-btn" data-i18n="settings.memory.purge_btn">Clear Memory</button>
                     </div>
                     <div class="form-group settings-group-divider">
                         <span class="form-label" data-i18n="settings.memory.bypass_title">Bypass Clip Memory</span>
                         <div class="form-hint" data-i18n="settings.memory.bypass_hint">Allow these roles to queue clips that are already in the memory</div>
                         <div class="cmd-roles memory-bypass-roles" id="memory-bypass-roles">
-                            <button class="role-badge" data-role="leadMod" title="Lead Moderator"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
-                            <button class="role-badge" data-role="mod" title="Moderator"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                            <button type="button" class="role-badge active" data-role="leadMod" data-i18n-title="roles.lead_mod" title="Lead Moderator" aria-pressed="true"><img src="https://assets.help.twitch.tv/article/img/000002212-07.png" alt="Lead Mod"></button>
+                            <button type="button" class="role-badge" data-role="mod" data-i18n-title="roles.mod" title="Moderator" aria-pressed="false"><img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1" alt="Moderator"></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- About Tab -->
+                <div class="settings-tab-content" id="stab-about">
+                    <div class="about-card">
+                        <h3 class="about-title" data-i18n="settings.about.heading">About ClipQ</h3>
+                        <p class="about-text" data-i18n="settings.about.description">Built by Platyboar with the help of Antigravity.</p>
+                        <p class="about-meta" data-i18n="settings.about.license">Licensed under the MIT License.</p>
+                        <p class="form-hint" data-i18n="settings.about.issues_hint">Found a bug or have an issue? Report it directly on GitHub:</p>
+                        <div class="about-actions">
+                            <a class="btn btn-primary" id="about-github-issues" href="https://github.com/Platyboar/ClipQ/issues" target="_blank" rel="noopener noreferrer" data-i18n="settings.about.report_btn">Report an Issue on GitHub</a>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" id="settings-cancel" data-i18n="settings.cancel">Cancel</button>
-                <button class="btn btn-primary" id="settings-save" data-i18n="settings.save">Save</button>
-                <button class="btn btn-primary" id="settings-save-close" data-i18n="settings.save_close">Save + Close</button>
+                <button type="button" class="btn btn-ghost" id="settings-cancel" data-i18n="settings.cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="settings-save" data-i18n="settings.save">Save</button>
+                <button type="button" class="btn btn-primary" id="settings-save-close" data-i18n="settings.save_close">Save + Close</button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="/js/tmi.min.js"></script>
-    <script src="/js/i18n.js?v=13"></script>
-    <script src="/js/lang/de.js?v=13"></script>
-    <script src="/js/lang/en.js?v=13"></script>
-    <script src="/js/lang/es.js?v=13"></script>
-    <script src="/js/lang/ru.js?v=13"></script>
-    <script src="/js/lang/pt.js?v=13"></script>
-    <script src="/js/lang/fr.js?v=13"></script>
-    <script src="/js/lang/ja.js?v=13"></script>
-    <script src="/js/lang/it.js?v=13"></script>
-    <script src="/js/providers.js?v=13"></script>
-    <script src="/js/memory.js?v=13"></script>
-    <script src="/js/layout.js?v=13"></script>
-    <script src="/js/settings.js?v=13"></script>
-    <script src="/js/design.js?v=13"></script>
-    <script src="/js/auth.js?v=13"></script>
-    <script src="/js/queue.js?v=13"></script>
-    <script src="/js/player.js?v=13"></script>
-    <script src="/js/chat.js?v=13"></script>
-    <script src="/js/app.js?v=13"></script>
+    <script src="/js/utils.js?v=29"></script>
+    <script src="/js/i18n.js?v=29"></script>
+    <script src="/js/lang/de.js?v=29"></script>
+    <script src="/js/lang/en.js?v=29"></script>
+    <script src="/js/lang/es.js?v=29"></script>
+    <script src="/js/lang/ru.js?v=29"></script>
+    <script src="/js/lang/pt.js?v=29"></script>
+    <script src="/js/lang/fr.js?v=29"></script>
+    <script src="/js/lang/ja.js?v=29"></script>
+    <script src="/js/lang/it.js?v=29"></script>
+    <script src="/js/providers.js?v=29"></script>
+    <script src="/js/memory.js?v=29"></script>
+    <script src="/js/layout.js?v=29"></script>
+    <script src="/js/settings-commands.js?v=29"></script>
+    <script src="/js/settings-layout.js?v=29"></script>
+    <script src="/js/settings.js?v=29"></script>
+    <script src="/js/design-picker.js?v=29"></script>
+    <script src="/js/design.js?v=29"></script>
+    <script src="/js/auth.js?v=29"></script>
+    <script src="/js/queue.js?v=29"></script>
+    <script src="/js/player.js?v=29"></script>
+    <script src="/js/chat.js?v=29"></script>
+    <script src="/js/app.js?v=29"></script>
 </body>
 
 </html>

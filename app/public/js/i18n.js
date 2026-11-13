@@ -5,6 +5,8 @@
 window.ClipQ = window.ClipQ || {};
 
 ClipQ.I18n = (() => {
+    'use strict';
+
     const LANG_KEY = 'clipq_language';
     let currentLang = 'en';
     const translations = {};
@@ -24,7 +26,10 @@ ClipQ.I18n = (() => {
     function setLanguage(lang) {
         if (translations[lang]) {
             currentLang = lang;
-            localStorage.setItem(LANG_KEY, lang);
+            try {
+                localStorage.setItem(LANG_KEY, lang);
+            } catch { /* ignore storage quota errors */ }
+            document.documentElement.lang = currentLang;
             applyToDOM();
         }
     }
@@ -34,14 +39,13 @@ ClipQ.I18n = (() => {
         return currentLang;
     }
 
-    /** Get the saved language from localStorage (before init) */
-    function getSavedLanguage() {
-        return localStorage.getItem(LANG_KEY);
-    }
-
     /** Check if a language has been saved */
     function hasLanguage() {
-        return localStorage.getItem(LANG_KEY) !== null;
+        try {
+            return localStorage.getItem(LANG_KEY) !== null;
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -65,7 +69,7 @@ ClipQ.I18n = (() => {
 
     /**
      * Get all available languages with their display names.
-     * @returns {Array<{code: string, name: string}>}
+     * @returns {Array<{code: string, name: string, flag: string}>}
      */
     function getAvailableLanguages() {
         return Object.keys(translations).map(code => ({
@@ -80,6 +84,10 @@ ClipQ.I18n = (() => {
      * Also handles data-i18n-placeholder, data-i18n-title, data-i18n-html.
      */
     function applyToDOM() {
+        if (!translations[currentLang] && translations['en']) {
+            currentLang = 'en';
+        }
+        document.documentElement.lang = currentLang;
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             el.textContent = t(key);
@@ -97,8 +105,11 @@ ClipQ.I18n = (() => {
     }
 
     // Auto-initialize: restore saved language
-    const saved = localStorage.getItem(LANG_KEY);
-    if (saved) currentLang = saved;
+    try {
+        const saved = localStorage.getItem(LANG_KEY);
+        if (saved) currentLang = saved;
+    } catch { /* ignore storage errors */ }
+    document.documentElement.lang = currentLang;
 
-    return { register, setLanguage, getLanguage, getSavedLanguage, hasLanguage, t, getAvailableLanguages, applyToDOM };
+    return { register, setLanguage, getLanguage, hasLanguage, t, getAvailableLanguages, applyToDOM };
 })();

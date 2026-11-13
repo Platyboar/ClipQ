@@ -4,15 +4,17 @@
 window.ClipQ = window.ClipQ || {};
 
 ClipQ.CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
-ClipQ.REDIRECT_URI = 'http://localhost:8000/';
 
 ClipQ.Auth = (() => {
+    'use strict';
+
+    const REDIRECT_URI = 'http://localhost:8000/';
     const TOKEN_KEY = 'clipq_token';
     const USER_KEY = 'clipq_user';
 
     function getLoginUrl() {
         const scopes = 'chat:read';
-        return `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${ClipQ.CLIENT_ID}&redirect_uri=${encodeURIComponent(ClipQ.REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
+        return `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${ClipQ.CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
     }
 
     function parseTokenFromHash() {
@@ -21,7 +23,9 @@ ClipQ.Auth = (() => {
         const params = new URLSearchParams(hash);
         const token = params.get('access_token');
         if (token) {
-            localStorage.setItem(TOKEN_KEY, token);
+            try {
+                localStorage.setItem(TOKEN_KEY, token);
+            } catch { /* ignore storage quota errors */ }
             // Clean URL
             history.replaceState(null, '', window.location.pathname);
             return token;
@@ -30,7 +34,11 @@ ClipQ.Auth = (() => {
     }
 
     function getToken() {
-        return localStorage.getItem(TOKEN_KEY);
+        try {
+            return localStorage.getItem(TOKEN_KEY);
+        } catch {
+            return null;
+        }
     }
 
     async function fetchUser(token) {
@@ -38,6 +46,7 @@ ClipQ.Auth = (() => {
             const res = await fetch('https://api.twitch.tv/helix/users', {
                 headers: { 'Client-ID': ClipQ.CLIENT_ID, 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) return null;
             const data = await res.json();
             if (data.data && data.data[0]) {
                 const user = {
@@ -46,7 +55,9 @@ ClipQ.Auth = (() => {
                     displayName: data.data[0].display_name,
                     avatar: data.data[0].profile_image_url
                 };
-                localStorage.setItem(USER_KEY, JSON.stringify(user));
+                try {
+                    localStorage.setItem(USER_KEY, JSON.stringify(user));
+                } catch { /* ignore storage quota errors */ }
                 return user;
             }
         } catch (e) {
@@ -64,16 +75,26 @@ ClipQ.Auth = (() => {
             const res = await fetch('https://id.twitch.tv/oauth2/validate', {
                 headers: { 'Authorization': `OAuth ${token}` }
             });
-            return res.ok;
-        } catch { return false; }
+            return { valid: res.ok, unauthorized: res.status === 401 };
+        } catch {
+            return { valid: false, unauthorized: false };
+        }
+    }
+
+    function clearSession() {
+        try {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+        } catch { /* ignore storage errors */ }
     }
 
     function logout() {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        localStorage.removeItem('clipq_language');
+        clearSession();
+        try {
+            localStorage.removeItem('clipq_language');
+        } catch { /* ignore storage errors */ }
         window.location.reload();
     }
 
-    return { getLoginUrl, parseTokenFromHash, getToken, fetchUser, getUser, validate, logout };
+    return { getLoginUrl, parseTokenFromHash, getToken, fetchUser, getUser, validate, clearSession, logout };
 })();
