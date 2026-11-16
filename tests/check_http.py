@@ -118,7 +118,19 @@ def run_http_checks():
         httpd.shutdown()
         httpd.server_close()
 
-    return {'status': 'ok', 'endpoints_verified': 15}
+    vercel_api_dir = ROOT / 'vercel-ytdlp' / 'api'
+    if str(vercel_api_dir) not in sys.path:
+        sys.path.insert(0, str(vercel_api_dir))
+    import video_url as vercel_video_url
+
+    assert (
+        vercel_video_url.normalize_allowed_video_url('http://instagram.com/reel/abc/')
+        == 'https://instagram.com/reel/abc/'
+    )
+    assert vercel_video_url.normalize_allowed_video_url('http://169.254.169.254/latest') is None
+    assert vercel_video_url.normalize_allowed_video_url('https://www.tiktok.com:8443/@u/video/1') is None
+
+    return {'status': 'ok', 'endpoints_verified': 18}
 
 
 if __name__ == '__main__':

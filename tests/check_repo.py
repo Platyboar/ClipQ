@@ -11,7 +11,7 @@ PUBLIC_DIR = APP_DIR / 'public'
 
 SKIP_DIRS = {'.git', 'node_modules', 'dist', 'build', '.gemini', 'scratch', '__pycache__'}
 EXEMPT_SIZE_AND_EOL = {'tmi.min.js', 'package-lock.json', 'desktop.ini'}
-TEXT_EXTS = {'.py', '.js', '.mjs', '.css', '.html', '.md', '.bat', '.json', '.toml'}
+TEXT_EXTS = {'.py', '.js', '.mjs', '.css', '.html', '.md', '.bat', '.json', '.toml', '.sql'}
 NAMED_TEXT_FILES = {'.gitattributes', '.gitignore', '.htmlhintrc', 'LICENSE'}
 INDENT_EXTS = {'.py', '.js', '.mjs', '.html'}
 KEBAB_FILE_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*\.[a-z]+$')
@@ -173,6 +173,27 @@ def check_html_and_assets():
         or script_order[-1] != '/js/app.js'
     ):
         issues.append(f'index.html: invalid script dependency order: {script_order}')
+
+    if 'fonts.googleapis.com' in html or 'fonts.gstatic.com' in html or 'flagcdn.com' in html:
+        issues.append('index.html: external Google Fonts or flagcdn URL found')
+
+    fonts_css = (PUBLIC_DIR / 'css' / 'fonts.css').read_text(encoding='utf-8')
+    for font_rel in re.findall(r"url\('(/fonts/[^']+)'\)", fonts_css):
+        if not (PUBLIC_DIR / font_rel.lstrip('/')).is_file():
+            issues.append(f'fonts.css: missing local font file {font_rel}')
+
+    for lang_file in sorted((PUBLIC_DIR / 'js' / 'lang').glob('*.js')):
+        flag_match = re.search(r"_flag:\s*'([^']+)'", lang_file.read_text(encoding='utf-8'))
+        if not flag_match or not flag_match.group(1).startswith('/img/flags/'):
+            issues.append(f'{lang_file.name}: _flag must use local /img/flags/ path')
+        elif not (PUBLIC_DIR / flag_match.group(1).lstrip('/')).is_file():
+            issues.append(f'{lang_file.name}: missing local flag file {flag_match.group(1)}')
+
+    wrangler = json.loads((ROOT / 'wrangler.json').read_text(encoding='utf-8'))
+    if wrangler.get('main') != './worker.js' or wrangler.get('assets', {}).get('directory') != './app/public':
+        issues.append('wrangler.json: invalid main or assets.directory configuration')
+    if not wrangler.get('d1_databases') or not wrangler['d1_databases'][0].get('database_id'):
+        issues.append('wrangler.json: missing D1 database_id binding')
 
     return html, id_set, sorted(ver_tags), issues
 

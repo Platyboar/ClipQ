@@ -31,6 +31,7 @@ ClipQ.I18n = (() => {
             } catch { /* ignore storage quota errors */ }
             document.documentElement.lang = currentLang;
             applyToDOM();
+            if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
         }
     }
 

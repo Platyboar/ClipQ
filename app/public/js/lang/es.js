@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('es', {
     _name: 'Español',
-    _flag: 'https://flagcdn.com/w80/es.png',
+    _flag: '/img/flags/es.png',
 
     // Login page
     'login.subtitle': 'Cola de clips para tu transmisión',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('es', {
     'history.confirm_delete': '¿Seguro que quieres eliminar este clip del historial?',
     'history.confirm_yes': 'Sí',
     'history.confirm_cancel': 'Cancelar',
+    'history.load_more': 'Cargar más ({count} restantes)',
 
     // Settings modal
     'settings.title': 'Configuración',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('es', {
     'settings.general.channel_hint': 'Canal de chat al que unirse',
     'settings.general.reset': 'Restablecer a valores de fábrica',
     'settings.general.confirm_reset': '¿Realmente restablecer todos los ajustes a los valores de fábrica? La aplicación se recargará.',
+    'settings.general.export': 'Exportar datos (JSON)',
+    'settings.general.delete_cloud': 'Eliminar datos del servidor',
+    'settings.general.confirm_delete_cloud': '¿Eliminar permanentemente toda tu configuración, historial y memoria de clips del servidor? Esto no se puede deshacer.',
+    'settings.general.delete_cloud_done': 'Todos los datos del servidor han sido eliminados.',
+    'settings.general.delete_cloud_error': 'No se pudieron eliminar los datos del servidor. Inténtalo de nuevo.',
 
     // Settings — Queue
     'settings.queue.providers': 'Proveedores de clips',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('es', {
     'settings.about.license': 'Bajo la licencia MIT.',
     'settings.about.issues_hint': '¿Encontraste un error o problema? Repórtalo directamente en GitHub:',
     'settings.about.report_btn': 'Reportar un problema en GitHub',
+    'settings.about.privacy_heading': 'Privacidad y almacenamiento',
+    'settings.about.privacy_text': 'En el servicio en línea, tus ajustes, memoria de clips e historial se guardan en la UE (Cloudflare D1) vinculados únicamente a tu ID de usuario de Twitch. No se guardan tokens de acceso en el servidor. Al reproducir clips se cargan reproductores externos de Twitch, YouTube, TikTok o Instagram. Puedes exportar o eliminar tus datos en cualquier momento en Ajustes → General.',
 });

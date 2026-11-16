@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('fr', {
     _name: 'Français',
-    _flag: 'https://flagcdn.com/w80/fr.png',
+    _flag: '/img/flags/fr.png',
 
     // Login page
     'login.subtitle': 'File d\'attente de clips pour votre stream',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('fr', {
     'history.confirm_delete': 'Voulez-vous vraiment supprimer ce clip de l\'historique ?',
     'history.confirm_yes': 'Oui',
     'history.confirm_cancel': 'Annuler',
+    'history.load_more': 'Charger plus ({count} restants)',
 
     // Settings modal
     'settings.title': 'Paramètres',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('fr', {
     'settings.general.channel_hint': 'Chaîne de chat à rejoindre',
     'settings.general.reset': "Rétablir les paramètres d'usine",
     'settings.general.confirm_reset': "Voulez-vous vraiment rétablir tous les paramètres d'usine ? L'application va redémarrer.",
+    'settings.general.export': 'Exporter les données (JSON)',
+    'settings.general.delete_cloud': 'Supprimer les données serveur',
+    'settings.general.confirm_delete_cloud': "Supprimer définitivement vos paramètres, votre historique et votre mémoire de clips du serveur ? Cette action est irréversible.",
+    'settings.general.delete_cloud_done': 'Toutes les données du serveur ont été supprimées.',
+    'settings.general.delete_cloud_error': 'Impossible de supprimer les données du serveur. Veuillez réessayer.',
 
     // Settings — Queue
     'settings.queue.providers': 'Fournisseurs de clips',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('fr', {
     'settings.about.license': 'Sous licence MIT.',
     'settings.about.issues_hint': 'Vous avez trouvé un bug ou un problème ? Signalez-le directement sur GitHub :',
     'settings.about.report_btn': 'Signaler un problème sur GitHub',
+    'settings.about.privacy_heading': 'Confidentialité et stockage des données',
+    'settings.about.privacy_text': "En ligne, vos paramètres, votre mémoire et votre historique de clips sont stockés dans l'UE (Cloudflare D1) et liés uniquement à votre identifiant Twitch. Aucun jeton d'accès Twitch n'est enregistré sur le serveur. La lecture des clips charge des lecteurs externes depuis Twitch, YouTube, TikTok ou Instagram. Vous pouvez exporter ou supprimer vos données à tout moment sous Paramètres → Général.",
 });

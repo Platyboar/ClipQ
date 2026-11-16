@@ -18,6 +18,7 @@ from browser_scenarios import (
     assert_modal_report,
     modal_symmetry_js,
 )
+from browser_sync_scenarios import SYNC_TEST_JS, assert_sync_report
 from cdp_client import MinimalCDP, find_browser_binary
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -163,6 +164,9 @@ def run_browser_checks():
 
             func_report = cdp.eval_js(FUNCTIONAL_TEST_JS)
             assert_functional_report(func_report)
+
+            sync_report = cdp.eval_js(SYNC_TEST_JS)
+            assert_sync_report(sync_report)
 
             cdp.eval_js("""
                 localStorage.setItem('clipq_language', 'ru');

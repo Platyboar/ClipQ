@@ -18,7 +18,7 @@ ClipQ.Queue = (() => {
 
     const HISTORY_KEY = 'clipq_history';
     const QUEUE_KEY = 'clipq_queue';
-    const MAX_HISTORY_ITEMS = 500;
+    const MAX_LOCAL_HISTORY_CACHE = 500;
 
     function normalizeClipUrl(item) {
         if (!item || !item.url || !ClipQ.Providers?.getCanonicalUrl) return false;
@@ -61,25 +61,20 @@ ClipQ.Queue = (() => {
         return true;
     }
 
-    function saveAndNotify() {
-        saveQueue();
-        notifyUpdate();
-    }
+    function saveAndNotify() { saveQueue(); notifyUpdate(); }
 
     function loadQueue() {
         try {
             const saved = JSON.parse(localStorage.getItem(QUEUE_KEY) || 'null');
             if (saved && Array.isArray(saved.items)) {
                 items = saved.items;
-                if (saved.currentPlaying && !items.some(i => i.id === saved.currentPlaying.id)) {
-                    items.unshift(saved.currentPlaying);
-                }
+                if (saved.currentPlaying && !items.some(i => i.id === saved.currentPlaying.id)) items.unshift(saved.currentPlaying);
                 if (normalizeStoredList(items, Date.now())) saveQueue();
             }
         } catch { items = []; }
     }
 
-    function saveQueue() {
+    function saveQueueCache() {
         try {
             localStorage.setItem(QUEUE_KEY, JSON.stringify({
                 items,
@@ -88,10 +83,15 @@ ClipQ.Queue = (() => {
         } catch { /* ignore quota errors */ }
     }
 
+    function saveQueue() {
+        saveQueueCache();
+        if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
+    }
+
     function loadHistory() {
         try {
             const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            history = Array.isArray(parsed) ? parsed.slice(-MAX_HISTORY_ITEMS) : [];
+            history = Array.isArray(parsed) ? parsed.slice(-MAX_LOCAL_HISTORY_CACHE) : [];
         } catch { history = []; }
         const normalized = normalizeStoredList(history, Date.now());
         cleanupHistory();
@@ -99,8 +99,8 @@ ClipQ.Queue = (() => {
     }
 
     function saveHistory() {
-        if (history.length > MAX_HISTORY_ITEMS) history = history.slice(-MAX_HISTORY_ITEMS);
-        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch { /* ignore */ }
+        const cache = history.length > MAX_LOCAL_HISTORY_CACHE ? history.slice(-MAX_LOCAL_HISTORY_CACHE) : history;
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(cache)); } catch { /* ignore */ }
     }
 
     function cleanupHistory() {
@@ -118,6 +118,7 @@ ClipQ.Queue = (() => {
             console.log(`[History] Cleaned ${before - history.length} old entries (>${retentionDays} days)`);
             const clearedActivePlayback = syncHistoryPlayback();
             saveHistory();
+            if (ClipQ.Sync) ClipQ.Sync.pruneHistoryBefore(cutoff);
             return clearedActivePlayback;
         }
         return false;
@@ -185,22 +186,14 @@ ClipQ.Queue = (() => {
         const isVip = !!(info && info.isVip);
         const isBroadcaster = !!(info && info.isBroadcaster);
         const msgId = (info && info.msgId) || clipData.msgId || null;
-
         const isPushed = !!clipData.isPushed;
-
-        // Priority is ONLY assigned if this is a pushed clip (via !queue push)
         const priority = isPushed ? (isBroadcaster ? 3 : isLeadMod ? 2 : isMod ? 1 : 0) : 0;
 
-        if (ClipQ.Settings.isUserBlocked(submitter) || ClipQ.Settings.isUserBlocked(submitterLogin)) {
-            return 'blocked';
-        }
+        if (ClipQ.Settings.isUserBlocked(submitter) || ClipQ.Settings.isUserBlocked(submitterLogin)) return 'blocked';
 
         const bypassRoles = settings.memory?.bypassRoles;
         const bypassMemory = isBroadcaster || (isLeadMod && bypassRoles?.leadMod) || (isMod && bypassRoles?.mod);
-
-        if (!bypassMemory && ClipQ.Memory.has(clipData.url, clipData.provider, clipData.clipId)) {
-            return 'memory';
-        }
+        if (!bypassMemory && ClipQ.Memory.has(clipData.url, clipData.provider, clipData.clipId)) return 'memory';
 
         if (settings.ageLimitDays > 0 && clipData.meta && clipData.meta.createdAt) {
             const clipDate = new Date(clipData.meta.createdAt);
@@ -265,12 +258,8 @@ ClipQ.Queue = (() => {
             clipId: clipData.clipId,
             meta: clipData.meta || {},
             submitters: [submitter],
-            submitterRoles: {
-                [submitter]: { isMod, isLeadMod, isVip, isBroadcaster }
-            },
-            submitterLogins: {
-                [submitter]: submitterLogin
-            },
+            submitterRoles: { [submitter]: { isMod, isLeadMod, isVip, isBroadcaster } },
+            submitterLogins: { [submitter]: submitterLogin },
             pushedBy,
             msgIds,
             priority,
@@ -290,15 +279,8 @@ ClipQ.Queue = (() => {
             const aPri = a.priority || 0;
             const bPri = b.priority || 0;
             if (bPri !== aPri) return bPri - aPri;
-
-            // If both are prioritized (> 0), newest push comes first
-            if (aPri > 0) {
-                return (b.pushedAt || b.addedAt) - (a.pushedAt || a.addedAt);
-            }
-
-            // If both are normal viewer clips (priority 0)
-            if (b.pushCount !== a.pushCount) return b.pushCount - a.pushCount;
-            return a.addedAt - b.addedAt;
+            if (aPri > 0) return (b.pushedAt || b.addedAt) - (a.pushedAt || a.addedAt);
+            return (b.pushCount - a.pushCount) || (a.addedAt - b.addedAt);
         });
     }
 
@@ -308,6 +290,7 @@ ClipQ.Queue = (() => {
             currentPlaying.watchedAt = Date.now();
             history.push(currentPlaying);
             saveHistory();
+            if (ClipQ.Sync) ClipQ.Sync.recordHistoryClip(currentPlaying);
         }
     }
 
@@ -323,8 +306,9 @@ ClipQ.Queue = (() => {
     function advancePlayback(archive) {
         if (playingFromHistory) {
             if (!archive && historyIndex >= 0 && historyIndex < history.length) {
-                history.splice(historyIndex, 1);
+                const [removed] = history.splice(historyIndex, 1);
                 saveHistory();
+                if (removed?.id && ClipQ.Sync) ClipQ.Sync.deleteHistoryClip(removed.id);
             } else {
                 historyIndex++;
             }
@@ -352,25 +336,16 @@ ClipQ.Queue = (() => {
         archiveCurrent();
         playingFromHistory = false;
         historyIndex = -1;
-
         const index = items.findIndex(i => i.id === id);
-        if (index > -1) {
-            currentPlaying = items.splice(index, 1)[0];
-        } else {
-            currentPlaying = null;
-        }
-
+        currentPlaying = index > -1 ? items.splice(index, 1)[0] : null;
         saveAndNotify();
         return currentPlaying;
     }
 
     function previousFromHistory() {
         if (history.length === 0) return null;
-
         if (!playingFromHistory) {
-            if (currentPlaying) {
-                items.unshift(currentPlaying);
-            }
+            if (currentPlaying) items.unshift(currentPlaying);
             playingFromHistory = true;
             historyIndex = history.length - 1;
         } else if (historyIndex > 0) {
@@ -378,7 +353,6 @@ ClipQ.Queue = (() => {
         } else {
             return null;
         }
-
         currentPlaying = history[historyIndex];
         saveAndNotify();
         return currentPlaying;
@@ -387,9 +361,7 @@ ClipQ.Queue = (() => {
     function removeById(id) {
         const before = items.length;
         items = items.filter(item => item.id !== id);
-        if (items.length < before) {
-            saveAndNotify();
-        }
+        if (items.length < before) saveAndNotify();
     }
 
     /** Remove a clip by its chat message ID when deleted by moderation. */
@@ -434,42 +406,27 @@ ClipQ.Queue = (() => {
             return true;
         });
 
-        if (changed) {
-            sortByPush();
-            saveAndNotify();
-        }
+        if (changed) { sortByPush(); saveAndNotify(); }
     }
 
     /** Smart removal of a submitter from all their clips (timeouts, bans, or remove all). */
-    function removeSubmitter(usernameOrLogin) {
-        removeSubmitterFromMatchedItems(() => true, usernameOrLogin, 'clip');
-    }
+    function removeSubmitter(usernameOrLogin) { removeSubmitterFromMatchedItems(() => true, usernameOrLogin, 'clip'); }
 
     /** Remove a clip by URL (privileged command). */
     function removeByUrl(url) {
         const parsed = ClipQ.Providers ? ClipQ.Providers.parseClipUrl(url) : null;
         const before = items.length;
         items = items.filter(item => !isSameClip(item, parsed?.provider, parsed?.id, url));
-        if (items.length < before) {
-            console.log(`[Queue] Removed clip by URL: ${url}`);
-            saveAndNotify();
-        }
+        if (items.length < before) { console.log(`[Queue] Removed clip by URL: ${url}`); saveAndNotify(); }
     }
 
     /** Remove caller's own clip by URL. */
     function removeOwnClipByUrl(url, usernameOrLogin) {
         const parsed = ClipQ.Providers ? ClipQ.Providers.parseClipUrl(url) : null;
-        removeSubmitterFromMatchedItems(
-            (item) => isSameClip(item, parsed?.provider, parsed?.id, url),
-            usernameOrLogin,
-            'own clip'
-        );
+        removeSubmitterFromMatchedItems((item) => isSameClip(item, parsed?.provider, parsed?.id, url), usernameOrLogin, 'own clip');
     }
 
-    function clear() {
-        items = [];
-        saveAndNotify();
-    }
+    function clear() { items = []; saveAndNotify(); }
 
     function removeHistoryById(id) {
         const idx = history.findIndex(item => item.id === id);
@@ -477,6 +434,7 @@ ClipQ.Queue = (() => {
         history.splice(idx, 1);
         const clearedActivePlayback = syncHistoryPlayback();
         saveHistory();
+        if (ClipQ.Sync) ClipQ.Sync.deleteHistoryClip(id);
         return { removed: true, clearedActivePlayback };
     }
 
@@ -484,7 +442,35 @@ ClipQ.Queue = (() => {
         history = [];
         const clearedActivePlayback = syncHistoryPlayback();
         saveHistory();
+        if (ClipQ.Sync) ClipQ.Sync.clearHistory();
         return clearedActivePlayback;
+    }
+
+    function applyCloudSnapshot(cloudQueue, cloudHistory) {
+        items = Array.isArray(cloudQueue?.items) ? [...cloudQueue.items] : [];
+        if (cloudQueue?.currentPlaying && !items.some(i => i.id === cloudQueue.currentPlaying.id)) {
+            items.unshift(cloudQueue.currentPlaying);
+        }
+        currentPlaying = null;
+        playingFromHistory = false;
+        historyIndex = -1;
+        history = Array.isArray(cloudHistory) ? [...cloudHistory] : [];
+        normalizeStoredList(items, Date.now());
+        normalizeStoredList(history, Date.now());
+        cleanupHistory();
+        saveQueueCache();
+        saveHistory();
+        notifyUpdate();
+    }
+
+    function prependCloudHistory(olderItems) {
+        if (!Array.isArray(olderItems) || olderItems.length === 0) return;
+        const existingIds = new Set(history.map(item => item.id).filter(Boolean));
+        const unique = olderItems.filter(item => item && (!item.id || !existingIds.has(item.id)));
+        if (unique.length === 0) return;
+        normalizeStoredList(unique, Date.now());
+        history = unique.concat(history);
+        if (playingFromHistory && historyIndex >= 0) historyIndex += unique.length;
     }
 
     loadQueue();
@@ -493,6 +479,7 @@ ClipQ.Queue = (() => {
         getItems, getHistory, isQueueOpen, setOpen, addClip, start, next, skipCurrent,
         extractAndPlay, previousFromHistory, removeById, removeByMsgId,
         removeSubmitter, removeByUrl, removeOwnClipByUrl, clear,
-        removeHistoryById, clearHistory, setUpdateCallback, cleanupHistory
+        removeHistoryById, clearHistory, setUpdateCallback, cleanupHistory,
+        applyCloudSnapshot, prependCloudHistory
     };
 })();

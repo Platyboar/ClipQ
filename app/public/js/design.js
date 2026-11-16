@@ -206,6 +206,7 @@ ClipQ.Design = (() => {
                 try {
                     localStorage.setItem(CUSTOM_DEFAULTS_KEY, JSON.stringify(readValues()));
                 } catch { /* ignore storage quota errors */ }
+                if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
                 alert(t('design.alert_set_default'));
             });
         }
@@ -225,6 +226,7 @@ ClipQ.Design = (() => {
                         try {
                             localStorage.removeItem(CUSTOM_DEFAULTS_KEY);
                         } catch { /* ignore storage remove errors */ }
+                        if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
                         resetToDefaults(false);
                     }
                 } else if (confirm(t('design.confirm_reset_all'))) {

@@ -10,16 +10,37 @@ export default [
     },
     js.configs.recommended,
     {
-        files: ["*.mjs"],
+        files: ["**/*.mjs"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "module",
             globals: {
                 ...globals.node,
+                ...globals.serviceworker,
             },
         },
         rules: {
             "no-unused-vars": ["error", { caughtErrors: "all" }],
+        },
+    },
+    {
+        files: ["worker.js", "worker/**/*.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: {
+                ...globals.serviceworker,
+            },
+        },
+        rules: {
+            "no-unused-vars": ["error", {
+                argsIgnorePattern: "^_",
+                caughtErrors: "all",
+            }],
+            "no-var": "error",
+            "prefer-const": "error",
+            "eqeqeq": ["error", "always", { null: "ignore" }],
+            "no-empty": ["error", { allowEmptyCatch: true }],
         },
     },
     {

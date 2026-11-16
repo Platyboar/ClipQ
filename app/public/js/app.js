@@ -9,6 +9,7 @@ ClipQ.App = (() => {
 
     let currentView = 'queue';
     let autoplay = false; // Default: OFF
+    let historyRenderLimit = 200;
     const t = (key, params) => ClipQ.I18n.t(key, params);
 
     async function init() {
@@ -105,21 +106,18 @@ ClipQ.App = (() => {
         else avatarEl.removeAttribute('src');
         document.getElementById('user-name').textContent = user.displayName;
 
+        if (ClipQ.Sync) await ClipQ.Sync.init(user);
+
         const settings = ClipQ.Settings.load();
         if (!settings.channel) {
             settings.channel = user.login;
             ClipQ.Settings.save(settings);
         }
 
-        // Apply app title
         const titleEl = document.getElementById('app-title');
         if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';
 
-        try {
-            autoplay = localStorage.getItem('clipq_autoplay') === 'true';
-        } catch {
-            autoplay = false;
-        }
+        try { autoplay = localStorage.getItem('clipq_autoplay') === 'true'; } catch { autoplay = false; }
         updateAutoplayUI();
 
         // Apply i18n to DOM after app screen is shown
@@ -156,7 +154,10 @@ ClipQ.App = (() => {
                 document.getElementById('queue-view').classList.toggle('hidden', currentView !== 'queue');
                 document.getElementById('history-view').classList.toggle('hidden', currentView !== 'history');
 
-                if (currentView === 'history') renderHistory();
+                if (currentView === 'history') {
+                    historyRenderLimit = 200;
+                    renderHistory();
+                }
             });
         });
     }
@@ -165,16 +166,16 @@ ClipQ.App = (() => {
         document.getElementById('btn-next').addEventListener('click', handleNextButton);
         document.getElementById('btn-prev').addEventListener('click', () => {
             const prev = ClipQ.Queue.previousFromHistory();
-            if (prev) {
-                ClipQ.Player.playClip(prev);
-                updateNextButton();
-            }
+            if (prev) { ClipQ.Player.playClip(prev); updateNextButton(); }
         });
         document.getElementById('queue-clear-btn').addEventListener('click', () => {
             if (confirm(t('queue.confirm_clear'))) ClipQ.Queue.clear();
         });
+        document.getElementById('history-load-more-btn')?.addEventListener('click', () => {
+            historyRenderLimit += 200;
+            renderHistory();
+        });
 
-        // Delegate queue list clicks and keyboard activation once on the container.
         const queueContainer = document.getElementById('queue-list');
         if (queueContainer) {
             bindThumbFallback(queueContainer);
@@ -196,10 +197,7 @@ ClipQ.App = (() => {
             queueContainer.addEventListener('keydown', (e) => {
                 if (e.target.closest('.queue-item-delete')) return;
                 const itemEl = e.target.closest('.queue-item');
-                if (itemEl && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    playFromElement(itemEl);
-                }
+                if (itemEl && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); playFromElement(itemEl); }
             });
         }
 
@@ -221,10 +219,7 @@ ClipQ.App = (() => {
                 if (!confirmed) return;
                 const result = ClipQ.Queue.removeHistoryById(id);
                 if (result.removed) {
-                    if (result.clearedActivePlayback) {
-                        ClipQ.Player.showEmpty();
-                        updateNextButton();
-                    }
+                    if (result.clearedActivePlayback) { ClipQ.Player.showEmpty(); updateNextButton(); }
                     renderHistory();
                 }
             });
@@ -251,13 +246,10 @@ ClipQ.App = (() => {
 
     function applyAutoplayState(state) {
         autoplay = !!state;
-        try {
-            localStorage.setItem('clipq_autoplay', autoplay);
-        } catch { /* ignore storage quota errors */ }
-        if (!autoplay && ClipQ.Player && ClipQ.Player.clearAutoplayTimeout) {
-            ClipQ.Player.clearAutoplayTimeout();
-        }
+        try { localStorage.setItem('clipq_autoplay', autoplay); } catch { /* ignore storage quota errors */ }
+        if (!autoplay && ClipQ.Player && ClipQ.Player.clearAutoplayTimeout) ClipQ.Player.clearAutoplayTimeout();
         updateAutoplayUI();
+        if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
         console.log(`[App] Autoplay set to: ${autoplay ? 'ON' : 'OFF'}`);
     }
 
@@ -400,8 +392,9 @@ ClipQ.App = (() => {
         const isLogo = safeThumb && safeThumb === fallbackLogo;
         const thumbClass = isLogo ? `${baseClass} platform-logo` : baseClass;
         const fallbackAttr = fallbackLogo && !isLogo ? ` data-fallback-logo="${ClipQ.escapeHtml(fallbackLogo)}"` : '';
+        const lazyAttr = baseClass === 'history-thumb' ? ' loading="lazy"' : '';
         return safeThumb
-            ? `<img class="${thumbClass}" src="${ClipQ.escapeHtml(safeThumb)}"${fallbackAttr} alt="">`
+            ? `<img class="${thumbClass}" src="${ClipQ.escapeHtml(safeThumb)}"${fallbackAttr}${lazyAttr} alt="">`
             : `<div class="${baseClass} clip-placeholder">🎬</div>`;
     }
 
@@ -467,25 +460,31 @@ ClipQ.App = (() => {
 
         const hist = ClipQ.Queue.getHistory();
         const grid = document.getElementById('history-grid');
+        const moreWrap = document.getElementById('history-more-wrap');
+        const moreBtn = document.getElementById('history-load-more-btn');
         if (hist.length === 0) {
             grid.innerHTML = `<div class="history-empty">${ClipQ.escapeHtml(t('history.empty'))}</div>`;
+            if (moreWrap) moreWrap.classList.add('hidden');
             return;
         }
 
         const deleteTitle = ClipQ.escapeHtml(t('history.delete'));
         const closeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
-        grid.innerHTML = hist.slice().reverse().map(item => {
+        const visible = hist.slice().reverse().slice(0, historyRenderLimit);
+        grid.innerHTML = visible.map(item => {
             const meta = item.meta || {};
-            const rawUrl = ClipQ.Providers?.getCanonicalUrl
-                ? ClipQ.Providers.getCanonicalUrl(item.provider, item.clipId, item.url)
-                : item.url;
+            const rawUrl = ClipQ.Providers?.getCanonicalUrl ? ClipQ.Providers.getCanonicalUrl(item.provider, item.clipId, item.url) : item.url;
             const safeUrl = ClipQ.sanitizeUrl(rawUrl);
             const inner = `${renderClipThumbnail(item, 'history-thumb')}<div class="history-info"><div class="history-title">${ClipQ.escapeHtml(meta.title || 'Clip')}</div><div class="history-channel">${ClipQ.escapeHtml(meta.channel || item.provider)}</div></div>`;
-            const body = safeUrl
-                ? `<a class="history-item-link" href="${ClipQ.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
-                : inner;
+            const body = safeUrl ? `<a class="history-item-link" href="${ClipQ.escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${inner}</a>` : inner;
             return `<div class="history-item" data-id="${ClipQ.escapeHtml(item.id || '')}">${body}<button type="button" class="history-item-delete" title="${deleteTitle}" aria-label="${deleteTitle}">${closeIcon}</button></div>`;
         }).join('');
+
+        const remaining = hist.length - visible.length;
+        if (moreWrap && moreBtn) {
+            moreWrap.classList.toggle('hidden', remaining <= 0);
+            if (remaining > 0) moreBtn.textContent = t('history.load_more', { count: remaining });
+        }
     }
 
     function isAutoplay() { return autoplay; }

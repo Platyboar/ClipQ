@@ -77,6 +77,7 @@ ClipQ.Settings = (() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
         } catch { /* ignore storage quota errors */ }
+        if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
     }
 
     function get() {
@@ -120,6 +121,10 @@ ClipQ.Settings = (() => {
 
         const channelText = document.getElementById('set-channel-text');
         if (channelText) channelText.textContent = s.channel || '';
+        const deleteCloudBtn = document.getElementById('settings-delete-cloud');
+        if (deleteCloudBtn) {
+            deleteCloudBtn.classList.toggle('hidden', !(ClipQ.Sync && ClipQ.Sync.isAvailable()));
+        }
         document.getElementById('set-app-title').value = s.appTitle || 'ClipQ';
 
         const langSelect = document.getElementById('set-language');
@@ -327,9 +332,35 @@ ClipQ.Settings = (() => {
             closeModal(true);
         });
 
+        const exportBtn = document.getElementById('settings-export');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                if (ClipQ.Sync) ClipQ.Sync.exportBackup();
+            });
+        }
+
+        const deleteCloudBtn = document.getElementById('settings-delete-cloud');
+        if (deleteCloudBtn) {
+            deleteCloudBtn.addEventListener('click', async () => {
+                const confirmed = await ClipQ.confirmAction({
+                    message: ClipQ.I18n.t('settings.general.confirm_delete_cloud'),
+                    yesLabel: ClipQ.I18n.t('history.confirm_yes'),
+                    cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
+                });
+                if (!confirmed || !ClipQ.Sync) return;
+                const ok = await ClipQ.Sync.deleteAllCloudData();
+                if (ok) {
+                    alert(ClipQ.I18n.t('settings.general.delete_cloud_done'));
+                    ClipQ.Auth.logout();
+                } else {
+                    alert(ClipQ.I18n.t('settings.general.delete_cloud_error'));
+                }
+            });
+        }
+
         const settingsResetBtn = document.getElementById('settings-reset');
         if (settingsResetBtn) {
-            settingsResetBtn.addEventListener('click', () => {
+            settingsResetBtn.addEventListener('click', async () => {
                 if (!confirm(ClipQ.I18n.t('settings.general.confirm_reset'))) return;
                 try {
                     localStorage.removeItem(STORAGE_KEY);
@@ -337,6 +368,10 @@ ClipQ.Settings = (() => {
                     localStorage.removeItem('clipq_layout_custom_defaults');
                     localStorage.removeItem('clipq_autoplay');
                 } catch { /* ignore storage errors */ }
+                current = cloneDefaultSettings();
+                if (ClipQ.Sync && ClipQ.Sync.isAvailable()) {
+                    await ClipQ.Sync.scheduleConfigSave(true);
+                }
                 window.location.reload();
             });
         }

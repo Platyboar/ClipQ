@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('de', {
     _name: 'Deutsch',
-    _flag: 'https://flagcdn.com/w80/de.png',
+    _flag: '/img/flags/de.png',
 
     // Login page
     'login.subtitle': 'Clip Queue für deinen Stream',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('de', {
     'history.confirm_delete': 'Möchtest du diesen Clip wirklich aus dem Verlauf löschen?',
     'history.confirm_yes': 'Ja',
     'history.confirm_cancel': 'Abbrechen',
+    'history.load_more': 'Mehr laden ({count} verbleibend)',
 
     // Settings modal
     'settings.title': 'Einstellungen',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('de', {
     'settings.general.channel_hint': 'Chat-Kanal, dem beigetreten wird',
     'settings.general.reset': 'Auf Werkseinstellungen zurücksetzen',
     'settings.general.confirm_reset': 'Möchtest du wirklich alle Einstellungen auf Werkseinstellungen zurücksetzen? Die App wird neu geladen.',
+    'settings.general.export': 'Daten exportieren (JSON)',
+    'settings.general.delete_cloud': 'Server-Daten löschen',
+    'settings.general.confirm_delete_cloud': 'Alle Einstellungen, den Verlauf und die Clip Memory dauerhaft vom Server löschen? Dies kann nicht rückgängig gemacht werden.',
+    'settings.general.delete_cloud_done': 'Alle Server-Daten wurden gelöscht.',
+    'settings.general.delete_cloud_error': 'Server-Daten konnten nicht gelöscht werden. Bitte erneut versuchen.',
 
     // Settings — Queue
     'settings.queue.providers': 'Clip-Anbieter',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('de', {
     'settings.about.license': 'Lizenziert unter der MIT-Lizenz.',
     'settings.about.issues_hint': 'Einen Fehler oder ein Problem gefunden? Melde es direkt auf GitHub:',
     'settings.about.report_btn': 'Problem auf GitHub melden',
+    'settings.about.privacy_heading': 'Datenschutz & Datenspeicherung',
+    'settings.about.privacy_text': 'Im Online-Betrieb werden deine Einstellungen, Clip Memory und dein Verlauf in der EU (Cloudflare D1) ausschließlich unter deiner Twitch-User-ID gespeichert. Twitch Access Tokens werden nicht auf dem Server gespeichert. Beim Abspielen von Clips werden externe Embeds von Twitch, YouTube, TikTok oder Instagram geladen. Du kannst deine Daten jederzeit unter Einstellungen → Allgemein exportieren oder löschen.',
 });

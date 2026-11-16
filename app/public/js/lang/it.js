@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('it', {
     _name: 'Italiano',
-    _flag: 'https://flagcdn.com/w80/it.png',
+    _flag: '/img/flags/it.png',
 
     // Login page
     'login.subtitle': 'Coda di clip per la tua trasmissione',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('it', {
     'history.confirm_delete': 'Vuoi davvero rimuovere questa clip dalla cronologia?',
     'history.confirm_yes': 'Sì',
     'history.confirm_cancel': 'Annulla',
+    'history.load_more': 'Carica altro ({count} rimanenti)',
 
     // Settings modal
     'settings.title': 'Impostazioni',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('it', {
     'settings.general.channel_hint': 'Canale chat a cui unirsi',
     'settings.general.reset': 'Ripristina impostazioni di fabbrica',
     'settings.general.confirm_reset': 'Vuoi davvero ripristinare tutte le impostazioni ai valori di fabbrica? L\'applicazione verrà ricaricata.',
+    'settings.general.export': 'Esporta dati (JSON)',
+    'settings.general.delete_cloud': 'Elimina dati sul server',
+    'settings.general.confirm_delete_cloud': 'Eliminare definitivamente tutte le impostazioni, la cronologia e la memoria clip dal server? Questa azione non può essere annullata.',
+    'settings.general.delete_cloud_done': 'Tutti i dati sul server sono stati eliminati.',
+    'settings.general.delete_cloud_error': 'Impossibile eliminare i dati sul server. Riprova.',
 
     // Settings — Queue
     'settings.queue.providers': 'Fornitori di clip',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('it', {
     'settings.about.license': 'Rilasciato sotto licenza MIT.',
     'settings.about.issues_hint': 'Hai trovato un bug o un problema? Segnalalo direttamente su GitHub:',
     'settings.about.report_btn': 'Segnala un problema su GitHub',
+    'settings.about.privacy_heading': 'Privacy e archiviazione dati',
+    'settings.about.privacy_text': "Nella versione ospitata online, impostazioni, memoria clip e cronologia vengono salvate nell'UE (Cloudflare D1) collegate solo al tuo ID utente Twitch. Nessun token di accesso Twitch viene salvato sul server. La riproduzione dei clip carica embed esterni da Twitch, YouTube, TikTok o Instagram. Puoi esportare o eliminare i tuoi dati in qualsiasi momento in Impostazioni → Generale.",
 });

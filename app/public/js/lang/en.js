@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('en', {
     _name: 'English',
-    _flag: 'https://flagcdn.com/w80/us.png',
+    _flag: '/img/flags/us.png',
 
     // Login page
     'login.subtitle': 'Clip Queue for your Stream',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('en', {
     'history.confirm_delete': 'Do you really want to remove this clip from history?',
     'history.confirm_yes': 'Yes',
     'history.confirm_cancel': 'Cancel',
+    'history.load_more': 'Load more ({count} remaining)',
 
     // Settings modal
     'settings.title': 'Settings',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('en', {
     'settings.general.channel_hint': 'Chat channel to join',
     'settings.general.reset': 'Reset to Factory Settings',
     'settings.general.confirm_reset': 'Really reset all settings to factory defaults? The app will reload.',
+    'settings.general.export': 'Export Data (JSON)',
+    'settings.general.delete_cloud': 'Delete Server Data',
+    'settings.general.confirm_delete_cloud': 'Permanently delete all your settings, history, and clip memory from the server? This cannot be undone.',
+    'settings.general.delete_cloud_done': 'All server data has been deleted.',
+    'settings.general.delete_cloud_error': 'Could not delete server data. Please try again.',
 
     // Settings — Queue
     'settings.queue.providers': 'Clip Providers',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('en', {
     'settings.about.license': 'Licensed under the MIT License.',
     'settings.about.issues_hint': 'Found a bug or have an issue? Report it directly on GitHub:',
     'settings.about.report_btn': 'Report an Issue on GitHub',
+    'settings.about.privacy_heading': 'Privacy & Data Storage',
+    'settings.about.privacy_text': 'When hosted online, your settings, clip memory, and clip history are stored in the EU (Cloudflare D1) linked only to your Twitch User ID. No Twitch access tokens are stored on the server. Playing clips loads external embeds from Twitch, YouTube, TikTok, or Instagram. You can export or delete your stored data anytime under Settings → General.',
 });

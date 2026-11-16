@@ -51,7 +51,12 @@ ClipQ.Memory = (() => {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(entriesCache));
             } catch { /* ignore storage quota errors */ }
+            if (ClipQ.Sync) ClipQ.Sync.recordMemoryKey(entry);
         }
+    }
+
+    function applyCloudSnapshot(keys) {
+        save(Array.isArray(keys) ? [...keys] : []);
     }
 
     function count() {
@@ -61,7 +66,8 @@ ClipQ.Memory = (() => {
 
     function purge() {
         save([]);
+        if (ClipQ.Sync) ClipQ.Sync.clearMemory();
     }
 
-    return { has, add, count, purge };
+    return { has, add, count, purge, applyCloudSnapshot };
 })();

@@ -8,7 +8,7 @@ ClipQ.CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
 ClipQ.Auth = (() => {
     'use strict';
 
-    const REDIRECT_URI = 'http://localhost:8000/';
+    const REDIRECT_URI = `${window.location.origin}/`;
     const TOKEN_KEY = 'clipq_token';
     const USER_KEY = 'clipq_user';
 

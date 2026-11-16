@@ -1,6 +1,7 @@
 {
     "name": "clipq-dev-checks",
     "version": "1.0.0",
+    "type": "module",
     "private": true,
     "description": "Development linters and verification checks for ClipQ",
     "scripts": {

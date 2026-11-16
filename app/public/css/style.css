@@ -229,3 +229,4 @@ a.btn:hover { text-decoration:none; }
 .history-title { font-size:var(--font-size-sm); font-weight:500; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .history-channel { font-size:11px; color:var(--color-text-dim); }
 .history-empty { color:var(--color-text-dim); padding:40px; text-align:center; }
+.history-more-wrap { display:flex; justify-content:center; padding:20px 0 8px; }

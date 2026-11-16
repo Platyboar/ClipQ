@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('ja', {
     _name: '日本語',
-    _flag: 'https://flagcdn.com/w80/jp.png',
+    _flag: '/img/flags/jp.png',
 
     // Login page
     'login.subtitle': 'あなたの配信のためのクリップキュー',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('ja', {
     'history.confirm_delete': 'このクリップを本当に履歴から削除しますか？',
     'history.confirm_yes': 'はい',
     'history.confirm_cancel': 'キャンセル',
+    'history.load_more': 'さらに読み込む（残り {count} 件）',
 
     // Settings modal
     'settings.title': '設定',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('ja', {
     'settings.general.channel_hint': '参加するチャットチャンネル',
     'settings.general.reset': '工場出荷時の設定に戻す',
     'settings.general.confirm_reset': '本当にすべての設定を工場出荷時のデフォルトに戻しますか？アプリが再読み込みされます。',
+    'settings.general.export': 'データをエクスポート (JSON)',
+    'settings.general.delete_cloud': 'サーバーデータを削除',
+    'settings.general.confirm_delete_cloud': 'すべての設定、履歴、クリップメモリをサーバーから完全に削除しますか？この操作は元に戻せません。',
+    'settings.general.delete_cloud_done': 'すべてのサーバーデータを削除しました。',
+    'settings.general.delete_cloud_error': 'サーバーデータを削除できませんでした。もう一度お試しください。',
 
     // Settings — Queue
     'settings.queue.providers': '対応プラットフォーム',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('ja', {
     'settings.about.license': 'MIT ライセンスのもとで公開されています。',
     'settings.about.issues_hint': 'バグや問題を見つけた場合は、GitHub で直接報告してください:',
     'settings.about.report_btn': 'GitHub で問題を報告',
+    'settings.about.privacy_heading': 'プライバシーとデータ保存',
+    'settings.about.privacy_text': 'オンライン利用時は、設定・クリップメモリ・視聴履歴が Twitch ユーザー ID にのみ紐づけて EU（Cloudflare D1）に保存されます。Twitch アクセストークンはサーバーに保存されません。クリップ再生時には Twitch・YouTube・TikTok・Instagram の外部プレイヤーが読み込まれます。「設定 → 一般」からいつでもデータのエクスポートや削除が可能です。',
 });

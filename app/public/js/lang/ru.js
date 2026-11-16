@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('ru', {
     _name: 'Русский',
-    _flag: 'https://flagcdn.com/w80/ru.png',
+    _flag: '/img/flags/ru.png',
 
     // Login page
     'login.subtitle': 'Очередь клипов для вашего стрима',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('ru', {
     'history.confirm_delete': 'Вы действительно хотите удалить этот клип из истории?',
     'history.confirm_yes': 'Да',
     'history.confirm_cancel': 'Отмена',
+    'history.load_more': 'Загрузить ещё (осталось {count})',
 
     // Settings modal
     'settings.title': 'Настройки',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('ru', {
     'settings.general.channel_hint': 'Канал чата для подключения',
     'settings.general.reset': 'Сбросить до заводских настроек',
     'settings.general.confirm_reset': 'Действительно сбросить все настройки до заводских? Приложение будет перезагружено.',
+    'settings.general.export': 'Экспорт данных (JSON)',
+    'settings.general.delete_cloud': 'Удалить данные с сервера',
+    'settings.general.confirm_delete_cloud': 'Удалить безвозвратно все ваши настройки, историю и память клипов с сервера? Это действие нельзя отменить.',
+    'settings.general.delete_cloud_done': 'Все данные на сервере удалены.',
+    'settings.general.delete_cloud_error': 'Не удалось удалить данные с сервера. Попробуйте еще раз.',
 
     // Settings — Queue
     'settings.queue.providers': 'Провайдеры клипов',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('ru', {
     'settings.about.license': 'Распространяется под лицензией MIT.',
     'settings.about.issues_hint': 'Нашли ошибку или проблему? Сообщите о ней напрямую на GitHub:',
     'settings.about.report_btn': 'Сообщить о проблеме на GitHub',
+    'settings.about.privacy_heading': 'Конфиденциальность и хранение данных',
+    'settings.about.privacy_text': 'В онлайн-версии ваши настройки, память и история клипов хранятся в ЕС (Cloudflare D1) и привязаны только к вашему Twitch User ID. Токены доступа Twitch на сервере не сохраняются. При воспроизведении клипов загружаются внешние плееры Twitch, YouTube, TikTok или Instagram. Вы можете экспортировать или удалить свои данные в любое время в Настройки → Общие.',
 });

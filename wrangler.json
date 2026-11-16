@@ -1,0 +1,16 @@
+{
+    "name": "clipq",
+    "main": "./worker.js",
+    "compatibility_date": "2026-11-01",
+    "assets": {
+        "directory": "./app/public",
+        "binding": "ASSETS"
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "clipq-db",
+            "database_id": "a0ed414c-73d7-460b-835b-08a6c3ae704c"
+        }
+    ]
+}

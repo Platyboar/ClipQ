@@ -30,7 +30,7 @@
 .provider-chip.active { background:var(--color-accent); color:#fff; border-color:var(--color-accent); }
 .settings-tab-content { display:none; }
 .settings-tab-content.active { display:block; }
-.settings-action-bar { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); display:flex; gap:10px; }
+.settings-action-bar { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); display:flex; gap:10px; flex-wrap:wrap; }
 .settings-count-text { margin:12px 0; }
 .settings-group-divider { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); }
 .channel-text-group { display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
@@ -124,6 +124,8 @@ select.form-input option { background:var(--color-settings-bg); color:var(--colo
 .about-text { line-height:1.6; color:var(--color-text); }
 .about-meta { font-size:var(--font-size-sm); color:var(--color-text-dim); }
 .about-actions { margin-top:4px; display:flex; flex-wrap:wrap; gap:10px; }
+.about-privacy { border-top:1px solid var(--color-border); padding-top:12px; display:flex; flex-direction:column; gap:6px; }
+.about-privacy-title { font-size:var(--font-size-base); font-weight:600; color:var(--color-text-bright); }
 
 /* CONFIRM DIALOG */
 .confirm-overlay { z-index:1100; }

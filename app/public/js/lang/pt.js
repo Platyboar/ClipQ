@@ -3,7 +3,7 @@
  */
 ClipQ.I18n.register('pt', {
     _name: 'Português',
-    _flag: 'https://flagcdn.com/w80/pt.png',
+    _flag: '/img/flags/pt.png',
 
     // Login page
     'login.subtitle': 'Fila de clips para a tua transmissão',
@@ -67,6 +67,7 @@ ClipQ.I18n.register('pt', {
     'history.confirm_delete': 'Desejas realmente remover este clip do histórico?',
     'history.confirm_yes': 'Sim',
     'history.confirm_cancel': 'Cancelar',
+    'history.load_more': 'Carregar mais ({count} restantes)',
 
     // Settings modal
     'settings.title': 'Configurações',
@@ -92,6 +93,11 @@ ClipQ.I18n.register('pt', {
     'settings.general.channel_hint': 'Canal de chat ao qual se ligar',
     'settings.general.reset': 'Restaurar configurações de fábrica',
     'settings.general.confirm_reset': 'Desejas realmente restaurar todas as configurações para os padrões de fábrica? A aplicação será recarregada.',
+    'settings.general.export': 'Exportar dados (JSON)',
+    'settings.general.delete_cloud': 'Eliminar dados do servidor',
+    'settings.general.confirm_delete_cloud': 'Eliminar permanentemente todas as tuas configurações, histórico e memória de clips do servidor? Esta ação não pode ser desfeita.',
+    'settings.general.delete_cloud_done': 'Todos os dados do servidor foram eliminados.',
+    'settings.general.delete_cloud_error': 'Não foi possível eliminar os dados do servidor. Tenta novamente.',
 
     // Settings — Queue
     'settings.queue.providers': 'Plataformas de clips',
@@ -237,4 +243,6 @@ ClipQ.I18n.register('pt', {
     'settings.about.license': 'Licenciado sob a licença MIT.',
     'settings.about.issues_hint': 'Encontraste um bug ou problema? Reporta diretamente no GitHub:',
     'settings.about.report_btn': 'Reportar um problema no GitHub',
+    'settings.about.privacy_heading': 'Privacidade e armazenamento de dados',
+    'settings.about.privacy_text': 'Na versão online, as tuas configurações, memória de clips e histórico são guardados na UE (Cloudflare D1) associados apenas ao teu ID de utilizador da Twitch. Nenhum token de acesso da Twitch é guardado no servidor. A reprodução de clips carrega leitores externos da Twitch, YouTube, TikTok ou Instagram. Podes exportar ou eliminar os teus dados a qualquer momento em Configurações → Geral.',
 });

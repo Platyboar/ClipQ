@@ -393,6 +393,7 @@ ClipQ.SettingsLayout = (() => {
                 try {
                     localStorage.setItem(CUSTOM_LAYOUT_KEY, JSON.stringify(readFromUI()));
                 } catch { /* ignore storage quota errors */ }
+                if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
                 alert(ClipQ.I18n.t('settings.layout.alert_set_default'));
             });
         }
@@ -410,6 +411,7 @@ ClipQ.SettingsLayout = (() => {
                         try {
                             localStorage.removeItem(CUSTOM_LAYOUT_KEY);
                         } catch { /* ignore storage errors */ }
+                        if (ClipQ.Sync) ClipQ.Sync.scheduleConfigSave();
                         targetLayout = getDefaultLayout();
                     }
                 } else if (confirm(ClipQ.I18n.t('settings.layout.confirm_reset_all'))) {

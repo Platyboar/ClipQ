@@ -62,10 +62,14 @@ def main():
     if not node_modules.is_dir():
         raise RuntimeError(f'Missing {node_modules}. Run "npm install" in {ROOT} first.')
 
-    _run_cmd('Ruff Lint', [sys.executable, '-m', 'ruff', 'check', 'app/server.py', 'build_exe.py', 'tests'], env)
+    _run_cmd(
+        'Ruff Lint',
+        [sys.executable, '-m', 'ruff', 'check', 'app/server.py', 'build_exe.py', 'tests', 'vercel-ytdlp'],
+        env,
+    )
     _run_cmd(
         'Ruff Format',
-        [sys.executable, '-m', 'ruff', 'format', '--check', 'app/server.py', 'build_exe.py', 'tests'],
+        [sys.executable, '-m', 'ruff', 'format', '--check', 'app/server.py', 'build_exe.py', 'tests', 'vercel-ytdlp'],
         env,
     )
     _run_cmd('ESLint', [_local_bin('eslint', env), '.'], env)
@@ -81,6 +85,11 @@ def main():
     http_res = run_http_checks()
     print(http_res)
     print('[PASS] Backend HTTP & SSRF Tests')
+
+    node_bin = shutil.which('node', path=env.get('PATH'))
+    if not node_bin:
+        raise RuntimeError('Node.js executable not found for Worker & D1 tests.')
+    _run_cmd('Cloudflare Worker & D1 Tests', [node_bin, 'tests/check_worker.mjs'], env)
 
     if args.quick:
         print('\n--- [Headless Browser E2E Tests: SKIPPED (--quick)] ---')

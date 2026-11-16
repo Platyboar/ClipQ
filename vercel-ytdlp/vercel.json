@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/video-url",
+            "destination": "/api/video_url.py"
+        }
+    ]
+}
