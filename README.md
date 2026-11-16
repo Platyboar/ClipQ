@@ -106,6 +106,15 @@ All commands use a configurable prefix (default: `!clipq`).
 
 ## Changelog
 
+### v2.0.0
+
+- 🌐 **Hosted Web App & EU Cloud Sync** — Live at **https://clipq.platyboar.workers.dev/** powered by Cloudflare Workers + Cloudflare D1 (EU), persisting settings, design, layout, clip memory, queue, and unlimited history per verified Twitch account, plus an optional Vercel `yt-dlp` proxy (`vercel-ytdlp/`) protected via shared secret and Twitch-authenticated proxy routes.
+- 💾 **Data Export, Erasure & Tab-Close Flush** — Added JSON backup export and permanent server-data deletion under **Settings → General**, plus `pagehide`/`visibilitychange` `keepalive` flushing and paginated history loading.
+- 💬 **`!clipq` Default & User Removal** — Switched the default command prefix from `!queue` to `!clipq` and extended `remove` to accept `<URL | all | user>` (e.g. `!clipq remove Platyboar`).
+- 🎬 **Provider, Player & History Improvements** — Upgraded TikTok embeds to `/player/v1/` (autoplay end detection and unmuted playback), improved Instagram handle extraction and direct Reel/MP4 fallbacks, canonicalized Twitch `/clip/` & `/create/` URLs, skipped unavailable Twitch clips without archiving them, and added single-entry deletion (`✕`) in History.
+- 👁️ **Layout `Hide` vs. `Remove` & Picker Polish** — Separate visibility toggles in **Layout**, accessible `:focus-visible` outlines, color picker fixes, and dark-contrast dropdown styling.
+- 🔒 **Local Assets & Verification Suite** — Self-hosted all fonts (`.woff2`) and language flags locally, added the **About** tab (with privacy/storage details and GitHub Issues link), refactored modules under 500 lines, and added a 9-stage automated check suite (`check.bat`).
+
 ### v1.1.0
 
 - 📐 **Advanced Layout Controls** — Adjust component heights (Facecam, Queue) with individual lock controls and smart auto-distribution of space.
