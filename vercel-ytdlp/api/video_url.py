@@ -45,6 +45,15 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/health':
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path not in ('/api/video-url', '/api/video_url', '/api/video_url.py'):
+            self._send_json(404, {'error': 'Not found'})
+            return
+
         expected_secret = os.environ.get('YTDLP_PROXY_SECRET', '').strip()
         if expected_secret:
             provided = self.headers.get('X-ClipQ-Proxy-Secret', '')
@@ -52,7 +61,6 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json(403, {'error': 'Forbidden'})
                 return
 
-        parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
         raw_url = params.get('url', [None])[0]
         if not raw_url:
