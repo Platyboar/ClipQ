@@ -6,6 +6,9 @@
         "directory": "./app/public",
         "binding": "ASSETS"
     },
+    "vars": {
+        "YTDLP_PROXY_URL": "https://clipq-ytdlp-two.vercel.app"
+    },
     "d1_databases": [
         {
             "binding": "DB",
