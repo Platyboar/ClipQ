@@ -77,10 +77,11 @@ FUNCTIONAL_TEST_JS = """
     const ariaAfter = modBadge.getAttribute('aria-pressed');
     modBadge.click();
     const prefixEl = document.getElementById('set-cmd-prefix');
+    const defaultPrefix = prefixEl.value;
     prefixEl.value = '?q';
     prefixEl.dispatchEvent(new Event('input', { bubbles: true }));
     const exText = document.getElementById('example-cmd-next').textContent;
-    prefixEl.value = '!queue';
+    prefixEl.value = '!clipq';
     prefixEl.dispatchEvent(new Event('input', { bubbles: true }));
     const origCmds = ClipQ.SettingsCommands.readFromUI();
     origCmds.purgememory.word = '';
@@ -88,7 +89,7 @@ FUNCTIONAL_TEST_JS = """
     const emptyCmdPreserved = document.getElementById('set-cmd-purgememory').value === '';
     origCmds.purgememory.word = 'purgememory';
     ClipQ.SettingsCommands.populateUI(origCmds);
-    out.commands = { ariaBefore, ariaAfter, exText, emptyCmdPreserved };
+    out.commands = { ariaBefore, ariaAfter, defaultPrefix, exText, emptyCmdPreserved };
 
     document.querySelector('.modal-tabs .tab[data-stab="layout"]').click();
     const lockQ = document.getElementById('layout-lock-queue');
@@ -423,7 +424,9 @@ def assert_functional_report(report):
     assert not report['runtimeErrors'], f"JS runtime errors: {report['runtimeErrors']}"
     assert report['about']['active'] and report['about']['rel'] == 'noopener noreferrer'
     assert report['commands']['ariaBefore'] == 'true' and report['commands']['ariaAfter'] == 'false'
-    assert report['commands']['exText'] == 'Ex: ?q next', f"Unexpected exText: {report['commands']}"
+    assert report['commands']['defaultPrefix'] == '!clipq' and report['commands']['exText'] == 'Ex: ?q next', report[
+        'commands'
+    ]
     assert report['commands']['emptyCmdPreserved'], 'Empty command word was not preserved'
     assert report['layout']['qLockedDisabled'] and report['layout']['qBefore'] == report['layout']['qAfter']
     assert report['layout']['sumHeights'] == 100 and report['layout']['orderChanged']
@@ -437,9 +440,7 @@ def assert_functional_report(report):
 
     des = report['design']
     assert des['pickerOpen'] and des['alphaAppearance'] == 'none', f'ColorPicker/range check failed: {des}'
-    assert des['previewAccent'] == 'rgba(17,170,34,1)' and des['modalClosedAfterCancel'], (
-        f'Design preview failed: {des}'
-    )
+    assert des['previewAccent'] == 'rgba(17,170,34,1)' and des['modalClosedAfterCancel'], des
     assert des['revertedAccent'] == des['origInlineAccent'], f'Design cancel revert failed: {des}'
 
     assert report['settingsLangSave'] == {'langAfterSaveDe': 'de', 'langAfterSaveEn': 'en'}

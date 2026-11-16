@@ -187,7 +187,7 @@ ClipQ.Player = (() => {
                 <div class="player-loading-text">${esc(t('player.loading_instagram'))}</div>
             </div>`;
 
-            fetch(`/api/video-url?url=${encodeURIComponent(clip.url)}`)
+            ClipQ.fetchWithAuth(`/api/video-url?url=${encodeURIComponent(clip.url)}`)
                 .then(res => {
                     if (!res.ok) throw new Error('API request failed');
                     return res.json();

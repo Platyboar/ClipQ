@@ -112,7 +112,7 @@ ClipQ.I18n.register('pt', {
     'settings.queue.blocked_users_hint': 'Um nome por linha. Mensagens destes utilizadores serão ignoradas.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Comandos de chat para a transmissão. Não distingue maiúsculas de minúsculas.<br>Exemplo: Se o prefixo for <code>!queue</code> e «Próximo clip» for <code>next</code>, então <code>!queue next</code> é reconhecido.',
+    'settings.commands.hint': 'Comandos de chat para a transmissão. Não distingue maiúsculas de minúsculas.<br>Exemplo: Se o prefixo for <code>!clipq</code> e «Próximo clip» for <code>next</code>, então <code>!clipq next</code> é reconhecido.',
     'settings.commands.example_label': 'Ex:',
     'settings.commands.prefix': 'Prefixo do comando',
     'settings.commands.next': 'Próximo clip',

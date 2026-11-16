@@ -112,7 +112,7 @@ ClipQ.I18n.register('ja', {
     'settings.queue.blocked_users_hint': '1行に1ユーザー名。これらのユーザーからのメッセージは無視されます。',
 
     // Settings — Commands
-    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!queue</code> で「次のクリップ」が <code>next</code> の場合、<code>!queue next</code> が認識されます。',
+    'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!clipq</code> で「次のクリップ」が <code>next</code> の場合、<code>!clipq next</code> が認識されます。',
     'settings.commands.example_label': '例:',
     'settings.commands.prefix': 'コマンドプレフィックス',
     'settings.commands.next': '次のクリップ',

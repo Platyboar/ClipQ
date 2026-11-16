@@ -103,14 +103,22 @@ ClipQ.Chat = (() => {
 
     function startHealthCheck() {
         if (healthInterval) clearInterval(healthInterval);
+        const host = window.location.hostname;
+        const isLocalServer = host === 'localhost' || host === '127.0.0.1';
+
         healthInterval = setInterval(() => {
+            const ircOk = Boolean(client && client.readyState() === 'OPEN');
+            if (!isLocalServer) {
+                setConnected(navigator.onLine !== false && ircOk);
+                return;
+            }
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
 
             fetch('/health', { signal: controller.signal })
                 .then(res => {
                     clearTimeout(timeoutId);
-                    const ircOk = client && client.readyState() === 'OPEN';
                     setConnected(res.ok && ircOk);
                 })
                 .catch(() => {
@@ -174,6 +182,42 @@ ClipQ.Chat = (() => {
         });
     }
 
+    function handleRemoveCommand(rawAfterPrefix, username, login, canRemoveAny) {
+        const firstSpaceIdx = rawAfterPrefix.search(/\s/);
+        const rawRest = firstSpaceIdx === -1 ? '' : rawAfterPrefix.slice(firstSpaceIdx).trim();
+        if (!rawRest) return 'handled';
+
+        const firstToken = rawRest.split(/\s+/)[0];
+        if (firstToken.toLowerCase() === 'all') {
+            console.log(`[Cmd] ${username}: remove all (own clips)`);
+            ClipQ.Queue.removeSubmitter(login || username);
+            return 'handled';
+        }
+
+        const isUrlArg = /^https?:\/\//i.test(firstToken) || firstToken.includes('/') || firstToken.includes('.');
+        if (isUrlArg) {
+            if (canRemoveAny) {
+                console.log(`[Cmd] ${username}: remove (privileged) ${rawRest}`);
+                ClipQ.Queue.removeByUrl(rawRest);
+            } else {
+                console.log(`[Cmd] ${username}: remove (own) ${rawRest}`);
+                ClipQ.Queue.removeOwnClipByUrl(rawRest, login || username);
+            }
+            return 'handled';
+        }
+
+        const targetUser = firstToken.replace(/^@/, '').trim();
+        if (targetUser) {
+            const targetLower = targetUser.toLowerCase();
+            const isSelf = targetLower === (login || username).toLowerCase() || targetLower === username.toLowerCase();
+            if (isSelf || canRemoveAny) {
+                console.log(`[Cmd] ${username}: remove user ${targetUser}`);
+                ClipQ.Queue.removeSubmitter(targetUser);
+            }
+        }
+        return 'handled';
+    }
+
     /**
      * Handle chat commands with role-based permissions.
      * @returns {'handled'|'push'|false}
@@ -187,7 +231,7 @@ ClipQ.Chat = (() => {
         const msg = rawTrimmed.toLowerCase();
 
         if (!msg.startsWith(prefix)) return false;
-        // Enforce that the command prefix is followed by whitespace (e.g., !queue next instead of !queuenext)
+        // Enforce that the command prefix is followed by whitespace (e.g., !clipq next instead of !clipqnext)
         if (msg.length <= prefix.length || !/\s/.test(msg.charAt(prefix.length))) return false;
 
         const rawAfterPrefix = rawTrimmed.substring(prefix.length).trim();
@@ -269,25 +313,7 @@ ClipQ.Chat = (() => {
         }
 
         if (matchesCmd('remove')) {
-            if (arg1 === 'all') {
-                console.log(`[Cmd] ${username}: remove all (own clips)`);
-                ClipQ.Queue.removeSubmitter(login || username);
-                return 'handled';
-            }
-
-            // Preserve original casing for case-sensitive clip IDs (YouTube, Twitch, Instagram)
-            const firstSpaceIdx = rawAfterPrefix.search(/\s/);
-            const urlArg = firstSpaceIdx === -1 ? '' : rawAfterPrefix.slice(firstSpaceIdx).trim();
-            if (urlArg) {
-                if (hasPermission('remove')) {
-                    console.log(`[Cmd] ${username}: remove (privileged) ${urlArg}`);
-                    ClipQ.Queue.removeByUrl(urlArg);
-                } else {
-                    console.log(`[Cmd] ${username}: remove (own) ${urlArg}`);
-                    ClipQ.Queue.removeOwnClipByUrl(urlArg, login || username);
-                }
-            }
-            return 'handled';
+            return handleRemoveCommand(rawAfterPrefix, username, login, hasPermission('remove'));
         }
 
         if (matchesCmd('providers')) {

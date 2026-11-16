@@ -18,7 +18,7 @@ async function hashToken(token) {
     return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function authenticateTwitchRequest(request, env) {
+export async function authenticateTwitchRequest(request, env) {
     const authHeader = request.headers.get('Authorization') || '';
     const match = authHeader.match(/^Bearer\s+([A-Za-z0-9._~+/-]+=*)$/);
     if (!match) return null;

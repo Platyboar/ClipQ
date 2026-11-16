@@ -112,7 +112,7 @@ ClipQ.I18n.register('fr', {
     'settings.queue.blocked_users_hint': 'Un nom par ligne. Les messages de ces utilisateurs seront ignorés.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!queue</code> et « Clip suivant » est <code>next</code>, alors <code>!queue next</code> est reconnu.',
+    'settings.commands.hint': 'Commandes de chat pour le stream. Non sensible à la casse.<br>Exemple : Si le préfixe est <code>!clipq</code> et « Clip suivant » est <code>next</code>, alors <code>!clipq next</code> est reconnu.',
     'settings.commands.example_label': 'Ex :',
     'settings.commands.prefix': 'Préfixe de commande',
     'settings.commands.next': 'Clip suivant',

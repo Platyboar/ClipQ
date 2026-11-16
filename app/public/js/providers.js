@@ -232,13 +232,13 @@ ClipQ.Providers = (() => {
                 };
                 try {
                     const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(id)}&format=json`;
-                    const res = await fetch(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
+                    const res = await ClipQ.fetchWithAuth(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
                     if (!res.ok) return fallback;
                     const data = await res.json();
 
                     let createdAt = null;
                     try {
-                        const metaRes = await fetch(`/api/youtube-meta?id=${encodeURIComponent(id)}`);
+                        const metaRes = await ClipQ.fetchWithAuth(`/api/youtube-meta?id=${encodeURIComponent(id)}`);
                         if (metaRes.ok) {
                             const metaData = await metaRes.json();
                             if (metaData.createdAt) createdAt = metaData.createdAt;
@@ -296,7 +296,7 @@ ClipQ.Providers = (() => {
 
                 const targetUrl = (originalUrl || `https://www.tiktok.com/video/${id}`).replace(/^http:\/\//i, 'https://');
                 try {
-                    const res = await fetch(`/api/video-url?url=${encodeURIComponent(targetUrl)}`);
+                    const res = await ClipQ.fetchWithAuth(`/api/video-url?url=${encodeURIComponent(targetUrl)}`);
                     if (res.ok) {
                         const data = await res.json();
                         const handle = (data.uploader || urlHandle || '').replace(/^@/, '');
@@ -335,7 +335,7 @@ ClipQ.Providers = (() => {
 
                 try {
                     const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(targetUrl)}`;
-                    const res = await fetch(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
+                    const res = await ClipQ.fetchWithAuth(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
                     if (!res.ok) return result;
                     const data = await res.json();
 
@@ -391,7 +391,7 @@ ClipQ.Providers = (() => {
                 };
                 try {
                     const videoUrl = (originalUrl || `https://www.instagram.com/p/${id}/`).replace(/^http:\/\//i, 'https://');
-                    const res = await fetch(`/api/video-url?url=${encodeURIComponent(videoUrl)}`);
+                    const res = await ClipQ.fetchWithAuth(`/api/video-url?url=${encodeURIComponent(videoUrl)}`);
                     if (res.ok) {
                         const data = await res.json();
                         const display = data.uploader || data.channel || meta.channel;

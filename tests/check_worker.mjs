@@ -134,20 +134,37 @@ async function main() {
         const badAsset = await callWorker('/js/missing.js', env);
         assert.equal(badAsset.status, 404);
 
-        assert.equal((await callWorker('/api/oembed', env)).status, 400);
-        assert.equal((await callWorker('/api/oembed?url=http://127.0.0.1/evil', env)).status, 403);
-        assert.equal((await callWorker('/api/youtube-meta?id=bad!id', env)).status, 400);
-        assert.equal((await callWorker('/api/video-url?url=http://169.254.169.254/latest', env)).status, 403);
+        const auth1 = { Authorization: 'Bearer token_user1' };
+        const auth2 = { Authorization: 'Bearer token_user2' };
 
-        const videoFallback = await callWorker('/api/video-url?url=https://www.instagram.com/reel/DfItNRUiKTV/', env);
+        assert.equal((await callWorker('/api/oembed', env)).status, 401);
+        assert.equal((await callWorker('/api/youtube-meta?id=dQw4w9WgXcQ', env)).status, 401);
+        assert.equal(
+            (await callWorker('/api/video-url?url=https://www.instagram.com/reel/DfItNRUiKTV/', env)).status,
+            401
+        );
+
+        assert.equal((await callWorker('/api/oembed', env, { headers: auth1 })).status, 400);
+        assert.equal(
+            (await callWorker('/api/oembed?url=http://127.0.0.1/evil', env, { headers: auth1 })).status,
+            403
+        );
+        assert.equal((await callWorker('/api/youtube-meta?id=bad!id', env, { headers: auth1 })).status, 400);
+        assert.equal(
+            (await callWorker('/api/video-url?url=http://169.254.169.254/latest', env, { headers: auth1 })).status,
+            403
+        );
+
+        const videoFallback = await callWorker(
+            '/api/video-url?url=https://www.instagram.com/reel/DfItNRUiKTV/',
+            env,
+            { headers: auth1 }
+        );
         assert.equal(videoFallback.status, 200);
         assert.deepEqual(videoFallback.json, { url: null });
 
         assert.equal((await callWorker('/api/sync', env)).status, 401);
         assert.equal((await callWorker('/api/sync', env, { headers: { Authorization: 'Bearer bad_token' } })).status, 401);
-
-        const auth1 = { Authorization: 'Bearer token_user1' };
-        const auth2 = { Authorization: 'Bearer token_user2' };
 
         const emptySync = await callWorker('/api/sync', env, { headers: auth1 });
         assert.equal(emptySync.status, 200);

@@ -56,6 +56,16 @@ window.ClipQ = window.ClipQ || {};
         return '';
     }
 
+    function fetchWithAuth(url, options = {}) {
+        const token = window.ClipQ.Auth && window.ClipQ.Auth.getToken ? window.ClipQ.Auth.getToken() : null;
+        if (!token) return fetch(url, options);
+        const headers = new Headers(options.headers || {});
+        if (!headers.has('Authorization')) {
+            headers.set('Authorization', `Bearer ${token}`);
+        }
+        return fetch(url, { ...options, headers });
+    }
+
     /** Parse an integer strictly, falling back only on NaN (preserving 0). */
     function intOrDefault(val, fallback) {
         const parsed = Number.parseInt(val, 10);
@@ -153,6 +163,7 @@ window.ClipQ = window.ClipQ || {};
         PROVIDER_THUMB_FALLBACKS,
         escapeHtml,
         sanitizeUrl,
+        fetchWithAuth,
         intOrDefault,
         getToggleState,
         setToggleState,

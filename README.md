@@ -1,7 +1,17 @@
 # ClipQ 🎬
 
-**ClipQ** is a lightweight, self-hosted Clip Queue for Twitch streamers. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
+**ClipQ** is a lightweight Clip Queue for Twitch streamers. Viewers submit clips via chat commands and the streamer watches them in order — with full control over the queue.
 Developed with the help of Google Antigravity.
+
+## 🌐 Use Online (No Installation Required)
+
+**Live Web App:** **https://clipq.platyboar.workers.dev/**
+
+- Open the URL directly in your browser — no download, Python setup, or extra account required.
+- Sign in using **Connect with Twitch** only.
+- When using the online version, your settings, design, layout, clip memory, and unlimited clip history are persisted in the EU (Cloudflare D1) under your Twitch User ID, with JSON export and one-click server data deletion under **Settings → General**.
+
+> Prefer running everything on your own machine? You can also self-host ClipQ locally using the Windows executable or Python source instructions below.
 
 ## Features
 
@@ -13,10 +23,11 @@ Developed with the help of Google Antigravity.
 - 🎨 **Customizable Design & Layout** — Colors, fonts, and layout (component ordering, sidebar position, info bar placement, and component visibility) are fully customizable and can be saved as defaults
 - 📋 **Clip Memory** — Prevents duplicate clips from being re-queued
 - 📜 **History** — Browse previously watched clips
+- 💾 **Data Export & Deletion** — Export backups as JSON or delete stored online data anytime
 - 🚫 **Moderation** — Blocked users/streamers, auto-removal on timeout/ban
 - ◀️ **Autoplay** — Automatically advance to the next clip
 
-## Getting Started
+## Getting Started (Local Self-Hosting)
 
 ### Standalone Executable (Windows)
 
@@ -60,23 +71,22 @@ If you prefer to run ClipQ from source or are on a non-Windows platform:
 
 ## Chat Commands
 
-All commands use a configurable prefix (default: `!queue`).
+All commands use a configurable prefix (default: `!clipq`).
 
 | Command | Description | Default Roles |
 |---------|-------------|---------------|
-| `!queue next` | Play next clip | Broadcaster, Lead Mod, Mod |
-| `!queue push [url]` | Push a clip to #1 in queue | Broadcaster, Lead Mod, Mod |
-| `!queue open` | Open the queue for submissions | Broadcaster, Lead Mod, Mod |
-| `!queue close` | Close the queue | Broadcaster, Lead Mod, Mod |
-| `!queue clear` | Clear the entire queue | Broadcaster, Lead Mod, Mod |
-| `!queue purgememory` | Clear the clip memory | Broadcaster, Lead Mod, Mod |
-| `!queue autoplay on/off` | Toggle autoplay | Broadcaster, Lead Mod, Mod |
-| `!queue limit [n]` | Set per-user clip limit | Broadcaster, Lead Mod, Mod |
-| `!queue remove [url]` | Remove a specific clip | Broadcaster, Lead Mod, Mod* |
-| `!queue remove all` | Remove all own clips | Everyone (own clips only) |
-| `!queue providers [name] on/off` | Enable/disable a clip provider | Broadcaster, Lead Mod, Mod |
+| `!clipq next` | Play next clip | Broadcaster, Lead Mod, Mod |
+| `!clipq push [url]` | Push a clip to #1 in queue | Broadcaster, Lead Mod, Mod |
+| `!clipq open` | Open the queue for submissions | Broadcaster, Lead Mod, Mod |
+| `!clipq close` | Close the queue | Broadcaster, Lead Mod, Mod |
+| `!clipq clear` | Clear the entire queue | Broadcaster, Lead Mod, Mod |
+| `!clipq purgememory` | Clear the clip memory | Broadcaster, Lead Mod, Mod |
+| `!clipq autoplay on/off` | Toggle autoplay | Broadcaster, Lead Mod, Mod |
+| `!clipq limit [n]` | Set per-user clip limit | Broadcaster, Lead Mod, Mod |
+| `!clipq remove <url \| all \| user>` | Remove a clip by URL, a user's clips, or all own clips (`all`) | Broadcaster, Lead Mod, Mod* |
+| `!clipq providers [name] on/off` | Enable/disable a clip provider | Broadcaster, Lead Mod, Mod |
 
-*\* Regular users can always remove their own submitted clips.*
+*\* Regular users can always remove their own submitted clips via `all`, their own username, or a specific URL.*
 
 ## Adding a New Language
 
@@ -88,7 +98,8 @@ All commands use a configurable prefix (default: `!queue`).
 
 ## Tech Stack
 
-- **Backend:** Python (`http.server` + `yt-dlp`)
+- **Web Hosting & Sync:** Cloudflare Workers + Cloudflare D1 (EU) + optional Vercel Python Serverless (`yt-dlp`)
+- **Local Backend:** Python (`http.server` + `yt-dlp`)
 - **Frontend:** Vanilla HTML, CSS, JavaScript
 - **Chat:** [tmi.js](https://tmijs.com/) (Twitch IRC)
 - **Auth:** Twitch OAuth Implicit Grant Flow

@@ -12,7 +12,19 @@ SYNC_TEST_JS = """
 
     const aboutPrivacyHeading = document.querySelector('#stab-about .about-privacy-title')?.textContent || '';
     out.aboutPrivacyRendered = Boolean(aboutPrivacyHeading.trim());
+    out.removeExampleText = document.getElementById('example-cmd-remove')?.textContent || '';
     out.offlineDeleteCloudHidden = document.getElementById('settings-delete-cloud')?.classList.contains('hidden');
+
+    ClipQ.Queue.clear();
+    ClipQ.Queue.setOpen(true);
+    ClipQ.Queue.addClip({
+        provider: 'youtube',
+        clipId: 'rmUser11111',
+        url: 'https://youtu.be/rmUser11111',
+        meta: { title: 'Remove User Clip', channel: 'Chan' }
+    }, { name: 'Platyboar', login: 'platyboar' });
+    ClipQ.Queue.removeSubmitter('platyboar');
+    out.removedSubmitterCount = ClipQ.Queue.getItems().length;
 
     const cloudHistoryPage1 = [];
     const cloudHistoryPage2 = [];
@@ -30,7 +42,7 @@ SYNC_TEST_JS = """
         else cloudHistoryPage1.push(entry);
     }
 
-    const calls = { putConfig: 0, postHistory: 0, postMemory: 0, deleteAll: 0 };
+    const calls = { putConfig: 0, keepalivePut: false, proxyAuthOk: false, postHistory: 0, postMemory: 0, deleteAll: 0 };
     const origFetch = window.fetch.bind(window);
     window.fetch = async (url, opts) => {
         const u = typeof url === 'string' ? url : '';
@@ -38,11 +50,16 @@ SYNC_TEST_JS = """
         if (u === '/health') {
             return new Response(JSON.stringify({ ok: true, sync: true }), { status: 200 });
         }
+        if (u.startsWith('/api/oembed')) {
+            calls.proxyAuthOk = new Headers(opts?.headers || {}).get('Authorization') === 'Bearer mock_test_token';
+            return new Response(JSON.stringify({ title: 'Mock' }), { status: 200 });
+        }
         if (u.startsWith('/api/sync/history?offset=')) {
             return new Response(JSON.stringify({ items: cloudHistoryPage2, offset: 500, hasMore: false }), { status: 200 });
         }
         if (u === '/api/sync/config' && method === 'PUT') {
             calls.putConfig++;
+            if (opts?.keepalive) calls.keepalivePut = true;
             return new Response(JSON.stringify({ ok: true }), { status: 200 });
         }
         if (u === '/api/sync/history' && method === 'POST') {
@@ -105,6 +122,11 @@ SYNC_TEST_JS = """
         out.onlineDeleteCloudVisible = !document.getElementById('settings-delete-cloud')?.classList.contains('hidden');
         document.getElementById('settings-close').click();
 
+        await ClipQ.fetchWithAuth('/api/oembed?url=https://www.youtube.com/oembed');
+        ClipQ.Sync.scheduleConfigSave();
+        window.dispatchEvent(new Event('pagehide'));
+        await new Promise(r => setTimeout(r, 40));
+
         await ClipQ.Sync.exportBackup();
         const deleted = await ClipQ.Sync.deleteAllCloudData();
         out.deletedCloud = deleted && !ClipQ.Sync.isAvailable() && localStorage.getItem('clipq_history') === null;
@@ -130,6 +152,8 @@ def assert_sync_report(report):
     assert report['loginRedirectMatchesOrigin'], f'OAuth redirect URI not dynamic: {report}'
     assert report['localFlagsAllPresent'], f'Non-local flags detected: {report}'
     assert report['aboutPrivacyRendered'], f'About privacy section missing: {report}'
+    assert report['removeExampleText'] == 'Ex: !clipq remove <URL | all | user>', report['removeExampleText']
+    assert report['removedSubmitterCount'] == 0, f'removeSubmitter did not clear user clip: {report}'
     assert report['offlineDeleteCloudHidden'], f'Delete cloud button should hide offline: {report}'
     assert report['syncAvailable'] and report['loadedOver500History'], f'Cloud history >500 failed: {report}'
     assert report['oldestLoadedFirst'] and report['syncedAppTitle'] == 'SyncedTitle', (
@@ -141,4 +165,8 @@ def assert_sync_report(report):
         'cardsAfterMore': 400,
     }, f'History pagination failed: {report["historyPaging"]}'
     assert report['onlineDeleteCloudVisible'], f'Delete cloud button hidden when online: {report}'
+    assert report['calls']['proxyAuthOk'], f'Proxy fetch missing Twitch Bearer token: {report}'
+    assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
+        f'pagehide keepalive config flush failed: {report}'
+    )
     assert report['deletedCloud'] and report['calls']['deleteAll'] == 1, f'Cloud deletion failed: {report}'

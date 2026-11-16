@@ -6,6 +6,7 @@ window.ClipQ = window.ClipQ || {};
 ClipQ.SettingsCommands = (() => {
     'use strict';
 
+    const DEFAULT_PREFIX = '!clipq';
     const DEFAULT_ROLES = { broadcaster: true, leadMod: true, mod: true, vip: false, all: false };
     const CMD_KEYS = ['next', 'push', 'open', 'close', 'clear', 'purgememory', 'autoplay', 'limit', 'remove', 'providers'];
     const DEFAULT_COMMAND_WORDS = {
@@ -30,7 +31,7 @@ ClipQ.SettingsCommands = (() => {
         purgememory: '',
         autoplay: ' off',
         limit: ' 5',
-        remove: ' all',
+        remove: ' <URL | all | user>',
         providers: ' twitch off'
     };
 
@@ -39,7 +40,7 @@ ClipQ.SettingsCommands = (() => {
     }
 
     function cloneDefaults() {
-        const cloned = { prefix: '!queue' };
+        const cloned = { prefix: DEFAULT_PREFIX };
         for (const key of CMD_KEYS) {
             cloned[key] = cloneCommand(DEFAULT_COMMAND_WORDS[key]);
         }
@@ -156,7 +157,7 @@ ClipQ.SettingsCommands = (() => {
 
     function readFromUI() {
         const prefixEl = document.getElementById('set-cmd-prefix');
-        const commands = { prefix: prefixEl ? prefixEl.value.trim() : '!queue' };
+        const commands = { prefix: prefixEl ? prefixEl.value.trim() : DEFAULT_PREFIX };
 
         for (const key of CMD_KEYS) {
             const input = document.getElementById(`set-cmd-${key}`);

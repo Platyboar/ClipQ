@@ -112,7 +112,7 @@ ClipQ.I18n.register('ru', {
     'settings.queue.blocked_users_hint': 'Одно имя на строку. Сообщения этих пользователей будут игнорироваться.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Команды чата для стрима. Регистр не важен.<br>Пример: Если префикс <code>!queue</code> и «Следующий клип» — <code>next</code>, то распознается <code>!queue next</code>.',
+    'settings.commands.hint': 'Команды чата для стрима. Регистр не важен.<br>Пример: Если префикс <code>!clipq</code> и «Следующий клип» — <code>next</code>, то распознается <code>!clipq next</code>.',
     'settings.commands.example_label': 'Прим:',
     'settings.commands.prefix': 'Префикс команды',
     'settings.commands.next': 'Следующий клип',

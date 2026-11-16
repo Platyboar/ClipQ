@@ -89,14 +89,22 @@ ClipQ.Sync = (() => {
         };
     }
 
-    async function pushConfigNow() {
+    async function pushConfigNow(useKeepalive = false) {
         if (!available || !ready || suppressPush) return;
+        const body = JSON.stringify(buildConfigPayload());
         try {
             await authFetch('/api/sync/config', {
                 method: 'PUT',
-                body: JSON.stringify(buildConfigPayload()),
+                body,
+                keepalive: Boolean(useKeepalive),
             });
-        } catch { /* ignore transient offline errors */ }
+        } catch {
+            if (useKeepalive) {
+                try {
+                    await authFetch('/api/sync/config', { method: 'PUT', body });
+                } catch { /* ignore transient offline errors */ }
+            }
+        }
     }
 
     function scheduleConfigSave(immediate = false) {
@@ -106,13 +114,20 @@ ClipQ.Sync = (() => {
             configTimer = null;
         }
         if (immediate) {
-            return pushConfigNow();
+            return pushConfigNow(false);
         }
         configTimer = setTimeout(() => {
             configTimer = null;
-            pushConfigNow();
+            pushConfigNow(false);
         }, CONFIG_DEBOUNCE_MS);
         return Promise.resolve();
+    }
+
+    function flushPendingConfig() {
+        if (!configTimer) return;
+        clearTimeout(configTimer);
+        configTimer = null;
+        pushConfigNow(true);
     }
 
     async function pushBatch(path, payloadBuilder, items, chunkSize) {
@@ -331,6 +346,11 @@ ClipQ.Sync = (() => {
     function isAvailable() {
         return available;
     }
+
+    window.addEventListener('pagehide', flushPendingConfig);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushPendingConfig();
+    });
 
     return {
         init,

@@ -112,7 +112,7 @@ ClipQ.I18n.register('en', {
     'settings.queue.blocked_users_hint': 'One name per line. Messages from these users will be ignored.',
 
     // Settings — Commands
-    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If the prefix is <code>!queue</code> and "Next Clip" is <code>next</code>, then <code>!queue next</code> is recognized.',
+    'settings.commands.hint': 'Chat commands for the stream. Not case-sensitive.<br>Example: If the prefix is <code>!clipq</code> and "Next Clip" is <code>next</code>, then <code>!clipq next</code> is recognized.',
     'settings.commands.example_label': 'Ex:',
     'settings.commands.prefix': 'Command Prefix',
     'settings.commands.next': 'Next Clip',
