@@ -29,6 +29,8 @@ ClipQ.I18n.register('ja', {
     'player.previous': '← 前へ',
     'player.start': '▶ スタート',
     'player.next': '次へ →',
+    'player.share_chat': 'チャットに共有',
+    'player.share_chat_scope_prompt': 'Twitchチャットへクリップを送信するには更新された権限が必要です。今すぐ再接続しますか？',
     'player.auto': '自動',
     'player.autoplay_title': '自動再生',
     'player.loading_instagram': 'Instagram動画を読み込み中...',
@@ -64,6 +66,7 @@ ClipQ.I18n.register('ja', {
 
     // History
     'history.empty': '再生されたクリップはまだありません。',
+    'history.filter_all': 'すべて',
     'history.search_placeholder': 'タイトル、チャンネル、投稿者で検索...',
     'history.search_empty': '検索に一致するクリップがありません。',
     'history.delete': '履歴から削除',
@@ -134,6 +137,8 @@ ClipQ.I18n.register('ja', {
     'settings.queue.blocked_streamers_hint': '1行に1つのチャンネル名。これらの配信者のクリップは拒否されます。',
     'settings.queue.blocked_users': 'ブロックされたユーザー',
     'settings.queue.blocked_users_hint': '1行に1ユーザー名。これらのユーザーからのメッセージは無視されます。',
+    'settings.queue.blocked_categories': 'ブロックされたカテゴリー / ゲーム',
+    'settings.queue.blocked_categories_hint': '1行に1つのゲームまたはカテゴリー名。該当するクリップは拒否されます。',
 
     // Settings — Commands
     'settings.commands.hint': '配信用のチャットコマンド。大文字と小文字は区別されません。<br>例：プレフィックスが <code>!clipq</code> で「次のクリップ」が <code>next</code> の場合、<code>!clipq next</code> が認識されます。',

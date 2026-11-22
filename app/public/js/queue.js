@@ -191,6 +191,7 @@ ClipQ.Queue = (() => {
         const priority = isPushed ? (isBroadcaster ? 3 : isLeadMod ? 2 : isMod ? 1 : 0) : 0;
 
         if (ClipQ.Settings.isUserBlocked(submitter) || ClipQ.Settings.isUserBlocked(submitterLogin)) return 'blocked';
+        if (clipData.meta?.category && ClipQ.Settings.isCategoryBlocked(clipData.meta.category)) return 'category';
 
         const bypassRoles = settings.memory?.bypassRoles;
         const bypassMemory = isBroadcaster || (isLeadMod && bypassRoles?.leadMod) || (isMod && bypassRoles?.mod);

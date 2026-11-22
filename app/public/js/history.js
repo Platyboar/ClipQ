@@ -8,12 +8,14 @@ ClipQ.History = (() => {
 
     let renderLimit = 200;
     let searchQuery = '';
+    let providerFilter = 'all';
 
     function resetLimit() {
         renderLimit = 200;
     }
 
     function matchesSearch(item, query) {
+        if (providerFilter !== 'all' && item.provider !== providerFilter) return false;
         if (!query) return true;
         const meta = item.meta || {};
         const haystack = [
@@ -85,6 +87,20 @@ ClipQ.History = (() => {
                 render(renderThumbFn);
             });
         }
+
+        const filtersWrap = document.getElementById('history-platform-filters');
+        filtersWrap?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.history-filter-chip');
+            if (!btn) return;
+            providerFilter = btn.dataset.provider || 'all';
+            filtersWrap.querySelectorAll('.history-filter-chip').forEach((chip) => {
+                const active = chip === btn;
+                chip.classList.toggle('active', active);
+                chip.setAttribute('aria-pressed', String(active));
+            });
+            renderLimit = 200;
+            render(renderThumbFn);
+        });
 
         document.getElementById('history-load-more-btn')?.addEventListener('click', () => {
             renderLimit += 200;

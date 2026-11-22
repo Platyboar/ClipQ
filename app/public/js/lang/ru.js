@@ -29,6 +29,8 @@ ClipQ.I18n.register('ru', {
     'player.previous': '← Назад',
     'player.start': '▶ Старт',
     'player.next': 'Вперед →',
+    'player.share_chat': 'Отправить в чат',
+    'player.share_chat_scope_prompt': 'Для отправки клипов в чат Twitch требуются обновленные права. Переподключить Twitch сейчас?',
     'player.auto': 'Авто',
     'player.autoplay_title': 'Автовоспроизведение',
     'player.loading_instagram': 'Загрузка видео из Instagram...',
@@ -64,6 +66,7 @@ ClipQ.I18n.register('ru', {
 
     // History
     'history.empty': 'Клипы еще не просмотрены.',
+    'history.filter_all': 'Все',
     'history.search_placeholder': 'Поиск по названию, каналу или автору...',
     'history.search_empty': 'Клипы по запросу не найдены.',
     'history.delete': 'Удалить из истории',
@@ -134,6 +137,8 @@ ClipQ.I18n.register('ru', {
     'settings.queue.blocked_streamers_hint': 'Один канал на строку. Клипы этих стримеров будут отклонены.',
     'settings.queue.blocked_users': 'Заблокированные пользователи',
     'settings.queue.blocked_users_hint': 'Одно имя на строку. Сообщения этих пользователей будут игнорироваться.',
+    'settings.queue.blocked_categories': 'Заблокированные категории / игры',
+    'settings.queue.blocked_categories_hint': 'Одно название игры или категории на строку. Клипы из этих категорий будут отклонены.',
 
     // Settings — Commands
     'settings.commands.hint': 'Команды чата для стрима. Регистр не важен.<br>Пример: Если префикс <code>!clipq</code> и «Следующий клип» — <code>next</code>, то распознается <code>!clipq next</code>.',

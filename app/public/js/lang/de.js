@@ -29,6 +29,8 @@ ClipQ.I18n.register('de', {
     'player.previous': '← Vorheriger',
     'player.start': '▶ Start',
     'player.next': 'Nächster →',
+    'player.share_chat': 'Im Chat teilen',
+    'player.share_chat_scope_prompt': 'Zum Senden von Clips in den Twitch-Chat sind aktualisierte Chat-Berechtigungen nötig. Jetzt neu mit Twitch verbinden?',
     'player.auto': 'Auto',
     'player.autoplay_title': 'Autoplay',
     'player.loading_instagram': 'Lade Instagram-Video...',
@@ -64,6 +66,7 @@ ClipQ.I18n.register('de', {
 
     // History
     'history.empty': 'Noch keine Clips angesehen.',
+    'history.filter_all': 'Alle',
     'history.search_placeholder': 'History durchsuchen...',
     'history.search_empty': 'Keine passenden Clips gefunden.',
     'history.delete': 'Aus dem Verlauf entfernen',
@@ -134,6 +137,8 @@ ClipQ.I18n.register('de', {
     'settings.queue.blocked_streamers_hint': 'Ein Kanalname pro Zeile. Clips von diesen Streamern werden abgelehnt.',
     'settings.queue.blocked_users': 'Gesperrte User',
     'settings.queue.blocked_users_hint': 'Ein Name pro Zeile. Nachrichten dieser User werden ignoriert.',
+    'settings.queue.blocked_categories': 'Gesperrte Kategorien / Spiele',
+    'settings.queue.blocked_categories_hint': 'Ein Spiel- oder Kategoriename pro Zeile. Clips aus diesen Kategorien werden abgelehnt.',
 
     // Settings — Commands
     'settings.commands.hint': 'Chat-Commands für den Stream. Nicht case-sensitive.<br>Beispiel: Wenn das Prefix <code>!clipq</code> und „Nächster Clip“ <code>next</code> ist, wird <code>!clipq next</code> erkannt.',

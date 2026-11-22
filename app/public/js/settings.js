@@ -24,6 +24,7 @@ ClipQ.Settings = (() => {
             historyRetentionDays: 0,
             blockedUsers: ['streamlabs', 'nightbot', 'streamelements', 'fossabot', 'moobot'],
             blockedStreamers: [],
+            blockedCategories: [],
             commands: ClipQ.SettingsCommands.cloneDefaults(),
             memory: {
                 bypassRoles: { leadMod: true, mod: false }
@@ -60,6 +61,7 @@ ClipQ.Settings = (() => {
                     providers: { ...base.providers, ...(saved.providers || {}) },
                     blockedUsers: Array.isArray(saved.blockedUsers) ? [...saved.blockedUsers] : base.blockedUsers,
                     blockedStreamers: Array.isArray(saved.blockedStreamers) ? [...saved.blockedStreamers] : base.blockedStreamers,
+                    blockedCategories: Array.isArray(saved.blockedCategories) ? [...saved.blockedCategories] : base.blockedCategories,
                     commands: ClipQ.SettingsCommands.migrate(saved.commands),
                     memory: {
                         ...base.memory,
@@ -145,6 +147,12 @@ ClipQ.Settings = (() => {
         return get().blockedStreamers.some(s => s.replace(/^@/, '').toLowerCase().trim() === normalized);
     }
 
+    function isCategoryBlocked(categoryName) {
+        if (!categoryName) return false;
+        const normalized = categoryName.toLowerCase().trim();
+        return get().blockedCategories.some(c => c.toLowerCase().trim() === normalized);
+    }
+
     /**
      * Check whether a user role is permitted to run a given command.
      */
@@ -208,6 +216,8 @@ ClipQ.Settings = (() => {
         document.getElementById('set-history-retention').value = s.historyRetentionDays || 0;
         document.getElementById('set-blocked-users').value = s.blockedUsers.join('\n');
         document.getElementById('set-blocked-streamers').value = s.blockedStreamers.join('\n');
+        const catEl = document.getElementById('set-blocked-categories');
+        if (catEl) catEl.value = s.blockedCategories.join('\n');
 
         document.querySelectorAll('.provider-chip').forEach(chip => {
             const active = !!s.providers[chip.dataset.provider];
@@ -264,6 +274,7 @@ ClipQ.Settings = (() => {
 
         const nonNegInt = (id) => Math.max(0, ClipQ.intOrDefault(document.getElementById(id)?.value, 0));
         const unitBtn = document.querySelector('#set-user-clip-unit .unit-switch-btn.active');
+        const readLines = (id) => (document.getElementById(id)?.value || '').split('\n').map(v => v.trim()).filter(Boolean);
         return {
             channel: get().channel,
             appTitle: document.getElementById('set-app-title').value.trim() || 'ClipQ',
@@ -276,8 +287,9 @@ ClipQ.Settings = (() => {
             ageLimitDays: nonNegInt('set-age-limit'),
             maxDurationSeconds: nonNegInt('set-max-duration'),
             historyRetentionDays: nonNegInt('set-history-retention'),
-            blockedUsers: document.getElementById('set-blocked-users').value.split('\n').map(u => u.trim()).filter(Boolean),
-            blockedStreamers: document.getElementById('set-blocked-streamers').value.split('\n').map(u => u.trim()).filter(Boolean),
+            blockedUsers: readLines('set-blocked-users'),
+            blockedStreamers: readLines('set-blocked-streamers'),
+            blockedCategories: readLines('set-blocked-categories'),
             commands: ClipQ.SettingsCommands.readFromUI(),
             memory: { bypassRoles },
             design: designVals,
@@ -411,27 +423,20 @@ ClipQ.Settings = (() => {
         });
 
         document.getElementById('settings-logout')?.addEventListener('click', () => ClipQ.Auth.logout());
-
         const copyObsBtn = document.getElementById('copy-obs-url-btn');
         if (copyObsBtn) {
             let copyResetTimer = null;
             copyObsBtn.addEventListener('click', async () => {
                 const obsInput = document.getElementById('set-obs-url');
                 if (!obsInput) return;
-                try {
-                    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(obsInput.value);
-                    else { obsInput.focus(); obsInput.select(); }
-                } catch { obsInput.focus(); obsInput.select(); }
+                try { if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(obsInput.value); else { obsInput.focus(); obsInput.select(); } } catch { obsInput.focus(); obsInput.select(); }
                 copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copied');
                 clearTimeout(copyResetTimer);
                 copyResetTimer = setTimeout(() => { copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copy'); copyResetTimer = null; }, 1500);
             });
         }
 
-        const confirmKey = (key) => ClipQ.confirmAction({
-            message: ClipQ.I18n.t(key), yesLabel: ClipQ.I18n.t('history.confirm_yes'), cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
-        });
-
+        const confirmKey = (key) => ClipQ.confirmAction({ message: ClipQ.I18n.t(key), yesLabel: ClipQ.I18n.t('history.confirm_yes'), cancelLabel: ClipQ.I18n.t('history.confirm_cancel') });
         const regenerateObsBtn = document.getElementById('regenerate-obs-url-btn');
         regenerateObsBtn?.addEventListener('click', async () => {
             if (!ClipQ.Sync?.regenerateObsKey || !(await confirmKey('settings.general.confirm_obs_regenerate'))) return;
@@ -442,7 +447,6 @@ ClipQ.Settings = (() => {
                 if (nextKey && obsInput) obsInput.value = `${window.location.origin}/obs/${nextKey}`;
             } finally { regenerateObsBtn.disabled = false; }
         });
-
         document.getElementById('settings-close').addEventListener('click', () => closeModal(false));
         document.getElementById('settings-cancel').addEventListener('click', () => closeModal(false));
         document.addEventListener('keydown', (e) => {
@@ -485,7 +489,7 @@ ClipQ.Settings = (() => {
     }
 
     return {
-        load, save, get, isUserBlocked, isStreamerBlocked,
+        load, save, get, isUserBlocked, isStreamerBlocked, isCategoryBlocked,
         hasCommandPermission, applyTopbarVisibility, hideObsUrlCover, initUI, populateUI
     };
 })();

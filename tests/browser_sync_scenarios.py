@@ -5,7 +5,7 @@ SYNC_TEST_JS = """
     const out = {};
 
     const loginUrl = new URL(ClipQ.Auth.getLoginUrl());
-    out.loginRedirectMatchesOrigin = loginUrl.searchParams.get('redirect_uri') === (window.location.origin + '/');
+    out.loginRedirectMatchesOrigin = loginUrl.searchParams.get('redirect_uri') === (window.location.origin + '/') && (loginUrl.searchParams.get('scope') || '').includes('user:write:chat');
     out.normalMenubarVisible = getComputedStyle(document.getElementById('menubar')).display !== 'none';
     out.obsUrlValue = document.getElementById('set-obs-url')?.value || '';
     history.replaceState(null, '', '/obs/obs_key_alpha_1234567890');
@@ -58,15 +58,14 @@ SYNC_TEST_JS = """
         else cloudHistoryPage1.push(entry);
     }
 
-    const calls = { putConfig: 0, keepalivePut: false, proxyAuthOk: false, obsSyncOk: false, obsTwitchMetaOk: false, postHistory: 0, postMemory: 0, deleteAll: 0 };
+    const calls = { putConfig: 0, keepalivePut: false, proxyAuthOk: false, obsSyncOk: false, obsTwitchMetaOk: false, postHistory: 0, postMemory: 0, deleteAll: 0, chatPosts: 0 };
     const origFetch = window.fetch.bind(window);
     window.fetch = async (url, opts) => {
         const u = typeof url === 'string' ? url : '';
         const method = (opts?.method || 'GET').toUpperCase();
         const hdrs = new Headers(opts?.headers || {});
-        if (u === '/health') {
-            return new Response(JSON.stringify({ ok: true, sync: true }), { status: 200 });
-        }
+        if (u === 'https://api.twitch.tv/helix/chat/messages' && method === 'POST') { calls.chatPosts++; return new Response(JSON.stringify({ data: [{ is_sent: true }] }), { status: 200 }); }
+        if (u === '/health') return new Response(JSON.stringify({ ok: true, sync: true }), { status: 200 });
         if (u.startsWith('/api/oembed')) {
             calls.proxyAuthOk = hdrs.get('Authorization') === 'Bearer mock_test_token';
             if (u.includes('DeadYt1')) return new Response(JSON.stringify({ error: 'Upstream HTTP 404' }), { status: 502 });
@@ -116,24 +115,11 @@ SYNC_TEST_JS = """
                 calls.obsSyncOk = true;
             }
             return new Response(JSON.stringify({
-                exists: true,
-                userId: '99999',
-                login: 'teststreamer',
-                displayName: 'TestStreamer',
+                exists: true, userId: '99999', login: 'teststreamer', displayName: 'TestStreamer',
                 avatar: obsHdr ? 'https://static-cdn.jtvnw.net/obs-u1.png' : '',
                 obsKey: obsHdr ? undefined : 'obs_key_alpha_1234567890',
-                config: {
-                    settings: { appTitle: 'SyncedTitle', providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true }, design: { showBadges: true, showChat: true } },
-                    customDesign: null,
-                    customLayout: null,
-                    queue: null,
-                    language: 'en',
-                    autoplay: true
-                },
-                history: cloudHistoryPage1,
-                historyTotal: 550,
-                hasMoreHistory: true,
-                memory: ['youtube:seen_1']
+                config: { settings: { appTitle: 'SyncedTitle', providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true }, design: { showBadges: true, showChat: true } }, customDesign: null, customLayout: null, queue: null, language: 'en', autoplay: true },
+                history: cloudHistoryPage1, historyTotal: 550, hasMoreHistory: true, memory: ['youtube:seen_1']
             }), { status: 200 });
         }
         if (u === 'https://7tv.io/v3/emote-sets/global') {
@@ -341,25 +327,40 @@ SYNC_TEST_JS = """
         document.getElementById('btn-next')?.click();
         await new Promise(r => setTimeout(r, 80));
         out.brokenAutoSkipped = Boolean(document.querySelector('#player-area iframe')?.getAttribute('src')?.includes('NormalClip1') && ClipQ.Queue.getItems().length === 0);
+        const shareBtn = document.getElementById('btn-share-chat');
+        const nextRect = document.getElementById('btn-next')?.getBoundingClientRect();
+        const shareRect = shareBtn?.getBoundingClientRect();
+        shareBtn?.click(); shareBtn?.click(); shareBtn?.click();
+        await new Promise(r => setTimeout(r, 30));
+        out.shareInChatRapidOk = Boolean(shareBtn && !shareBtn.disabled && shareRect && nextRect && shareRect.top >= nextRect.bottom && calls.chatPosts === 3);
         ClipQ.Player.showEmpty();
 
         document.getElementById('dropdown-settings').click();
         document.querySelector('.modal-tabs .tab[data-stab="queue"]').click();
         const qLefts = ['#stab-queue .form-label', '#stab-queue .form-hint', '.user-limit-grid > div:first-child .form-hint'].map(s => Math.round(document.querySelector(s)?.getBoundingClientRect().left || 0));
+        const blkCols = Array.from(document.querySelectorAll('#stab-queue .blocked-lists-grid > div'));
+        out.blockedSideBySide = blkCols.length === 2 && Math.round(blkCols[0].getBoundingClientRect().top) === Math.round(blkCols[1].getBoundingClientRect().top);
         document.getElementById('set-remove-timeout-clips').click();
         document.getElementById('set-remove-timeout-clips').click();
+        document.getElementById('set-blocked-categories').value = 'Just Chatting';
         document.getElementById('set-user-clip-limit').value = '1';
         document.getElementById('set-user-clip-window').value = '24';
         document.querySelector('#set-user-clip-unit [data-unit="days"]').click();
         document.getElementById('settings-save-close').click();
         const qCfg = ClipQ.Settings.get();
+        const catBlockedRes = ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'CatClip1', url: 'https://clips.twitch.tv/CatClip1', meta: { title: 'Cat', category: 'Just Chatting' } }, 'catuser');
         ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'WinClip1', url: 'https://youtu.be/WinClip1', meta: { title: 'W1' } }, 'winuser');
         ClipQ.Queue.start();
         ClipQ.Queue.next();
         const winLimRes = ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'WinClip2', url: 'https://youtu.be/WinClip2', meta: { title: 'W2' } }, 'winuser');
-        out.userWindowLimitOk = new Set(qLefts).size === 1 && qLefts[0] > 0 && qCfg.userClipLimitWindow === 24 && qCfg.userClipLimitUnit === 'days' && qCfg.removeClipsOnTimeout === true && winLimRes === 'limit';
-        qCfg.userClipLimit = 0;
-        qCfg.userClipLimitWindow = 0;
+        out.userWindowLimitOk = catBlockedRes === 'category' && new Set(qLefts).size === 1 && qLefts[0] > 0 && qCfg.userClipLimitWindow === 24 && qCfg.userClipLimitUnit === 'days' && qCfg.removeClipsOnTimeout === true && winLimRes === 'limit';
+        qCfg.userClipLimit = 0; qCfg.userClipLimitWindow = 0; qCfg.blockedCategories = [];
+
+        document.querySelector('.menu-tabs .tab[data-tab="history"]').click();
+        const filterClick = (p) => { document.querySelector(`#history-platform-filters [data-provider="${p}"]`)?.click(); return document.querySelectorAll('#history-grid .history-item').length; };
+        const twCount = filterClick('twitch'), ytCount = filterClick('youtube'), allCount = filterClick('all');
+        out.historyPlatformFilterOk = twCount === 0 && ytCount === allCount && allCount >= 1;
+        document.querySelector('.menu-tabs .tab[data-tab="queue"]').click();
 
         await ClipQ.fetchWithAuth('/api/oembed?url=https://www.youtube.com/oembed');
         ClipQ.App.setClipLimit(7);
@@ -427,24 +428,12 @@ def assert_sync_report(report):
     assert report['removedSubmitterCount'] == 0, f'removeSubmitter did not clear user clip: {report}'
     assert report['offlineDeleteCloudHidden'], f'Delete cloud button should hide offline: {report}'
     assert report['syncAvailable'] and report['loadedOver500History'], f'Cloud history >500 failed: {report}'
-    assert report['oldestLoadedFirst'] and report['syncedAppTitle'] == 'SyncedTitle', (
-        f'Cloud sync order/title failed: {report}'
-    )
-    assert report['historyPaging'] == {
-        'cardsBeforeMore': 200,
-        'loadMoreVisible': True,
-        'cardsAfterMore': 400,
-    }, f'History pagination failed: {report["historyPaging"]}'
-    assert report['onlineDeleteCloudVisible'] and report['generalButtonsSingleRow'], (
-        f'Delete cloud button or single-row general action bar failed: {report}'
-    )
-    assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890'), (
-        f'Personal OBS URL missing: {report}'
-    )
-    assert report['regenerateObsBtnVisible'], f'Regenerate OBS button hidden when online: {report}'
-    assert report['regeneratedObsUrlValue'].endswith('/obs/obs_key_beta_9876543210'), (
-        f'Regenerated OBS URL mismatch: {report}'
-    )
+    assert report['oldestLoadedFirst'] and report['syncedAppTitle'] == 'SyncedTitle', report
+    assert report['historyPaging'] == {'cardsBeforeMore': 200, 'loadMoreVisible': True, 'cardsAfterMore': 400}, report
+    assert report['onlineDeleteCloudVisible'] and report['generalButtonsSingleRow'], report
+    assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890'), report
+    assert report['regenerateObsBtnVisible'], report
+    assert report['regeneratedObsUrlValue'].endswith('/obs/obs_key_beta_9876543210'), report
     assert (
         report['chatCountInitial'] == 2
         and report['chatMultiBadgeCount'] == 2
@@ -452,24 +441,37 @@ def assert_sync_report(report):
         and report['chatXssPrevented']
         and report['chatInvalidColorBlocked']
     ), f'Live chat feed rendering/XSS check failed: {report}'
-    assert (
-        report['chatBadgesHiddenClass']
-        and report['chatUrlsStripped']
-        and report['chatMessagesHidden']
-        and report['chatOptionsCollapsed']
-    ), f'Chat/Badge/Link toggles failed: {report}'
-    assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, (
-        f'Chat moderation deletion failed: {report}'
-    )
-    assert (
-        report['chatScrollbarHidden']
-        and report['chatAutoExpired']
-        and report['chatRow1TopAligned']
-        and report['chatAnimDefaultsOk']
-        and report['enterSpeedHiddenOnNone']
-        and report['enterSpeedShownOnSlide']
-        and report['exitSlideApplied']
-    ), f'Chat scrollbar/auto-hide/anim check failed: {report}'
+    assert all(
+        report[k]
+        for k in (
+            'chatBadgesHiddenClass',
+            'chatUrlsStripped',
+            'chatMessagesHidden',
+            'chatOptionsCollapsed',
+            'chatScrollbarHidden',
+            'chatAutoExpired',
+            'chatRow1TopAligned',
+            'chatAnimDefaultsOk',
+            'enterSpeedHiddenOnNone',
+            'enterSpeedShownOnSlide',
+            'exitSlideApplied',
+            'chatTestMessageAdded',
+            'chatNoScrollBounce',
+            'chatRow3StableOnNone',
+            'chatToggleGapCompact',
+            'designColorsRowLayout',
+            'videoVolumeRestored',
+            'maxDurationRejected',
+            'userWindowLimitOk',
+            'brokenAutoSkipped',
+            'blockedSideBySide',
+            'shareInChatRapidOk',
+            'historySearchOk',
+            'historyPlatformFilterOk',
+            'backupImported',
+        )
+    ), f'Sync/chat/queue/history feature check failed: {report}'
+    assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, report
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
     assert report['twitchFallbackVideoSrc'].startswith(
         'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4?sig=sig123'
@@ -484,14 +486,4 @@ def assert_sync_report(report):
     assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
         f'pagehide keepalive config flush failed: {report}'
     )
-    assert report['chatTestMessageAdded'] and report['chatNoScrollBounce'], f'Chat test message/bounce failed: {report}'
-    assert report['chatRow3StableOnNone'] and report['chatToggleGapCompact'] and report['designColorsRowLayout'], (
-        f'Chat settings grid/spacing/color layout failed: {report}'
-    )
-    assert report['videoVolumeRestored'], f'Video volume/mute persistence failed: {report}'
-    assert report['maxDurationRejected'] and report['userWindowLimitOk'] and report['brokenAutoSkipped'], (
-        f'Duration/window limit or broken clip skip failed: {report}'
-    )
-    assert report['historySearchOk'], f'History search filter failed: {report}'
-    assert report['backupImported'], f'Backup JSON import failed: {report}'
     assert report['deletedCloud'] and report['calls']['deleteAll'] == 1, f'Cloud deletion failed: {report}'

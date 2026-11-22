@@ -40,7 +40,7 @@ ClipQ.Auth = (() => {
             if (isObsMode()) sessionStorage.setItem(OBS_REDIRECT_KEY, '1');
             else sessionStorage.removeItem(OBS_REDIRECT_KEY);
         } catch { /* ignore sessionStorage errors */ }
-        const scopes = 'chat:read';
+        const scopes = 'chat:read user:write:chat';
         return `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${ClipQ.CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
     }
 

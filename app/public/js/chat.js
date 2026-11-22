@@ -12,6 +12,8 @@ ClipQ.Chat = (() => {
 
     let client = null;
     let healthInterval = null;
+    let scopePromptShown = false;
+    const channelIdCache = {};
 
     function stopHealthCheck() {
         if (healthInterval) {
@@ -410,6 +412,10 @@ ClipQ.Chat = (() => {
             console.log(`[Chat] ⊘ Blocked streamer "${meta.channel}" (metadata)`);
             return;
         }
+        if (meta && meta.category && ClipQ.Settings.isCategoryBlocked(meta.category)) {
+            console.log(`[Chat] ⊘ Blocked category "${meta.category}"`);
+            return;
+        }
 
         const result = ClipQ.Queue.addClip({
             provider: parsed.provider,
@@ -423,5 +429,58 @@ ClipQ.Chat = (() => {
         console.log(`[Queue] → ${result}`);
     }
 
-    return { connect };
+    async function resolveBroadcasterId(channelLogin, token, user) {
+        const clean = (channelLogin || user?.login || '').toLowerCase().trim();
+        if (!clean) return user?.id || '';
+        if (user?.id && user?.login && clean === user.login.toLowerCase()) return user.id;
+        if (channelIdCache[clean]) return channelIdCache[clean];
+        try {
+            const resp = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(clean)}`, {
+                headers: { 'Client-ID': ClipQ.CLIENT_ID, 'Authorization': `Bearer ${token}` }
+            });
+            if (!resp.ok) return '';
+            const id = (await resp.json())?.data?.[0]?.id || '';
+            if (id) channelIdCache[clean] = id;
+            return id;
+        } catch {
+            return '';
+        }
+    }
+
+    async function sendMessage(text) {
+        const msg = typeof text === 'string' ? text.trim() : '';
+        const token = ClipQ.Auth?.getToken?.();
+        const user = ClipQ.Auth?.getUser?.();
+        if (!msg || !token || !user?.id) return { ok: false, unauthenticated: true };
+
+        const channelLogin = ClipQ.Settings?.get?.().channel || user.login;
+        const broadcasterId = await resolveBroadcasterId(channelLogin, token, user);
+        if (!broadcasterId) return { ok: false };
+
+        try {
+            const resp = await fetch('https://api.twitch.tv/helix/chat/messages', {
+                method: 'POST',
+                headers: {
+                    'Client-ID': ClipQ.CLIENT_ID,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ broadcaster_id: broadcasterId, sender_id: user.id, message: msg })
+            });
+            if (resp.status === 401 && !scopePromptShown && ClipQ.confirmAction) {
+                scopePromptShown = true;
+                const reauth = await ClipQ.confirmAction({
+                    message: ClipQ.I18n.t('player.share_chat_scope_prompt'),
+                    yesLabel: ClipQ.I18n.t('history.confirm_yes'),
+                    cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
+                });
+                if (reauth) window.location.href = ClipQ.Auth.getLoginUrl();
+            }
+            return { ok: resp.ok, status: resp.status };
+        } catch {
+            return { ok: false };
+        }
+    }
+
+    return { connect, sendMessage };
 })();

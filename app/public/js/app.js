@@ -173,6 +173,13 @@ ClipQ.App = (() => {
             const prev = ClipQ.Queue.previousFromHistory();
             if (prev) { ClipQ.Player.playClip(prev); updateNextButton(); }
         });
+        document.getElementById('btn-share-chat')?.addEventListener('click', () => {
+            const clip = ClipQ.Player.getCurrent();
+            if (!clip) return;
+            const rawUrl = clip.url ? (ClipQ.Providers?.getCanonicalUrl?.(clip.provider, clip.clipId, clip.url) || clip.url) : '';
+            const safeClipUrl = ClipQ.sanitizeUrl(rawUrl);
+            if (safeClipUrl && ClipQ.Chat && ClipQ.Chat.sendMessage) ClipQ.Chat.sendMessage(safeClipUrl);
+        });
         document.getElementById('queue-clear-btn').addEventListener('click', () => {
             if (confirm(t('queue.confirm_clear'))) ClipQ.Queue.clear();
         });
@@ -219,8 +226,11 @@ ClipQ.App = (() => {
     }
 
     function updateNextButton() {
+        const current = ClipQ.Player.getCurrent();
         const btn = document.getElementById('btn-next');
-        btn.textContent = t(ClipQ.Player.getCurrent() ? 'player.next' : 'player.start');
+        btn.textContent = t(current ? 'player.next' : 'player.start');
+        const shareBtn = document.getElementById('btn-share-chat');
+        if (shareBtn) shareBtn.disabled = !current;
     }
 
     function applyAutoplayState(state) {
