@@ -314,8 +314,9 @@ SYNC_TEST_JS = """
         chatExitSel.dispatchEvent(new Event('change'));
         out.exitSlideApplied = Boolean(exitNoneOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
         const colorGroupRows = Array.from(document.querySelectorAll('#design-colors-container .design-group-row'));
-        const rowTops = (rowEl) => Array.from(new Set(Array.from(rowEl?.querySelectorAll('.design-group') || []).map(g => Math.round(g.getBoundingClientRect().top))));
-        out.designColorsRowLayout = colorGroupRows.length === 2 && colorGroupRows[0].querySelectorAll('.design-group').length === 2 && rowTops(colorGroupRows[0]).length === 1 && colorGroupRows[1].querySelectorAll('.design-group').length === 3 && rowTops(colorGroupRows[1]).length === 1;
+        const rowTops = (rowEl) => new Set(Array.from(rowEl?.querySelectorAll('.design-group') || []).map(g => Math.round(g.getBoundingClientRect().top))).size;
+        const aligned = (a, b) => { const ra = document.querySelector(`.color-swatch[data-var="${a}"]`)?.getBoundingClientRect(), rb = document.querySelector(`.color-swatch[data-var="${b}"]`)?.getBoundingClientRect(); return Boolean(ra && rb && Math.abs(ra.left - rb.left) <= 1 && Math.abs(ra.width - rb.width) <= 1); };
+        out.designColorsRowLayout = colorGroupRows.length === 3 && colorGroupRows[1].querySelectorAll('.design-group-divider').length === 1 && rowTops(colorGroupRows[1]) === 1 && colorGroupRows[2].querySelectorAll('.design-group-divider').length === 2 && rowTops(colorGroupRows[2]) === 1 && aligned('--color-border-info', '--color-queue-bg') && aligned('--color-accent', '--color-queue-item-hover') && aligned('--color-text', '--color-queue-bg') && aligned('--color-overlay', '--color-settings-bg');
         const chatBox = document.getElementById('chat-messages');
         const testMsgBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
         document.getElementById('design-chat-test-btn')?.click();

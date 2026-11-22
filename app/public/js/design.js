@@ -10,7 +10,7 @@ ClipQ.Design = (() => {
     const CUSTOM_DEFAULTS_KEY = 'clipq_custom_defaults';
 
     const COLOR_GROUPS = [
-        { labelKey: 'design.group.backgrounds', row: 0, items: [
+        { labelKey: 'design.group.backgrounds', row: 0, col: 1, span: 11, items: [
             { var: '--color-bg', labelKey: 'design.color.app' }, { var: '--color-menubar', labelKey: 'design.color.menubar' },
             { var: '--color-player-bg', labelKey: 'design.color.player' }, { var: '--color-facecam-bg', labelKey: 'design.color.facecam' },
             { var: '--color-chat-bg', labelKey: 'design.color.chat' }, { var: '--color-queue-bg', labelKey: 'design.color.queue' },
@@ -18,25 +18,25 @@ ClipQ.Design = (() => {
             { var: '--color-info-bg', labelKey: 'design.color.infobar' }, { var: '--color-ad-bg', labelKey: 'design.color.ad' },
             { var: '--color-settings-bg', labelKey: 'design.color.settings' },
         ] },
-        { labelKey: 'design.group.borders', row: 1, items: [
+        { labelKey: 'design.group.borders', row: 1, col: 1, span: 6, items: [
             { var: '--color-border', labelKey: 'design.color.standard' }, { var: '--color-border-player', labelKey: 'design.color.player' },
             { var: '--color-border-facecam', labelKey: 'design.color.facecam' }, { var: '--color-border-chat', labelKey: 'design.color.chat' },
             { var: '--color-border-queue', labelKey: 'design.color.queue' }, { var: '--color-border-info', labelKey: 'design.color.info' },
         ] },
-        { labelKey: 'design.group.accent', row: 1, items: [
+        { labelKey: 'design.group.accent', row: 1, col: 8, span: 5, items: [
             { var: '--color-accent', labelKey: 'design.color.accent' }, { var: '--color-accent-hover', labelKey: 'design.color.hover' },
             { var: '--color-accent-glow', labelKey: 'design.color.glow' }, { var: '--color-accent-secondary', labelKey: 'design.color.secondary' },
             { var: '--color-accent-gradient', labelKey: 'design.color.gradient' },
         ] },
-        { labelKey: 'design.group.status', row: 2, items: [
+        { labelKey: 'design.group.status', row: 2, col: 1, span: 4, items: [
             { var: '--color-open', labelKey: 'design.color.open' }, { var: '--color-closed', labelKey: 'design.color.closed' },
             { var: '--color-danger', labelKey: 'design.color.danger' }, { var: '--color-push-badge', labelKey: 'design.color.badge' },
         ] },
-        { labelKey: 'design.group.text', row: 2, items: [
+        { labelKey: 'design.group.text', row: 2, col: 6, span: 4, items: [
             { var: '--color-text', labelKey: 'design.color.standard' }, { var: '--color-text-dim', labelKey: 'design.color.dimmed' },
             { var: '--color-text-bright', labelKey: 'design.color.bright' }, { var: '--color-text-accent', labelKey: 'design.color.accent' },
         ] },
-        { labelKey: 'design.group.misc', row: 2, items: [{ var: '--color-overlay', labelKey: 'design.color.overlay' }] },
+        { labelKey: 'design.group.misc', row: 2, col: 11, span: 2, items: [{ var: '--color-overlay', labelKey: 'design.color.overlay' }] },
     ];
 
     const DEFAULT_COLORS = {
@@ -123,9 +123,9 @@ ClipQ.Design = (() => {
 
     function renderSwatchGroup(group) {
         return `
-            <div class="design-group">
+            <div class="design-group" style="grid-column:${group.col} / span ${group.span}">
                 <div class="design-group-label" data-i18n="${group.labelKey}">${ClipQ.escapeHtml(t(group.labelKey))}</div>
-                <div class="design-swatches">
+                <div class="design-swatches" style="grid-template-columns:repeat(${group.span}, minmax(0, 1fr))">
                     ${group.items.map(item => {
                         const label = t(item.labelKey);
                         const currentColor = readCssColor(item.var);
@@ -150,11 +150,13 @@ ClipQ.Design = (() => {
                 rows[group.row] = rows[group.row] || [];
                 rows[group.row].push(group);
             });
-            container.innerHTML = rows.map((groups) => (
-                groups.length > 1
-                    ? `<div class="design-group-row">${groups.map(renderSwatchGroup).join('')}</div>`
-                    : renderSwatchGroup(groups[0])
-            )).join('');
+            container.innerHTML = rows.map((groups) => {
+                const cells = groups.map((group, idx) => {
+                    const divider = idx > 0 ? `<div class="design-group-divider" style="grid-column:${group.col - 1}"></div>` : '';
+                    return `${divider}${renderSwatchGroup(group)}`;
+                }).join('');
+                return `<div class="design-group-row">${cells}</div>`;
+            }).join('');
         }
 
         document.querySelectorAll('#design-colors-container .color-swatch').forEach(bindColorSwatch);
