@@ -174,7 +174,6 @@ ClipQ.I18n.register('de', {
     'settings.design.chat_show_links': 'Links einblenden',
     'settings.design.chat_animation': 'Nachrichten-Einblendung',
     'settings.design.chat_anim_slide': 'Sanft reingleiten',
-    'settings.design.chat_anim_fade': 'Sanft einblenden',
     'settings.design.chat_anim_none': 'Sofort erscheinen',
     'settings.design.chat_enter_ms': 'Einblend-Dauer (ms)',
     'settings.design.chat_direction': 'Nachrichten-Richtung',
@@ -182,7 +181,6 @@ ClipQ.I18n.register('de', {
     'settings.design.chat_dir_top': 'Von oben nach unten',
     'settings.design.chat_hide_seconds': 'Nachrichten ausblenden (Sek., 0 = Aus)',
     'settings.design.chat_hide_mode': 'Nachrichten-Ausblendung',
-    'settings.design.chat_hide_fade': 'Sanft ausblenden',
     'settings.design.chat_hide_slide': 'Sanft rausgleiten',
     'settings.design.chat_hide_direct': 'Direkt verschwinden',
     'settings.design.chat_exit_ms': 'Ausblend-Dauer (ms)',
@@ -199,7 +197,7 @@ ClipQ.I18n.register('de', {
     'design.group.accent': 'Akzent',
     'design.group.status': 'Status',
     'design.group.text': 'Text',
-    'design.group.misc': 'Sonstiges',
+    'design.group.misc': 'Misc',
 
     // Design — Color Labels
     'design.color.app': 'App',

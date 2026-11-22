@@ -210,6 +210,8 @@ SYNC_TEST_JS = """
         document.getElementById('user-menu-toggle').click();
         document.getElementById('dropdown-settings').click();
         out.onlineDeleteCloudVisible = !document.getElementById('settings-delete-cloud')?.classList.contains('hidden');
+        const genBtns = Array.from(document.querySelectorAll('.general-action-bar .btn'));
+        out.generalButtonsSingleRow = genBtns.length === 4 && new Set(genBtns.map(b => Math.round(b.getBoundingClientRect().top))).size === 1;
         out.obsCoverInitiallyMasked = document.getElementById('obs-url-group')?.classList.contains('obs-masked');
         document.getElementById('reveal-obs-url-btn').click();
         out.obsCoverUnmaskedOnClick = !document.getElementById('obs-url-group')?.classList.contains('obs-masked');
@@ -302,17 +304,18 @@ SYNC_TEST_JS = """
         const hideSecTopAfter = Math.round(document.getElementById('design-chat-hide-seconds')?.getBoundingClientRect().top || 0);
         out.enterSpeedHiddenOnNone = document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden');
         out.chatRow3StableOnNone = hideSecTopBefore > 0 && hideSecTopBefore === hideSecTopAfter;
-        chatAnimSel.value = 'fade';
-        chatAnimSel.dispatchEvent(new Event('change'));
-        out.enterSpeedShownOnFade = !document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden') && document.getElementById('chat-messages')?.classList.contains('anim-in-fade');
-        chatExitSel.value = 'fade';
-        chatExitSel.dispatchEvent(new Event('change'));
-        const fadeOutOk = document.getElementById('chat-messages')?.classList.contains('anim-out-fade');
-        chatExitSel.value = 'slide';
-        chatExitSel.dispatchEvent(new Event('change'));
-        out.exitSlideApplied = Boolean(fadeOutOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
         chatAnimSel.value = 'slide';
         chatAnimSel.dispatchEvent(new Event('change'));
+        out.enterSpeedShownOnSlide = !document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden') && document.getElementById('chat-messages')?.classList.contains('anim-in-slide');
+        chatExitSel.value = 'none';
+        chatExitSel.dispatchEvent(new Event('change'));
+        const exitNoneOk = document.getElementById('design-chat-exit-speed-wrap')?.classList.contains('hidden') && !document.getElementById('chat-messages')?.classList.contains('anim-out-slide');
+        chatExitSel.value = 'slide';
+        chatExitSel.dispatchEvent(new Event('change'));
+        out.exitSlideApplied = Boolean(exitNoneOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
+        const colorGroupRows = Array.from(document.querySelectorAll('#design-colors-container .design-group-row'));
+        const rowTops = (rowEl) => Array.from(new Set(Array.from(rowEl?.querySelectorAll('.design-group') || []).map(g => Math.round(g.getBoundingClientRect().top))));
+        out.designColorsRowLayout = colorGroupRows.length === 2 && colorGroupRows[0].querySelectorAll('.design-group').length === 2 && rowTops(colorGroupRows[0]).length === 1 && colorGroupRows[1].querySelectorAll('.design-group').length === 3 && rowTops(colorGroupRows[1]).length === 1;
         const chatBox = document.getElementById('chat-messages');
         const testMsgBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
         document.getElementById('design-chat-test-btn')?.click();
@@ -432,7 +435,9 @@ def assert_sync_report(report):
         'loadMoreVisible': True,
         'cardsAfterMore': 400,
     }, f'History pagination failed: {report["historyPaging"]}'
-    assert report['onlineDeleteCloudVisible'], f'Delete cloud button hidden when online: {report}'
+    assert report['onlineDeleteCloudVisible'] and report['generalButtonsSingleRow'], (
+        f'Delete cloud button or single-row general action bar failed: {report}'
+    )
     assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890'), (
         f'Personal OBS URL missing: {report}'
     )
@@ -462,7 +467,7 @@ def assert_sync_report(report):
         and report['chatRow1TopAligned']
         and report['chatAnimDefaultsOk']
         and report['enterSpeedHiddenOnNone']
-        and report['enterSpeedShownOnFade']
+        and report['enterSpeedShownOnSlide']
         and report['exitSlideApplied']
     ), f'Chat scrollbar/auto-hide/anim check failed: {report}'
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
@@ -480,8 +485,8 @@ def assert_sync_report(report):
         f'pagehide keepalive config flush failed: {report}'
     )
     assert report['chatTestMessageAdded'] and report['chatNoScrollBounce'], f'Chat test message/bounce failed: {report}'
-    assert report['chatRow3StableOnNone'] and report['chatToggleGapCompact'], (
-        f'Chat settings grid/spacing failed: {report}'
+    assert report['chatRow3StableOnNone'] and report['chatToggleGapCompact'] and report['designColorsRowLayout'], (
+        f'Chat settings grid/spacing/color layout failed: {report}'
     )
     assert report['videoVolumeRestored'], f'Video volume/mute persistence failed: {report}'
     assert report['maxDurationRejected'], f'Max clip duration rejection failed: {report}'

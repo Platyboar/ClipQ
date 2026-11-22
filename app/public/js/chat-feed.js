@@ -30,7 +30,7 @@ ClipQ.ChatFeed = (() => {
     }
 
     function normalizeAnimMode(val, fallback) {
-        return (val === 'slide' || val === 'fade' || val === 'none') ? val : fallback;
+        return (val === 'slide' || val === 'none') ? val : fallback;
     }
 
     function sanitizeColor(rawColor) {
@@ -44,9 +44,7 @@ ClipQ.ChatFeed = (() => {
         container.classList.toggle('dir-top', direction === 'top');
         container.classList.toggle('dir-bottom', direction !== 'top');
         container.classList.toggle('anim-in-slide', animation === 'slide');
-        container.classList.toggle('anim-in-fade', animation === 'fade');
         container.classList.toggle('anim-out-slide', hideMode === 'slide');
-        container.classList.toggle('anim-out-fade', hideMode === 'fade');
         const root = document.documentElement.style;
         if (enterMs !== 350) root.setProperty('--chat-enter-duration', `${enterMs}ms`);
         else root.removeProperty('--chat-enter-duration');
@@ -74,7 +72,7 @@ ClipQ.ChatFeed = (() => {
         if (!container) return;
         const row = Array.from(container.children).find((el) => el.dataset && Number(el.dataset.msgUid) === uid);
         if (!row) return;
-        if (hideMode === 'fade' || hideMode === 'slide') {
+        if (hideMode === 'slide') {
             row.classList.add('chat-msg-exit');
             setTimeout(() => { if (row.parentNode) row.remove(); }, exitMs + 20);
         } else {

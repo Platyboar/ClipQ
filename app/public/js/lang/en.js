@@ -174,7 +174,6 @@ ClipQ.I18n.register('en', {
     'settings.design.chat_show_links': 'Show Links',
     'settings.design.chat_animation': 'Message Appearance',
     'settings.design.chat_anim_slide': 'Slide in smoothly',
-    'settings.design.chat_anim_fade': 'Fade in smoothly',
     'settings.design.chat_anim_none': 'Appear immediately',
     'settings.design.chat_enter_ms': 'In Speed (ms)',
     'settings.design.chat_direction': 'Message Direction',
@@ -182,7 +181,6 @@ ClipQ.I18n.register('en', {
     'settings.design.chat_dir_top': 'From top down',
     'settings.design.chat_hide_seconds': 'Hide Messages (after s, 0 = Off)',
     'settings.design.chat_hide_mode': 'Message Disappearance',
-    'settings.design.chat_hide_fade': 'Fade out smoothly',
     'settings.design.chat_hide_slide': 'Slide out smoothly',
     'settings.design.chat_hide_direct': 'Disappear immediately',
     'settings.design.chat_exit_ms': 'Out Speed (ms)',
@@ -199,7 +197,7 @@ ClipQ.I18n.register('en', {
     'design.group.accent': 'Accent',
     'design.group.status': 'Status',
     'design.group.text': 'Text',
-    'design.group.misc': 'Miscellaneous',
+    'design.group.misc': 'Misc',
 
     // Design — Color Labels
     'design.color.app': 'App',

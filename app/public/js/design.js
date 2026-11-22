@@ -10,67 +10,33 @@ ClipQ.Design = (() => {
     const CUSTOM_DEFAULTS_KEY = 'clipq_custom_defaults';
 
     const COLOR_GROUPS = [
-        {
-            labelKey: 'design.group.backgrounds',
-            items: [
-                { var: '--color-bg', labelKey: 'design.color.app' },
-                { var: '--color-menubar', labelKey: 'design.color.menubar' },
-                { var: '--color-player-bg', labelKey: 'design.color.player' },
-                { var: '--color-facecam-bg', labelKey: 'design.color.facecam' },
-                { var: '--color-chat-bg', labelKey: 'design.color.chat' },
-                { var: '--color-queue-bg', labelKey: 'design.color.queue' },
-                { var: '--color-queue-item', labelKey: 'design.color.tile' },
-                { var: '--color-queue-item-hover', labelKey: 'design.color.tile_hover' },
-                { var: '--color-info-bg', labelKey: 'design.color.infobar' },
-                { var: '--color-ad-bg', labelKey: 'design.color.ad' },
-                { var: '--color-settings-bg', labelKey: 'design.color.settings' },
-            ]
-        },
-        {
-            labelKey: 'design.group.borders',
-            items: [
-                { var: '--color-border', labelKey: 'design.color.standard' },
-                { var: '--color-border-player', labelKey: 'design.color.player' },
-                { var: '--color-border-facecam', labelKey: 'design.color.facecam' },
-                { var: '--color-border-chat', labelKey: 'design.color.chat' },
-                { var: '--color-border-queue', labelKey: 'design.color.queue' },
-                { var: '--color-border-info', labelKey: 'design.color.info' },
-            ]
-        },
-        {
-            labelKey: 'design.group.accent',
-            items: [
-                { var: '--color-accent', labelKey: 'design.color.accent' },
-                { var: '--color-accent-hover', labelKey: 'design.color.hover' },
-                { var: '--color-accent-glow', labelKey: 'design.color.glow' },
-                { var: '--color-accent-secondary', labelKey: 'design.color.secondary' },
-                { var: '--color-accent-gradient', labelKey: 'design.color.gradient' },
-            ]
-        },
-        {
-            labelKey: 'design.group.status',
-            items: [
-                { var: '--color-open', labelKey: 'design.color.open' },
-                { var: '--color-closed', labelKey: 'design.color.closed' },
-                { var: '--color-danger', labelKey: 'design.color.danger' },
-                { var: '--color-push-badge', labelKey: 'design.color.badge' },
-            ]
-        },
-        {
-            labelKey: 'design.group.text',
-            items: [
-                { var: '--color-text', labelKey: 'design.color.standard' },
-                { var: '--color-text-dim', labelKey: 'design.color.dimmed' },
-                { var: '--color-text-bright', labelKey: 'design.color.bright' },
-                { var: '--color-text-accent', labelKey: 'design.color.accent' },
-            ]
-        },
-        {
-            labelKey: 'design.group.misc',
-            items: [
-                { var: '--color-overlay', labelKey: 'design.color.overlay' },
-            ]
-        }
+        { labelKey: 'design.group.backgrounds', row: 0, items: [
+            { var: '--color-bg', labelKey: 'design.color.app' }, { var: '--color-menubar', labelKey: 'design.color.menubar' },
+            { var: '--color-player-bg', labelKey: 'design.color.player' }, { var: '--color-facecam-bg', labelKey: 'design.color.facecam' },
+            { var: '--color-chat-bg', labelKey: 'design.color.chat' }, { var: '--color-queue-bg', labelKey: 'design.color.queue' },
+            { var: '--color-queue-item', labelKey: 'design.color.tile' }, { var: '--color-queue-item-hover', labelKey: 'design.color.tile_hover' },
+            { var: '--color-info-bg', labelKey: 'design.color.infobar' }, { var: '--color-ad-bg', labelKey: 'design.color.ad' },
+            { var: '--color-settings-bg', labelKey: 'design.color.settings' },
+        ] },
+        { labelKey: 'design.group.borders', row: 1, items: [
+            { var: '--color-border', labelKey: 'design.color.standard' }, { var: '--color-border-player', labelKey: 'design.color.player' },
+            { var: '--color-border-facecam', labelKey: 'design.color.facecam' }, { var: '--color-border-chat', labelKey: 'design.color.chat' },
+            { var: '--color-border-queue', labelKey: 'design.color.queue' }, { var: '--color-border-info', labelKey: 'design.color.info' },
+        ] },
+        { labelKey: 'design.group.accent', row: 1, items: [
+            { var: '--color-accent', labelKey: 'design.color.accent' }, { var: '--color-accent-hover', labelKey: 'design.color.hover' },
+            { var: '--color-accent-glow', labelKey: 'design.color.glow' }, { var: '--color-accent-secondary', labelKey: 'design.color.secondary' },
+            { var: '--color-accent-gradient', labelKey: 'design.color.gradient' },
+        ] },
+        { labelKey: 'design.group.status', row: 2, items: [
+            { var: '--color-open', labelKey: 'design.color.open' }, { var: '--color-closed', labelKey: 'design.color.closed' },
+            { var: '--color-danger', labelKey: 'design.color.danger' }, { var: '--color-push-badge', labelKey: 'design.color.badge' },
+        ] },
+        { labelKey: 'design.group.text', row: 2, items: [
+            { var: '--color-text', labelKey: 'design.color.standard' }, { var: '--color-text-dim', labelKey: 'design.color.dimmed' },
+            { var: '--color-text-bright', labelKey: 'design.color.bright' }, { var: '--color-text-accent', labelKey: 'design.color.accent' },
+        ] },
+        { labelKey: 'design.group.misc', row: 2, items: [{ var: '--color-overlay', labelKey: 'design.color.overlay' }] },
     ];
 
     const DEFAULT_COLORS = {
@@ -155,28 +121,40 @@ ClipQ.Design = (() => {
         if (ClipQ.ColorPicker) ClipQ.ColorPicker.close();
     }
 
+    function renderSwatchGroup(group) {
+        return `
+            <div class="design-group">
+                <div class="design-group-label" data-i18n="${group.labelKey}">${ClipQ.escapeHtml(t(group.labelKey))}</div>
+                <div class="design-swatches">
+                    ${group.items.map(item => {
+                        const label = t(item.labelKey);
+                        const currentColor = readCssColor(item.var);
+                        return `
+                        <button type="button" class="color-swatch" data-var="${item.var}" title="${ClipQ.escapeHtml(label)}: ${item.var}">
+                            <div class="swatch-color-wrap">
+                                <div class="swatch-checker"></div>
+                                <div class="swatch-color" style="background:${ClipQ.escapeHtml(currentColor)}"></div>
+                            </div>
+                            <span class="swatch-label" data-i18n="${item.labelKey}">${ClipQ.escapeHtml(label)}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    }
+
     function renderSwatches() {
         const container = document.getElementById('design-colors-container');
         if (container) {
-            container.innerHTML = COLOR_GROUPS.map(group => `
-                <div class="design-group">
-                    <div class="design-group-label" data-i18n="${group.labelKey}">${ClipQ.escapeHtml(t(group.labelKey))}</div>
-                    <div class="design-swatches">
-                        ${group.items.map(item => {
-                            const label = t(item.labelKey);
-                            const currentColor = readCssColor(item.var);
-                            return `
-                            <button type="button" class="color-swatch" data-var="${item.var}" title="${ClipQ.escapeHtml(label)}: ${item.var}">
-                                <div class="swatch-color-wrap">
-                                    <div class="swatch-checker"></div>
-                                    <div class="swatch-color" style="background:${ClipQ.escapeHtml(currentColor)}"></div>
-                                </div>
-                                <span class="swatch-label" data-i18n="${item.labelKey}">${ClipQ.escapeHtml(label)}</span>
-                            </button>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `).join('');
+            const rows = [];
+            COLOR_GROUPS.forEach((group) => {
+                rows[group.row] = rows[group.row] || [];
+                rows[group.row].push(group);
+            });
+            container.innerHTML = rows.map((groups) => (
+                groups.length > 1
+                    ? `<div class="design-group-row">${groups.map(renderSwatchGroup).join('')}</div>`
+                    : renderSwatchGroup(groups[0])
+            )).join('');
         }
 
         document.querySelectorAll('#design-colors-container .color-swatch').forEach(bindColorSwatch);
@@ -236,12 +214,12 @@ ClipQ.Design = (() => {
             });
         }
         const readInCfg = () => ({
-            chatAnimation: normalizeMode(document.getElementById('design-chat-animation')?.value, 'slide', ['slide', 'fade', 'none']),
+            chatAnimation: normalizeMode(document.getElementById('design-chat-animation')?.value, 'slide', ['slide', 'none']),
             chatEnterMs: clampMs(document.getElementById('design-chat-enter-ms')?.value, 350)
         });
         const readHideCfg = () => ({
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(document.getElementById('design-chat-hide-seconds')?.value, 0))),
-            chatHideMode: normalizeMode(document.getElementById('design-chat-hide-mode')?.value, 'slide', ['slide', 'fade', 'none']),
+            chatHideMode: normalizeMode(document.getElementById('design-chat-hide-mode')?.value, 'slide', ['slide', 'none']),
             chatExitMs: clampMs(document.getElementById('design-chat-exit-ms')?.value, 350)
         });
         document.getElementById('design-chat-animation')?.addEventListener('change', () => {
@@ -344,8 +322,8 @@ ClipQ.Design = (() => {
         const chatSizeLabel = document.getElementById('design-chat-font-size-val');
         if (chatSize) chatSize.value = chatSizeVal;
         if (chatSizeLabel) chatSizeLabel.textContent = `${chatSizeVal}px`;
-        const inMode = normalizeMode(designSettings.chatAnimation, 'slide', ['slide', 'fade', 'none']);
-        const outMode = normalizeMode(designSettings.chatHideMode, 'slide', ['slide', 'fade', 'none']);
+        const inMode = normalizeMode(designSettings.chatAnimation, 'slide', ['slide', 'none']);
+        const outMode = normalizeMode(designSettings.chatHideMode, 'slide', ['slide', 'none']);
         const chatAnim = document.getElementById('design-chat-animation');
         if (chatAnim) chatAnim.value = inMode;
         const chatEnterMs = document.getElementById('design-chat-enter-ms');
@@ -382,11 +360,11 @@ ClipQ.Design = (() => {
             fontFamily: fontSelect ? fontSelect.value : 'Inter',
             chatFontFamily: chatFont ? chatFont.value : 'Inter',
             chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(chatSize?.value, 13))),
-            chatAnimation: normalizeMode(chatAnim?.value, 'slide', ['slide', 'fade', 'none']),
+            chatAnimation: normalizeMode(chatAnim?.value, 'slide', ['slide', 'none']),
             chatEnterMs: clampMs(chatEnterMs?.value, 350),
             chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom',
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(chatHideSec?.value, 0))),
-            chatHideMode: normalizeMode(chatHideMode?.value, 'slide', ['slide', 'fade', 'none']),
+            chatHideMode: normalizeMode(chatHideMode?.value, 'slide', ['slide', 'none']),
             chatExitMs: clampMs(chatExitMs?.value, 350)
         };
     }
@@ -444,11 +422,11 @@ ClipQ.Design = (() => {
                     fontFamily: custom.fontFamily || 'Inter',
                     chatFontFamily: custom.chatFontFamily || 'Inter',
                     chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(custom.chatFontSize, 13))),
-                    chatAnimation: normalizeMode(custom.chatAnimation, 'slide', ['slide', 'fade', 'none']),
+                    chatAnimation: normalizeMode(custom.chatAnimation, 'slide', ['slide', 'none']),
                     chatEnterMs: clampMs(custom.chatEnterMs, 350),
                     chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom',
                     chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(custom.chatHideSeconds, 0))),
-                    chatHideMode: normalizeMode(custom.chatHideMode, 'slide', ['slide', 'fade', 'none']),
+                    chatHideMode: normalizeMode(custom.chatHideMode, 'slide', ['slide', 'none']),
                     chatExitMs: clampMs(custom.chatExitMs, 350)
                 };
             }

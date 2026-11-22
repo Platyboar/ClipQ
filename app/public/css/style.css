@@ -202,8 +202,6 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 .chat-msg { overflow-wrap:anywhere; color:var(--color-text); }
 .chat-messages.anim-in-slide.dir-bottom .chat-msg-enter { animation:chat-slide-up var(--chat-enter-duration) cubic-bezier(0.22,1,0.36,1) both; }
 .chat-messages.anim-in-slide.dir-top .chat-msg-enter { animation:chat-slide-down var(--chat-enter-duration) cubic-bezier(0.22,1,0.36,1) both; }
-.chat-messages.anim-in-fade .chat-msg-enter { animation:chat-fade-in var(--chat-enter-duration) ease-in both; }
-.chat-messages.anim-out-fade .chat-msg-exit { animation:chat-fade-out var(--chat-exit-duration) ease-out forwards; pointer-events:none; }
 .chat-messages.anim-out-slide.dir-bottom .chat-msg-exit { animation:chat-slide-out-up var(--chat-exit-duration) ease-in forwards; pointer-events:none; }
 .chat-messages.anim-out-slide.dir-top .chat-msg-exit { animation:chat-slide-out-down var(--chat-exit-duration) ease-in forwards; pointer-events:none; }
 
@@ -211,15 +209,11 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 
 @keyframes chat-slide-down { from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)} }
 
-@keyframes chat-fade-in { from{opacity:0}to{opacity:1} }
-
-@keyframes chat-fade-out { from{opacity:1}to{opacity:0} }
-
 @keyframes chat-slide-out-up { from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)} }
 
 @keyframes chat-slide-out-down { from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(12px)} }
 
-@media (prefers-reduced-motion:reduce) { .chat-messages.anim-in-slide .chat-msg-enter, .chat-messages.anim-in-fade .chat-msg-enter, .chat-messages.anim-out-slide .chat-msg-exit, .chat-messages.anim-out-fade .chat-msg-exit { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .chat-messages.anim-in-slide .chat-msg-enter, .chat-messages.anim-out-slide .chat-msg-exit { animation:none; } }
 .chat-msg-badges { display:inline; vertical-align:middle; }
 .chat-badge { width:16px; height:16px; }
 body.chat-badges-hidden .chat-msg-badges { display:none; }
