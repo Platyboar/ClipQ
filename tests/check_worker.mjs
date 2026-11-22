@@ -58,7 +58,10 @@ function createAssetsMock() {
     return {
         async fetch(request) {
             const reqUrl = new URL(request.url);
-            if (reqUrl.pathname === '/' || reqUrl.pathname === '/index.html') {
+            if (reqUrl.pathname === '/index.html') {
+                return new Response(null, { status: 307, headers: { Location: '/' } });
+            }
+            if (reqUrl.pathname === '/') {
                 return new Response('<html><title>ClipQ</title></html>', {
                     status: 200,
                     headers: { 'Content-Type': 'text/html' },

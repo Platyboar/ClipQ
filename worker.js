@@ -49,7 +49,7 @@ export default {
 
         const baseName = path.split('/').pop() || '';
         if (!baseName.includes('.')) {
-            const indexUrl = new URL('/index.html', url.origin);
+            const indexUrl = new URL('/', url.origin);
             const spaResponse = await env.ASSETS.fetch(new Request(indexUrl, request));
             if (OBS_PATH_RE.test(path)) {
                 const headers = new Headers(spaResponse.headers);
