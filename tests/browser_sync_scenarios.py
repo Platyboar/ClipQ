@@ -148,7 +148,7 @@ SYNC_TEST_JS = """
             if (slug === 'FailedTranscodeClip') {
                 return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'FAILED' }], playbackAccessToken: { signature: 'sig123', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4' }) }, videoQualities: [] } } }), { status: 200 });
             }
-            return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'CREATED' }], playbackAccessToken: { signature: 'sig456', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }) }, videoQualities: [{ quality: '1080', sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }] } } }), { status: 200 });
+            return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'CREATED' }], playbackAccessToken: { signature: 'sig456', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/avc/360/index.mp4' }) }, videoQualities: [{ quality: '360', frameRate: 30, sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/360/index.mp4' }, { quality: '720', frameRate: 60, sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/720p60/index.mp4' }, { quality: '1080', frameRate: 30, sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080p30/index.mp4' }, { quality: '1080', frameRate: 60, sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080p60/index.mp4' }] } } }), { status: 200 });
         }
         return origFetch(url, opts);
     };
@@ -319,6 +319,13 @@ SYNC_TEST_JS = """
         const pausedAfter1 = Boolean(ClipQ.Player.isPaused() && pauseBtn?.getAttribute('aria-pressed') === 'true' && getComputedStyle(pauseBtn.querySelector('.pause-label-resume')).visibility === 'visible' && getComputedStyle(pauseBtn.querySelector('.pause-label-pause')).visibility === 'hidden');
         pauseBtn?.click();
         out.pauseResumeOk = Boolean(ytIframeSrc.includes('enablejsapi=1') && prevRect && pauseRect && nextRectPause && pauseRect.left > prevRect.right && nextRectPause.left > pauseRect.right && Math.abs(pauseRect.width - pauseRect2.width) < 0.1 && Math.abs(nextRectPause.left - nextRectPause2.left) < 0.1 && pausedAfter1 && !ClipQ.Player.isPaused() && getComputedStyle(pauseBtn.querySelector('.pause-label-pause')).visibility === 'visible');
+        let maxQualSrc = '';
+        const qObs = new MutationObserver(() => { const s = document.getElementById('twitch-video-player')?.getAttribute('src'); if (s) maxQualSrc = s; });
+        qObs.observe(document.getElementById('player-area'), { childList: true, subtree: true });
+        ClipQ.Player.playClip({ provider: 'twitch', clipId: 'MaxQualityClip1', url: 'https://www.twitch.tv/skuuii/clip/MaxQualityClip1', meta: { title: 'MaxQ Clip', channel: 'skuuii' } });
+        await new Promise(r => setTimeout(r, 40));
+        qObs.disconnect();
+        out.twitchMaxQualitySelected = maxQualSrc.startsWith('https://d1ndex63qxojbr.cloudfront.net/avc/1080p60/index.mp4?sig=sig456');
         ClipQ.Player.playClip({ provider: 'twitch', clipId: 'EmbedOnlyClip', url: 'https://www.twitch.tv/skuuii/clip/EmbedOnlyClip', meta: { title: 'Embed Clip', channel: 'skuuii' } });
         await new Promise(r => setTimeout(r, 40));
         out.twitchNormalIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
@@ -416,15 +423,9 @@ def assert_sync_report(report):
     assert report['obsUrlValue'].endswith('/obs'), f'Unexpected offline OBS URL value: {report}'
     assert report['obsKeyExtractedFromPath'] == 'obs_key_alpha_1234567890', f'OBS key extraction failed: {report}'
     assert report['obsMenubarHiddenOnPath'] and report['obsDetectedOnQuery'], f'OBS mode check failed: {report}'
-    assert report['obsMenubarShownWhenTopbarOn'] and report['browserMenubarAlwaysVisible'], (
-        f'Show Topbar toggle behavior failed: {report}'
-    )
-    assert report['obsCoverInitiallyMasked'] and report['obsCoverUnmaskedOnClick'], (
-        f'OBS reveal cover toggle failed: {report}'
-    )
-    assert report['obsCoverRemaskedOnTabLeave'] and report['obsCoverRemaskedOnClose'], (
-        f'OBS reveal auto-remask failed: {report}'
-    )
+    assert report['obsMenubarShownWhenTopbarOn'] and report['browserMenubarAlwaysVisible'], report
+    assert report['obsCoverInitiallyMasked'] and report['obsCoverUnmaskedOnClick'], report
+    assert report['obsCoverRemaskedOnTabLeave'] and report['obsCoverRemaskedOnClose'], report
     assert report['noOpSaveSkippedSync'], f'No-op save unexpectedly sent sync PUT: {report}'
     assert report['purgeDefaultRoles'] == {
         'broadcaster': True,
@@ -432,7 +433,7 @@ def assert_sync_report(report):
         'mod': False,
         'vip': False,
         'all': False,
-    }, f"Unexpected default purgememory roles: {report['purgeDefaultRoles']}"
+    }
     assert report['memoryPreservedOnHistDelete'], 'History delete/clear must preserve Clip Memory'
     assert report['localFlagsAllPresent'], f'Non-local flags detected: {report}'
     assert report['aboutPrivacyRendered'], f'About privacy section missing: {report}'
@@ -474,6 +475,7 @@ def assert_sync_report(report):
             'chatToggleGapCompact',
             'designColorsRowLayout',
             'videoVolumeRestored',
+            'twitchMaxQualitySelected',
             'maxDurationRejected',
             'userWindowLimitOk',
             'brokenAutoSkipped',

@@ -81,6 +81,7 @@ class handler(BaseHTTPRequestHandler):
                 'no_color': True,
                 'socket_timeout': 8,
                 'format': 'b[ext=mp4]/b/best[vcodec!=none][acodec!=none]/best',
+                'format_sort': ['res', 'fps', 'br'],
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(safe_url, download=False) or {}

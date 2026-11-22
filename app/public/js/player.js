@@ -83,16 +83,7 @@ ClipQ.Player = (() => {
             return;
         }
         const wrapClass = extraClass ? `vertical-embed-wrap ${esc(extraClass)}` : 'vertical-embed-wrap';
-        playerArea.innerHTML = `
-        <div class="${wrapClass}">
-            <iframe
-                src="${esc(cleanEmbed)}"
-                scrolling="no"
-                allowfullscreen
-                allow="autoplay; encrypted-media; fullscreen"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            ></iframe>
-        </div>`;
+        playerArea.innerHTML = `<div class="${wrapClass}"><iframe src="${esc(cleanEmbed)}" scrolling="no" allowfullscreen allow="autoplay; encrypted-media; fullscreen" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe></div>`;
     }
 
     function renderEmbedIframe(playerArea, embedUrl, isVertical = false, extraClass = '') {
@@ -115,16 +106,7 @@ ClipQ.Player = (() => {
             return;
         }
 
-        playerArea.innerHTML = `
-        <div class="direct-video-wrap">
-            <video
-                id="${esc(videoId)}"
-                src="${esc(cleanVideoUrl)}"
-                autoplay
-                controls
-                playsinline
-            ></video>
-        </div>`;
+        playerArea.innerHTML = `<div class="direct-video-wrap"><video id="${esc(videoId)}" src="${esc(cleanVideoUrl)}" autoplay controls playsinline></video></div>`;
 
         const videoEl = document.getElementById(videoId);
         if (videoEl) {
@@ -158,6 +140,20 @@ ClipQ.Player = (() => {
         }
     }
 
+    function pickBestTwitchQualityUrl(qualities) {
+        if (!Array.isArray(qualities) || qualities.length === 0) return '';
+        const rank = (q) => {
+            const raw = String(q?.quality || '').trim().toLowerCase();
+            if (raw === 'source') return Number.MAX_SAFE_INTEGER;
+            const num = Number.parseInt(raw, 10);
+            return Number.isFinite(num) ? num : -1;
+        };
+        const sorted = qualities
+            .filter(q => q && typeof q.sourceURL === 'string' && q.sourceURL.trim())
+            .sort((a, b) => (rank(b) - rank(a)) || ((Number(b?.frameRate) || 0) - (Number(a?.frameRate) || 0)));
+        return sorted[0]?.sourceURL || '';
+    }
+
     async function resolveTwitchFallbackVideoUrl(clipId) {
         if (!clipId || !/^[A-Za-z0-9_-]{1,128}$/.test(clipId)) return null;
         try {
@@ -165,7 +161,7 @@ ClipQ.Player = (() => {
                 method: 'POST',
                 headers: { 'Client-ID': TWITCH_GQL_CLIENT_ID, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    query: 'query($slug:ID!){clip(slug:$slug){assets{creationState} playbackAccessToken(params:{platform:"web",playerType:"embed"}){signature value} videoQualities{quality sourceURL}}}',
+                    query: 'query($slug:ID!){clip(slug:$slug){assets{creationState} playbackAccessToken(params:{platform:"web",playerType:"embed"}){signature value} videoQualities{quality frameRate sourceURL}}}',
                     variables: { slug: clipId }
                 }),
                 signal: AbortSignal.timeout(4000)
@@ -179,7 +175,7 @@ ClipQ.Player = (() => {
 
             const assets = Array.isArray(clipData.assets) ? clipData.assets : [];
             const transcodesFailed = assets.length > 0 && assets.every(a => a?.creationState === 'FAILED');
-            const qualities = Array.isArray(clipData.videoQualities) ? clipData.videoQualities : [];
+            const bestQualityUrl = pickBestTwitchQualityUrl(clipData.videoQualities);
             const sig = clipData.playbackAccessToken?.signature;
             const rawToken = clipData.playbackAccessToken?.value;
             if (!sig || !rawToken) return null;
@@ -187,9 +183,9 @@ ClipQ.Player = (() => {
             let clipUri = '';
             try { clipUri = JSON.parse(rawToken)?.clip_uri || ''; } catch { clipUri = ''; }
             const isHevcSource = typeof clipUri === 'string' && /\/hevc\//i.test(clipUri);
-            const rawSource = (transcodesFailed || qualities.length === 0 || isHevcSource)
-                ? (clipUri || qualities[0]?.sourceURL || '')
-                : (qualities[0]?.sourceURL || clipUri || '');
+            const rawSource = (transcodesFailed || !bestQualityUrl || isHevcSource)
+                ? (clipUri || bestQualityUrl)
+                : (bestQualityUrl || clipUri);
             const safeBase = safeUrl(rawSource);
             if (!safeBase) return null;
             return { url: `${safeBase}?sig=${encodeURIComponent(sig)}&token=${encodeURIComponent(rawToken)}` };
