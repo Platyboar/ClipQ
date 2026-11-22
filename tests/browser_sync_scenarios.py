@@ -280,7 +280,18 @@ SYNC_TEST_JS = """
         const expBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
         await new Promise(r => setTimeout(r, 1150));
         out.chatAutoExpired = expBefore === 1 && document.querySelectorAll('#chat-messages .chat-msg').length === 0;
-        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'fade' });
+        const chatAnimSel = document.getElementById('design-chat-animation');
+        const chatExitSel = document.getElementById('design-chat-hide-mode');
+        chatAnimSel.value = 'none';
+        chatAnimSel.dispatchEvent(new Event('change'));
+        out.enterSpeedHiddenOnNone = document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden');
+        chatAnimSel.value = 'fade';
+        chatAnimSel.dispatchEvent(new Event('change'));
+        out.enterSpeedShownOnFade = !document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden') && document.getElementById('chat-messages')?.classList.contains('anim-in-fade');
+        chatExitSel.value = 'slide';
+        chatExitSel.dispatchEvent(new Event('change'));
+        out.exitSlideApplied = document.getElementById('chat-messages')?.classList.contains('anim-out-slide');
+        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatEnterMs: 260, chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'fade', chatExitMs: 350 });
 
         const invalidObsRes = await ClipQ.Sync.initObsSession('obs_key_revoked_00000000');
         out.invalidObsRejected = invalidObsRes && invalidObsRes.ok === false && invalidObsRes.invalid === true;
@@ -388,9 +399,13 @@ def assert_sync_report(report):
     assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, (
         f'Chat moderation deletion failed: {report}'
     )
-    assert report['chatScrollbarHidden'] and report['chatAutoExpired'], (
-        f'Chat scrollbar/auto-hide check failed: {report}'
-    )
+    assert (
+        report['chatScrollbarHidden']
+        and report['chatAutoExpired']
+        and report['enterSpeedHiddenOnNone']
+        and report['enterSpeedShownOnFade']
+        and report['exitSlideApplied']
+    ), f'Chat scrollbar/auto-hide/anim check failed: {report}'
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
     assert report['twitchFallbackVideoSrc'].startswith(
         'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4?sig=sig123'

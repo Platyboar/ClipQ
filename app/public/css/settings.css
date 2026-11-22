@@ -23,7 +23,7 @@
 .form-input, .form-textarea { width:100%; padding:10px 14px; background:rgba(20,23,30,0.65); color:var(--color-text); border:1px solid var(--color-border); border-radius:var(--border-radius-sm); transition:border-color .15s; }
 .form-textarea { min-height:100px; resize:vertical; font-family:monospace; }
 .form-input:focus, .form-textarea:focus { border-color:var(--color-accent); }
-.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
+.toggle-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 0; }
 .toggle-row + .toggle-row { margin-top:10px; }
 .toggle-row:first-of-type { margin-top:10px; }
 .provider-toggles { display:flex; flex-wrap:wrap; gap:8px; }
@@ -34,6 +34,7 @@
 .settings-action-bar { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); display:flex; gap:10px; flex-wrap:wrap; }
 .settings-count-text { margin:12px 0; }
 .settings-group-divider { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); }
+.settings-section-title { font-size:var(--font-size-lg); font-weight:600; color:var(--color-text-bright); margin-bottom:10px; }
 .channel-text-group { display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
 .channel-name-text { flex:1; text-align:center; font-weight:600; color:var(--color-text-bright); font-size:var(--font-size-xl); }
 .channel-text-group .btn { white-space:nowrap; }
@@ -47,9 +48,12 @@
 
 /* DESIGN TAB & COLOR PICKER */
 .design-chat-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--color-border); }
-.design-chat-options { display:flex; flex-direction:column; gap:14px; margin-top:12px; padding:14px; border-radius:var(--border-radius-sm); background:rgba(255,255,255,.04); border:1px solid var(--color-border); }
-.design-chat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px 16px; align-items:start; }
-.design-chat-color-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.design-chat-options { display:flex; flex-direction:column; gap:14px; margin-top:12px; }
+.design-chat-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 16px; align-items:end; }
+.design-chat-color-cell { display:flex; flex-direction:column; gap:2px; }
+.design-chat-swatch { flex-direction:row; justify-content:flex-start; min-width:0; padding:3px 4px; }
+
+@media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } }
 .design-group { margin-bottom:20px; }
 .design-group-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--color-text-dim); margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--color-border); }
 .design-swatches { display:flex; flex-wrap:wrap; gap:6px; }
@@ -125,13 +129,14 @@ select.form-input option { background:var(--color-settings-bg); color:var(--colo
 .width-control-item { margin-top:12px; }
 .width-control-item .form-label,
 .height-slider-container .form-label { font-size:13px; color:var(--color-text-dim); font-weight:500; margin-bottom:4px; }
-.visibility-grid { display:grid; grid-template-columns:1fr minmax(72px, auto) minmax(72px, auto); align-items:center; gap:16px; margin-top:12px; }
+.visibility-grid { display:grid; grid-template-columns:1fr minmax(72px, auto) minmax(72px, auto); align-items:center; gap:8px 16px; margin-top:0; }
+.form-hint + .visibility-grid { margin-top:-4px; }
 .visibility-col-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-dim); text-align:center; justify-self:center; }
 .visibility-grid .form-label { margin-bottom:0; }
 .visibility-grid .toggle-switch { justify-self:center; }
 
 /* ABOUT TAB */
-.about-card { display:flex; flex-direction:column; gap:14px; padding:18px; background:rgba(255,255,255,0.04); border:1px solid var(--color-border); border-radius:var(--border-radius-sm); }
+.about-card { display:flex; flex-direction:column; gap:14px; }
 .about-title { font-size:var(--font-size-xl); font-weight:700; color:var(--color-text-bright); }
 .about-text { line-height:1.6; color:var(--color-text); }
 .about-meta { font-size:var(--font-size-sm); color:var(--color-text-dim); }

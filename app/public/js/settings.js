@@ -35,8 +35,10 @@ ClipQ.Settings = (() => {
                 chatShowLinks: true,
                 chatAnimation: 'slide',
                 chatDirection: 'bottom',
+                chatEnterMs: 260,
                 chatHideSeconds: 0,
-                chatHideMode: 'fade'
+                chatHideMode: 'fade',
+                chatExitMs: 350
             },
             layout: ClipQ.SettingsLayout.getDefaultLayout()
         };

@@ -8,20 +8,29 @@ ClipQ.ChatFeed = (() => {
 
     const MAX_MESSAGES = 120;
     const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
-    const FADE_EXIT_MS = 360;
 
     let entries = [];
     let enabled = true;
     let showLinks = true;
     let direction = 'bottom';
     let animation = 'slide';
+    let enterMs = 260;
     let hideSeconds = 0;
     let hideMode = 'fade';
+    let exitMs = 350;
     let nextUid = 1;
     const expiryTimers = new Map();
 
     function getContainer() {
         return document.getElementById('chat-messages');
+    }
+
+    function clampDurationMs(val, fallback) {
+        return Math.max(50, Math.min(2000, ClipQ.intOrDefault(val, fallback)));
+    }
+
+    function normalizeAnimMode(val, fallback) {
+        return (val === 'slide' || val === 'fade' || val === 'none') ? val : fallback;
     }
 
     function sanitizeColor(rawColor) {
@@ -34,8 +43,15 @@ ClipQ.ChatFeed = (() => {
         if (!container) return;
         container.classList.toggle('dir-top', direction === 'top');
         container.classList.toggle('dir-bottom', direction !== 'top');
-        container.classList.toggle('anim-slide', animation === 'slide');
-        container.classList.toggle('anim-fade-out', hideMode === 'fade');
+        container.classList.toggle('anim-in-slide', animation === 'slide');
+        container.classList.toggle('anim-in-fade', animation === 'fade');
+        container.classList.toggle('anim-out-slide', hideMode === 'slide');
+        container.classList.toggle('anim-out-fade', hideMode === 'fade');
+        const root = document.documentElement.style;
+        if (enterMs !== 260) root.setProperty('--chat-enter-duration', `${enterMs}ms`);
+        else root.removeProperty('--chat-enter-duration');
+        if (exitMs !== 350) root.setProperty('--chat-exit-duration', `${exitMs}ms`);
+        else root.removeProperty('--chat-exit-duration');
     }
 
     function cancelTimer(uid) {
@@ -58,9 +74,9 @@ ClipQ.ChatFeed = (() => {
         if (!container) return;
         const row = Array.from(container.children).find((el) => el.dataset && Number(el.dataset.msgUid) === uid);
         if (!row) return;
-        if (hideMode === 'fade') {
+        if (hideMode === 'fade' || hideMode === 'slide') {
             row.classList.add('chat-msg-exit');
-            setTimeout(() => { if (row.parentNode) row.remove(); }, FADE_EXIT_MS);
+            setTimeout(() => { if (row.parentNode) row.remove(); }, exitMs + 20);
         } else {
             row.remove();
         }
@@ -162,9 +178,10 @@ ClipQ.ChatFeed = (() => {
         else root.removeProperty('--chat-font-size');
     }
 
-    function rescheduleTimersFromSettings(nextSec, nextMode) {
+    function rescheduleTimersFromSettings(nextSec, nextMode, nextExitMs) {
         hideSeconds = Math.max(0, Math.min(3600, ClipQ.intOrDefault(nextSec, 0)));
-        hideMode = nextMode === 'none' ? 'none' : 'fade';
+        hideMode = normalizeAnimMode(nextMode, 'fade');
+        exitMs = clampDurationMs(nextExitMs, 350);
         clearAllTimers();
         const now = Date.now();
         entries.forEach((entry) => {
@@ -180,9 +197,11 @@ ClipQ.ChatFeed = (() => {
         const showBadges = s.chatShowBadges !== false;
         showLinks = s.chatShowLinks !== false;
         direction = s.chatDirection === 'top' ? 'top' : 'bottom';
-        animation = s.chatAnimation === 'none' ? 'none' : 'slide';
+        animation = normalizeAnimMode(s.chatAnimation, 'slide');
+        enterMs = clampDurationMs(s.chatEnterMs, 260);
         hideSeconds = Math.max(0, Math.min(3600, ClipQ.intOrDefault(s.chatHideSeconds, 0)));
-        hideMode = s.chatHideMode === 'none' ? 'none' : 'fade';
+        hideMode = normalizeAnimMode(s.chatHideMode, 'fade');
+        exitMs = clampDurationMs(s.chatExitMs, 350);
         entries.forEach((entry) => {
             entry._expiresAt = hideSeconds > 0 ? Date.now() + (hideSeconds * 1000) : 0;
         });
@@ -213,12 +232,17 @@ ClipQ.ChatFeed = (() => {
             return;
         }
         if (key === 'animation') {
-            animation = value === 'none' ? 'none' : 'slide';
+            if (value && typeof value === 'object') {
+                animation = normalizeAnimMode(value.chatAnimation, 'slide');
+                enterMs = clampDurationMs(value.chatEnterMs, 260);
+            } else {
+                animation = normalizeAnimMode(value, 'slide');
+            }
             applyContainerClasses(getContainer());
             return;
         }
         if (key === 'hideConfig') {
-            rescheduleTimersFromSettings(value?.chatHideSeconds, value?.chatHideMode);
+            rescheduleTimersFromSettings(value?.chatHideSeconds, value?.chatHideMode, value?.chatExitMs);
             return;
         }
         if (key === 'fontFamily' || key === 'fontSize') {

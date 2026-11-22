@@ -199,6 +199,19 @@ ClipQ.Design = (() => {
         });
     }
 
+    function clampMs(val, fallback) {
+        return Math.max(50, Math.min(2000, ClipQ.intOrDefault(val, fallback)));
+    }
+
+    function normalizeMode(val, fallback, allowed) {
+        return allowed.includes(val) ? val : fallback;
+    }
+
+    function syncChatSpeedVisibility(inMode, outMode) {
+        document.getElementById('design-chat-enter-speed-wrap')?.classList.toggle('hidden', inMode === 'none');
+        document.getElementById('design-chat-exit-speed-wrap')?.classList.toggle('hidden', outMode === 'none');
+    }
+
     function initChatControls() {
         bindColorSwatch(document.getElementById('design-chat-color-swatch'));
         const readChatTypo = () => ({
@@ -216,20 +229,35 @@ ClipQ.Design = (() => {
                 if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('fontSize', readChatTypo());
             });
         }
-        document.getElementById('design-chat-animation')?.addEventListener('change', (e) => {
-            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('animation', e.target.value);
-        });
-        document.getElementById('design-chat-direction')?.addEventListener('change', (e) => {
-            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('direction', e.target.value);
+        const readInCfg = () => ({
+            chatAnimation: normalizeMode(document.getElementById('design-chat-animation')?.value, 'slide', ['slide', 'fade', 'none']),
+            chatEnterMs: clampMs(document.getElementById('design-chat-enter-ms')?.value, 260)
         });
         const readHideCfg = () => ({
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(document.getElementById('design-chat-hide-seconds')?.value, 0))),
-            chatHideMode: document.getElementById('design-chat-hide-mode')?.value === 'none' ? 'none' : 'fade'
+            chatHideMode: normalizeMode(document.getElementById('design-chat-hide-mode')?.value, 'fade', ['fade', 'slide', 'none']),
+            chatExitMs: clampMs(document.getElementById('design-chat-exit-ms')?.value, 350)
+        });
+        document.getElementById('design-chat-animation')?.addEventListener('change', () => {
+            const cfg = readInCfg();
+            syncChatSpeedVisibility(cfg.chatAnimation, readHideCfg().chatHideMode);
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('animation', cfg);
+        });
+        document.getElementById('design-chat-enter-ms')?.addEventListener('input', () => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('animation', readInCfg());
+        });
+        document.getElementById('design-chat-direction')?.addEventListener('change', (e) => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('direction', e.target.value);
         });
         document.getElementById('design-chat-hide-seconds')?.addEventListener('input', () => {
             if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', readHideCfg());
         });
         document.getElementById('design-chat-hide-mode')?.addEventListener('change', () => {
+            const cfg = readHideCfg();
+            syncChatSpeedVisibility(readInCfg().chatAnimation, cfg.chatHideMode);
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', cfg);
+        });
+        document.getElementById('design-chat-exit-ms')?.addEventListener('input', () => {
             if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', readHideCfg());
         });
     }
@@ -307,14 +335,21 @@ ClipQ.Design = (() => {
         const chatSizeLabel = document.getElementById('design-chat-font-size-val');
         if (chatSize) chatSize.value = chatSizeVal;
         if (chatSizeLabel) chatSizeLabel.textContent = `${chatSizeVal}px`;
+        const inMode = normalizeMode(designSettings.chatAnimation, 'slide', ['slide', 'fade', 'none']);
+        const outMode = normalizeMode(designSettings.chatHideMode, 'fade', ['fade', 'slide', 'none']);
         const chatAnim = document.getElementById('design-chat-animation');
-        if (chatAnim) chatAnim.value = designSettings.chatAnimation === 'none' ? 'none' : 'slide';
+        if (chatAnim) chatAnim.value = inMode;
+        const chatEnterMs = document.getElementById('design-chat-enter-ms');
+        if (chatEnterMs) chatEnterMs.value = clampMs(designSettings.chatEnterMs, 260);
         const chatDir = document.getElementById('design-chat-direction');
         if (chatDir) chatDir.value = designSettings.chatDirection === 'top' ? 'top' : 'bottom';
         const chatHideSec = document.getElementById('design-chat-hide-seconds');
         if (chatHideSec) chatHideSec.value = Math.max(0, Math.min(3600, ClipQ.intOrDefault(designSettings.chatHideSeconds, 0)));
         const chatHideMode = document.getElementById('design-chat-hide-mode');
-        if (chatHideMode) chatHideMode.value = designSettings.chatHideMode === 'none' ? 'none' : 'fade';
+        if (chatHideMode) chatHideMode.value = outMode;
+        const chatExitMs = document.getElementById('design-chat-exit-ms');
+        if (chatExitMs) chatExitMs.value = clampMs(designSettings.chatExitMs, 350);
+        syncChatSpeedVisibility(inMode, outMode);
         document.getElementById('design-chat-options')?.classList.toggle('hidden', designSettings.showChat === false);
     }
 
@@ -328,18 +363,22 @@ ClipQ.Design = (() => {
         const chatFont = document.getElementById('design-chat-font');
         const chatSize = document.getElementById('design-chat-font-size');
         const chatAnim = document.getElementById('design-chat-animation');
+        const chatEnterMs = document.getElementById('design-chat-enter-ms');
         const chatDir = document.getElementById('design-chat-direction');
         const chatHideSec = document.getElementById('design-chat-hide-seconds');
         const chatHideMode = document.getElementById('design-chat-hide-mode');
+        const chatExitMs = document.getElementById('design-chat-exit-ms');
         return {
             colors,
             fontFamily: fontSelect ? fontSelect.value : 'Inter',
             chatFontFamily: chatFont ? chatFont.value : 'Inter',
             chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(chatSize?.value, 13))),
-            chatAnimation: chatAnim?.value === 'none' ? 'none' : 'slide',
+            chatAnimation: normalizeMode(chatAnim?.value, 'slide', ['slide', 'fade', 'none']),
+            chatEnterMs: clampMs(chatEnterMs?.value, 260),
             chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom',
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(chatHideSec?.value, 0))),
-            chatHideMode: chatHideMode?.value === 'none' ? 'none' : 'fade'
+            chatHideMode: normalizeMode(chatHideMode?.value, 'fade', ['fade', 'slide', 'none']),
+            chatExitMs: clampMs(chatExitMs?.value, 350)
         };
     }
 
@@ -396,10 +435,12 @@ ClipQ.Design = (() => {
                     fontFamily: custom.fontFamily || 'Inter',
                     chatFontFamily: custom.chatFontFamily || 'Inter',
                     chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(custom.chatFontSize, 13))),
-                    chatAnimation: custom.chatAnimation === 'none' ? 'none' : 'slide',
+                    chatAnimation: normalizeMode(custom.chatAnimation, 'slide', ['slide', 'fade', 'none']),
+                    chatEnterMs: clampMs(custom.chatEnterMs, 260),
                     chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom',
                     chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(custom.chatHideSeconds, 0))),
-                    chatHideMode: custom.chatHideMode === 'none' ? 'none' : 'fade'
+                    chatHideMode: normalizeMode(custom.chatHideMode, 'fade', ['fade', 'slide', 'none']),
+                    chatExitMs: clampMs(custom.chatExitMs, 350)
                 };
             }
         } catch { /* ignore corrupt custom defaults */ }
@@ -414,9 +455,11 @@ ClipQ.Design = (() => {
             chatFontFamily: 'Inter',
             chatFontSize: 13,
             chatAnimation: 'slide',
+            chatEnterMs: 260,
             chatDirection: 'bottom',
             chatHideSeconds: 0,
-            chatHideMode: 'fade'
+            chatHideMode: 'fade',
+            chatExitMs: 350
         };
         if (useCustom !== false) {
             const custom = getCustomDefaults();
