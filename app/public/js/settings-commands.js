@@ -8,6 +8,7 @@ ClipQ.SettingsCommands = (() => {
 
     const DEFAULT_PREFIX = '!clipq';
     const DEFAULT_ROLES = { broadcaster: true, leadMod: true, mod: true, vip: false, all: false };
+    const RESTRICTED_MEMORY_ROLES = { broadcaster: true, leadMod: true, mod: false, vip: false, all: false };
     const CMD_KEYS = ['next', 'push', 'open', 'close', 'clear', 'purgememory', 'autoplay', 'limit', 'remove', 'providers'];
     const DEFAULT_COMMAND_WORDS = {
         next: 'next',
@@ -35,6 +36,10 @@ ClipQ.SettingsCommands = (() => {
         providers: ' twitch off'
     };
 
+    function getDefaultRoles(key) {
+        return key === 'purgememory' ? RESTRICTED_MEMORY_ROLES : DEFAULT_ROLES;
+    }
+
     function cloneCommand(word, roles = DEFAULT_ROLES) {
         return { word, roles: { ...roles } };
     }
@@ -42,7 +47,7 @@ ClipQ.SettingsCommands = (() => {
     function cloneDefaults() {
         const cloned = { prefix: DEFAULT_PREFIX };
         for (const key of CMD_KEYS) {
-            cloned[key] = cloneCommand(DEFAULT_COMMAND_WORDS[key]);
+            cloned[key] = cloneCommand(DEFAULT_COMMAND_WORDS[key], getDefaultRoles(key));
         }
         return cloned;
     }
@@ -57,13 +62,14 @@ ClipQ.SettingsCommands = (() => {
         const migrated = { prefix: savedCmds.prefix ?? defaults.prefix };
 
         for (const key of CMD_KEYS) {
+            const baseRoles = getDefaultRoles(key);
             if (savedCmds[key] && typeof savedCmds[key] === 'object' && typeof savedCmds[key].word === 'string') {
                 migrated[key] = {
                     word: savedCmds[key].word,
-                    roles: { ...DEFAULT_ROLES, ...(savedCmds[key].roles || {}) }
+                    roles: { ...baseRoles, ...(savedCmds[key].roles || {}) }
                 };
             } else if (typeof savedCmds[key] === 'string') {
-                migrated[key] = cloneCommand(savedCmds[key]);
+                migrated[key] = cloneCommand(savedCmds[key], baseRoles);
             } else {
                 migrated[key] = defaults[key];
             }
@@ -96,9 +102,10 @@ ClipQ.SettingsCommands = (() => {
         container.innerHTML = CMD_KEYS.map(key => {
             const label = ClipQ.escapeHtml(t(`settings.commands.${key}`));
             const defaultWord = ClipQ.escapeHtml(DEFAULT_COMMAND_WORDS[key]);
+            const defaultRoles = getDefaultRoles(key);
             const badgesHtml = roleMeta.map(r => {
                 const roleLabel = ClipQ.escapeHtml(t(r.i18nKey));
-                const isActive = !!DEFAULT_ROLES[r.role];
+                const isActive = !!defaultRoles[r.role];
                 const safeImg = ClipQ.sanitizeUrl(r.img);
                 return `<button type="button" class="role-badge${isActive ? ' active' : ''}" data-role="${r.role}" data-i18n-title="${r.i18nKey}" title="${roleLabel}" aria-pressed="${isActive}">${safeImg ? `<img src="${ClipQ.escapeHtml(safeImg)}" alt="${roleLabel}">` : ''}</button>`;
             }).join('');

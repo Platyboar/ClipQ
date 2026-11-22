@@ -193,18 +193,20 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 .sidebar-chat-ad-row { display:flex; gap:var(--gap); flex-shrink:0; }
 #ad-area { width:var(--chat-height); height:var(--chat-height); flex-shrink:0; background:var(--color-ad-bg); border:1px solid var(--color-border); border-radius:var(--border-radius); display:flex; align-items:center; justify-content:center; color:var(--color-text-dim); }
 #chat-area { flex:1; height:var(--chat-height); background:var(--color-chat-bg); border:1px solid var(--color-border-chat); border-radius:var(--border-radius); overflow:hidden; }
-.chat-messages { width:100%; height:100%; overflow:hidden auto; padding:8px 10px; display:flex; flex-direction:column; gap:4px; font-family:var(--chat-font-family); font-size:var(--chat-font-size); line-height:1.4; }
+.chat-messages { width:100%; height:100%; overflow:hidden auto; scrollbar-width:none; padding:8px 10px; display:flex; flex-direction:column; gap:4px; font-family:var(--chat-font-family); font-size:var(--chat-font-size); line-height:1.4; }
+.chat-messages::-webkit-scrollbar { display:none; }
 .chat-messages.dir-bottom > .chat-msg:first-child { margin-top:auto; }
 .chat-messages.dir-top > .chat-msg { margin-top:0; }
 .chat-msg { overflow-wrap:anywhere; color:var(--color-text); }
 .chat-messages.anim-slide.dir-bottom .chat-msg-enter { animation:chat-slide-up .26s cubic-bezier(0.22,1,0.36,1) both; }
 .chat-messages.anim-slide.dir-top .chat-msg-enter { animation:chat-slide-down .26s cubic-bezier(0.22,1,0.36,1) both; }
+.chat-messages.anim-fade-out .chat-msg-exit { opacity:0; transition:opacity .35s ease-out; pointer-events:none; }
 
 @keyframes chat-slide-up { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)} }
 
 @keyframes chat-slide-down { from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)} }
 
-@media (prefers-reduced-motion:reduce) { .chat-messages.anim-slide .chat-msg-enter { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .chat-messages.anim-slide .chat-msg-enter { animation:none; } .chat-messages.anim-fade-out .chat-msg-exit { transition:none; } }
 .chat-msg-badges { display:inline; vertical-align:middle; }
 .chat-badge { width:16px; height:16px; }
 body.chat-badges-hidden .chat-msg-badges { display:none; }

@@ -219,6 +219,12 @@ SYNC_TEST_JS = """
         document.getElementById('settings-save').click();
         await new Promise(r => setTimeout(r, 80));
         out.noOpSaveSkippedSync = calls.putConfig === putBeforeNoOp;
+        out.purgeDefaultRoles = ClipQ.Settings.get().commands.purgememory.roles;
+        ClipQ.Memory.add('https://youtu.be/cloud_1', 'youtube', 'cloud_1');
+        const memClip = ClipQ.Queue.getHistory().find(c => c.clipId === 'cloud_1');
+        if (memClip) ClipQ.Queue.removeHistoryById(memClip.id);
+        ClipQ.Queue.clearHistory();
+        out.memoryPreservedOnHistDelete = ClipQ.Memory.has('https://youtu.be/cloud_1', 'youtube', 'cloud_1');
 
         out.personalObsUrlValue = document.getElementById('set-obs-url')?.value || '';
         out.regenerateObsBtnVisible = !document.getElementById('regenerate-obs-url-btn')?.classList.contains('hidden');
@@ -268,6 +274,13 @@ SYNC_TEST_JS = """
         out.chatCountAfterDeleteMsg = document.querySelectorAll('#chat-messages .chat-msg').length;
         ClipQ.ChatFeed.removeUserMessages('seconduser');
         out.chatCountAfterDeleteUser = document.querySelectorAll('#chat-messages .chat-msg').length;
+        out.chatScrollbarHidden = getComputedStyle(document.getElementById('chat-messages')).scrollbarWidth === 'none';
+        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'none', chatDirection: 'bottom', chatHideSeconds: 1, chatHideMode: 'none' });
+        ClipQ.ChatFeed.appendMessage({ id: 'exp_1', username: 'ExpiringUser', login: 'expiringuser', roles: {}, message: 'Temporary message' });
+        const expBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
+        await new Promise(r => setTimeout(r, 1150));
+        out.chatAutoExpired = expBefore === 1 && document.querySelectorAll('#chat-messages .chat-msg').length === 0;
+        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'fade' });
 
         const invalidObsRes = await ClipQ.Sync.initObsSession('obs_key_revoked_00000000');
         out.invalidObsRejected = invalidObsRes && invalidObsRes.ok === false && invalidObsRes.invalid === true;
@@ -329,6 +342,14 @@ def assert_sync_report(report):
         f'OBS reveal auto-remask failed: {report}'
     )
     assert report['noOpSaveSkippedSync'], f'No-op save unexpectedly sent sync PUT: {report}'
+    assert report['purgeDefaultRoles'] == {
+        'broadcaster': True,
+        'leadMod': True,
+        'mod': False,
+        'vip': False,
+        'all': False,
+    }, f"Unexpected default purgememory roles: {report['purgeDefaultRoles']}"
+    assert report['memoryPreservedOnHistDelete'], 'History delete/clear must preserve Clip Memory'
     assert report['localFlagsAllPresent'], f'Non-local flags detected: {report}'
     assert report['aboutPrivacyRendered'], f'About privacy section missing: {report}'
     assert report['removeExampleText'] == 'Ex: !clipq remove <URL | all | user>', report['removeExampleText']
@@ -366,6 +387,9 @@ def assert_sync_report(report):
     ), f'Chat/Badge/Link toggles failed: {report}'
     assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, (
         f'Chat moderation deletion failed: {report}'
+    )
+    assert report['chatScrollbarHidden'] and report['chatAutoExpired'], (
+        f'Chat scrollbar/auto-hide check failed: {report}'
     )
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
     assert report['twitchFallbackVideoSrc'].startswith(

@@ -222,6 +222,16 @@ ClipQ.Design = (() => {
         document.getElementById('design-chat-direction')?.addEventListener('change', (e) => {
             if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('direction', e.target.value);
         });
+        const readHideCfg = () => ({
+            chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(document.getElementById('design-chat-hide-seconds')?.value, 0))),
+            chatHideMode: document.getElementById('design-chat-hide-mode')?.value === 'none' ? 'none' : 'fade'
+        });
+        document.getElementById('design-chat-hide-seconds')?.addEventListener('input', () => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', readHideCfg());
+        });
+        document.getElementById('design-chat-hide-mode')?.addEventListener('change', () => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', readHideCfg());
+        });
     }
 
     function populateFontSelect(selectEl) {
@@ -301,6 +311,10 @@ ClipQ.Design = (() => {
         if (chatAnim) chatAnim.value = designSettings.chatAnimation === 'none' ? 'none' : 'slide';
         const chatDir = document.getElementById('design-chat-direction');
         if (chatDir) chatDir.value = designSettings.chatDirection === 'top' ? 'top' : 'bottom';
+        const chatHideSec = document.getElementById('design-chat-hide-seconds');
+        if (chatHideSec) chatHideSec.value = Math.max(0, Math.min(3600, ClipQ.intOrDefault(designSettings.chatHideSeconds, 0)));
+        const chatHideMode = document.getElementById('design-chat-hide-mode');
+        if (chatHideMode) chatHideMode.value = designSettings.chatHideMode === 'none' ? 'none' : 'fade';
         document.getElementById('design-chat-options')?.classList.toggle('hidden', designSettings.showChat === false);
     }
 
@@ -315,13 +329,17 @@ ClipQ.Design = (() => {
         const chatSize = document.getElementById('design-chat-font-size');
         const chatAnim = document.getElementById('design-chat-animation');
         const chatDir = document.getElementById('design-chat-direction');
+        const chatHideSec = document.getElementById('design-chat-hide-seconds');
+        const chatHideMode = document.getElementById('design-chat-hide-mode');
         return {
             colors,
             fontFamily: fontSelect ? fontSelect.value : 'Inter',
             chatFontFamily: chatFont ? chatFont.value : 'Inter',
             chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(chatSize?.value, 13))),
             chatAnimation: chatAnim?.value === 'none' ? 'none' : 'slide',
-            chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom'
+            chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom',
+            chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(chatHideSec?.value, 0))),
+            chatHideMode: chatHideMode?.value === 'none' ? 'none' : 'fade'
         };
     }
 
@@ -379,7 +397,9 @@ ClipQ.Design = (() => {
                     chatFontFamily: custom.chatFontFamily || 'Inter',
                     chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(custom.chatFontSize, 13))),
                     chatAnimation: custom.chatAnimation === 'none' ? 'none' : 'slide',
-                    chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom'
+                    chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom',
+                    chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(custom.chatHideSeconds, 0))),
+                    chatHideMode: custom.chatHideMode === 'none' ? 'none' : 'fade'
                 };
             }
         } catch { /* ignore corrupt custom defaults */ }
@@ -394,7 +414,9 @@ ClipQ.Design = (() => {
             chatFontFamily: 'Inter',
             chatFontSize: 13,
             chatAnimation: 'slide',
-            chatDirection: 'bottom'
+            chatDirection: 'bottom',
+            chatHideSeconds: 0,
+            chatHideMode: 'fade'
         };
         if (useCustom !== false) {
             const custom = getCustomDefaults();

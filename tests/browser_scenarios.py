@@ -16,15 +16,19 @@ def modal_symmetry_js(lang, check_widths=True):
             const bar = document.querySelector('.modal-tabs');
             const tabs = Array.from(document.querySelectorAll('.modal-tabs .tab'));
             const widths = [];
+            const tops = [];
             for (const tab of tabs) {{
                 tab.click();
-                widths.push(Math.round(modal.getBoundingClientRect().width * 10) / 10);
+                const mr = modal.getBoundingClientRect();
+                widths.push(Math.round(mr.width * 10) / 10);
+                tops.push(Math.round(mr.top * 10) / 10);
             }}
             const br = bar.getBoundingClientRect();
             const firstR = tabs[0].getBoundingClientRect();
             const lastR = tabs[tabs.length - 1].getBoundingClientRect();
             return {{
                 widths: Array.from(new Set(widths)),
+                tops: Array.from(new Set(tops)),
                 overflow: bar.scrollWidth > bar.clientWidth + 1,
                 allVisible: tabs.every(t => {{
                     const r = t.getBoundingClientRect();
@@ -412,6 +416,7 @@ def assert_modal_report(modal_report):
             assert not res['overflow'], f'{key}: unexpected tab overflow {res}'
             if 'widths' in res:
                 assert len(res['widths']) == 1, f'{key}: modal width changed across tabs: {res}'
+                assert len(res['tops']) == 1, f'{key}: modal top position shifted across tabs: {res}'
                 assert res['allVisible'], f'{key}: not all tabs visible: {res}'
                 assert abs(res['boxGapL'] - res['boxGapR']) <= 0.5, f'{key}: asymmetric gaps {res}'
         elif key.startswith('700x768_'):
@@ -428,38 +433,34 @@ def assert_functional_report(report):
         'commands'
     ]
     assert report['commands']['emptyCmdPreserved'], 'Empty command word was not preserved'
-    assert report['layout']['qLockedDisabled'] and report['layout']['qBefore'] == report['layout']['qAfter']
-    assert report['layout']['sumHeights'] == 100 and report['layout']['orderChanged']
-
+    lay = report['layout']
+    assert (
+        lay['qLockedDisabled'] and lay['qBefore'] == lay['qAfter'] and lay['sumHeights'] == 100 and lay['orderChanged']
+    )
     vis = report['layoutVisibility']
-    assert vis['fcVisOnHide'] == 'hidden' and vis['fcPointerOnHide'] == 'none'
-    assert vis['fcAriaHiddenOnHide'] == 'true' and vis['fcHeightPositive']
-    assert vis['qDeltaOnHide'] == 0 and vis['fcPercentUpdatedWhileHidden'] == 55
+    assert vis['fcVisOnHide'] == 'hidden' and vis['fcPointerOnHide'] == 'none' and vis['fcAriaHiddenOnHide'] == 'true'
+    assert vis['fcHeightPositive'] and vis['qDeltaOnHide'] == 0 and vis['fcPercentUpdatedWhileHidden'] == 55
     assert vis['fcInOrderingWhileHidden'] and vis['hideClearedByRemove']
     assert vis['fcDisplayRemoved'] == 'none' and not vis['fcInOrderingRemoved']
 
     des = report['design']
-    assert des['pickerOpen'] and des['alphaAppearance'] == 'none', f'ColorPicker/range check failed: {des}'
+    assert des['pickerOpen'] and des['alphaAppearance'] == 'none', des
     assert des['previewAccent'] == 'rgba(17,170,34,1)' and des['modalClosedAfterCancel'], des
-    assert des['revertedAccent'] == des['origInlineAccent'], f'Design cancel revert failed: {des}'
+    assert des['revertedAccent'] == des['origInlineAccent'], des
 
     assert report['settingsLangSave'] == {'langAfterSaveDe': 'de', 'langAfterSaveEn': 'en'}
 
     hc = report['historyAndCanonical']
     assert hc['dirtyTwitchChannelUrl'] == 'https://www.twitch.tv/mychan/clip/SomeCoolClip'
     assert hc['dirtyClipsHostUrl'] == 'https://clips.twitch.tv/AnotherSlug'
-    assert hc['createClipsHostId'] == 'SomeCoolClip'
-    assert hc['createClipsHostUrl'] == 'https://clips.twitch.tv/SomeCoolClip'
-    assert hc['bareCreateRejected'], f'Invalid clips.twitch paths were not rejected: {hc}'
-    assert hc['tiktokEmbed'].startswith('https://www.tiktok.com/player/v1/6718335390845095173'), hc['tiktokEmbed']
-    assert hc['langScheme'] == 'dark', f"Unexpected #set-language color-scheme: {hc['langScheme']}"
-    assert hc['twitchDedupCount'] == 1, f'Expected /create/ + channel URL dedup to 1 item: {hc}'
-    assert hc['twitchQueueThumbIsLogo'] and not hc['twitchQueueHasPlaceholder'], (
-        f'Twitch fallback logo check failed: {hc}'
+    assert (
+        hc['createClipsHostId'] == 'SomeCoolClip' and hc['createClipsHostUrl'] == 'https://clips.twitch.tv/SomeCoolClip'
     )
-    assert hc['iconTopLeftTransparent'], f'Provider icon positioning/background failed: {hc}'
-    assert hc['delSolidBg'], f'Queue delete button solid fill check failed: {hc}'
-    assert hc['tiktokChan'] == 'handofblood' and hc['tiktokQueueThumbIsLogo'], f'TikTok queue/handle failed: {hc}'
+    assert hc['bareCreateRejected'] and hc['langScheme'] == 'dark', hc
+    assert hc['tiktokEmbed'].startswith('https://www.tiktok.com/player/v1/6718335390845095173'), hc['tiktokEmbed']
+    assert hc['twitchDedupCount'] == 1 and hc['twitchQueueThumbIsLogo'] and not hc['twitchQueueHasPlaceholder'], hc
+    assert hc['iconTopLeftTransparent'] and hc['delSolidBg'], hc
+    assert hc['tiktokChan'] == 'handofblood' and hc['tiktokQueueThumbIsLogo'], hc
     assert (
         hc['badTtHref'] == 'https://vm.tiktok.com/ZNR12345'
         and hc['goodTtHref'] == 'https://www.tiktok.com/@handofblood'
@@ -472,29 +473,20 @@ def assert_functional_report(report):
         'igClipFallbackHref': 'https://www.instagram.com/reel/DfItNRUiKTV/',
         'igUrlHandleHref': 'https://www.instagram.com/ausconservation/',
     }, hc
-    assert hc['skipHistLen'] == 0 and hc['skipCurrentId'] == 'live2222222', f'Unavailable skip archived clip: {hc}'
+    assert hc['skipHistLen'] == 0 and hc['skipCurrentId'] == 'live2222222', hc
     assert hc['histLinkHref'] == 'https://www.twitch.tv/mychan/clip/LegacyClipSlug'
     assert hc['confirmVisible'] and hc['histCountBeforeCancel'] == hc['histCountAfterCancel']
     assert hc['histCountAfterConfirm'] == hc['histCountAfterCancel'] - 1 and hc['clearedPlayerAfterDel']
 
     qa = report['queueAndApp']
-    assert qa['addedFlags'] == ['added', 'added', 'added', 'added'], f"Unexpected add flags: {qa['addedFlags']}"
-    assert qa['rBlockedUser'] == 'blocked', f"Expected blocked user: {qa['rBlockedUser']}"
-    assert qa['rTooOld'] == 'age', f"Expected age rejection: {qa['rTooOld']}"
-    assert qa['userLimit'] == {'second': 'added', 'third': 'limit'}, f"User limit check failed: {qa['userLimit']}"
-    assert qa['rDup'] == 'added' and qa['dupPushCount'] == 2, f"Duplicate push check failed: {qa}"
-    assert qa['xssSafe'] and qa['emptyQueueBrRendered'], f"XSS/empty queue check failed: {qa}"
-    assert qa['memoryHasStarted'] and qa['rMemViewer'] == 'memory' and qa['rMemLeadMod'] == 'added', (
-        f"Memory bypass failed: {qa}"
-    )
-    assert qa['removals']['countAfterRemMsg'] == qa['removals']['countBeforeRem'] - 1, (
-        f"msgId remove failed: {qa['removals']}"
-    )
-    assert qa['removals']['countAfterRemOwn'] == qa['removals']['countAfterRemMsg'] - 1, (
-        f"own URL remove failed: {qa['removals']}"
-    )
-    assert qa['prevClipId'] == 'ccccccccccc' and qa['prevAtStart'] is None, f"History prev check failed: {qa}"
-    assert qa['clearedPlayback'] and qa['nextAfterClearHist'] == 'ddddddddddd', f"Clear history check failed: {qa}"
-    assert qa['playedViaDelegate'] == 'g1111111111' and qa['countAfterDelegatedDelete'] == 0, (
-        f"Delegated click/del failed: {qa}"
-    )
+    assert qa['addedFlags'] == ['added', 'added', 'added', 'added'], qa['addedFlags']
+    assert qa['rBlockedUser'] == 'blocked' and qa['rTooOld'] == 'age', qa
+    assert qa['userLimit'] == {'second': 'added', 'third': 'limit'}, qa['userLimit']
+    assert qa['rDup'] == 'added' and qa['dupPushCount'] == 2, qa
+    assert qa['xssSafe'] and qa['emptyQueueBrRendered'], qa
+    assert qa['memoryHasStarted'] and qa['rMemViewer'] == 'memory' and qa['rMemLeadMod'] == 'added', qa
+    assert qa['removals']['countAfterRemMsg'] == qa['removals']['countBeforeRem'] - 1, qa['removals']
+    assert qa['removals']['countAfterRemOwn'] == qa['removals']['countAfterRemMsg'] - 1, qa['removals']
+    assert qa['prevClipId'] == 'ccccccccccc' and qa['prevAtStart'] is None, qa
+    assert qa['clearedPlayback'] and qa['nextAfterClearHist'] == 'ddddddddddd', qa
+    assert qa['playedViaDelegate'] == 'g1111111111' and qa['countAfterDelegatedDelete'] == 0, qa
