@@ -248,7 +248,7 @@ ClipQ.Providers = (() => {
                 /(?:https?:\/\/)?(?:(?:www|m)\.)?youtube\.com\/(?:shorts|live)\/([A-Za-z0-9_-]+)/i
             ],
             extractId(url) { return matchFirstPattern(this.patterns, url); },
-            getEmbedUrl(id) { return `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1`; },
+            getEmbedUrl(id) { return `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&enablejsapi=1`; },
             async isClipAvailable(id) {
                 if (!id) return true;
                 try { return !(await isYoutubeResponseUnavailable(await fetchYoutubeOembed(id))); } catch { return true; }

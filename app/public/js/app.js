@@ -173,6 +173,9 @@ ClipQ.App = (() => {
             const prev = ClipQ.Queue.previousFromHistory();
             if (prev) { ClipQ.Player.playClip(prev); updateNextButton(); }
         });
+        document.getElementById('btn-pause')?.addEventListener('click', () => {
+            ClipQ.Player.togglePause();
+        });
         document.getElementById('btn-share-chat')?.addEventListener('click', () => {
             const clip = ClipQ.Player.getCurrent();
             if (!clip) return;
@@ -227,8 +230,15 @@ ClipQ.App = (() => {
 
     function updateNextButton() {
         const current = ClipQ.Player.getCurrent();
+        const isPaused = Boolean(current && ClipQ.Player.isPaused());
         const btn = document.getElementById('btn-next');
         btn.textContent = t(current ? 'player.next' : 'player.start');
+        const pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) {
+            pauseBtn.disabled = !current;
+            pauseBtn.textContent = t(isPaused ? 'player.resume' : 'player.pause');
+            pauseBtn.setAttribute('aria-pressed', String(isPaused));
+        }
         const shareBtn = document.getElementById('btn-share-chat');
         if (shareBtn) shareBtn.disabled = !current;
     }

@@ -9,6 +9,9 @@ ClipQ.Player = (() => {
 
     let currentClip = null;
     let playTimeout = null;
+    let autoplayDeadline = 0;
+    let remainingAutoplayMs = 0;
+    let paused = false;
     let tiktokUnmutePending = false;
     const t = (key, params) => ClipQ.I18n.t(key, params);
     const esc = (val) => ClipQ.escapeHtml(val);
@@ -25,33 +28,16 @@ ClipQ.Player = (() => {
         const timestamp = new Date(dateStr).getTime();
         if (Number.isNaN(timestamp)) return '';
 
-        const diff = Math.max(0, Date.now() - timestamp);
-        const mins = Math.floor(diff / 60000);
+        const mins = Math.floor(Math.max(0, Date.now() - timestamp) / 60000);
+        const plural = (n, sKey, pKey) => t(n === 1 ? sKey : pKey, { count: n });
         if (mins < 60) return t('time.minutes_ago', { count: mins });
         const hours = Math.floor(mins / 60);
         if (hours < 24) return t('time.hours_ago', { count: hours });
         const days = Math.floor(hours / 24);
-        if (days < 7) {
-            return days === 1
-                ? t('time.day_ago', { count: days })
-                : t('time.days_ago', { count: days });
-        }
-        const weeks = Math.floor(days / 7);
-        if (days < 30) {
-            return weeks === 1
-                ? t('time.week_ago', { count: weeks })
-                : t('time.weeks_ago', { count: weeks });
-        }
-        const months = Math.floor(days / 30);
-        if (days < 365) {
-            return months === 1
-                ? t('time.month_ago', { count: months })
-                : t('time.months_ago', { count: months });
-        }
-        const years = Math.floor(days / 365);
-        return years === 1
-            ? t('time.year_ago', { count: years })
-            : t('time.years_ago', { count: years });
+        if (days < 7) return plural(days, 'time.day_ago', 'time.days_ago');
+        if (days < 30) return plural(Math.floor(days / 7), 'time.week_ago', 'time.weeks_ago');
+        if (days < 365) return plural(Math.floor(days / 30), 'time.month_ago', 'time.months_ago');
+        return plural(Math.floor(days / 365), 'time.year_ago', 'time.years_ago');
     }
 
     function getChannelUrl(channelName, provider, meta = {}, clipUrl = '') {
@@ -79,6 +65,10 @@ ClipQ.Player = (() => {
             return `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
         }
         return '';
+    }
+
+    function syncPlaybackButtons() {
+        if (ClipQ.App && ClipQ.App.updateNextButton) ClipQ.App.updateNextButton();
     }
 
     function skipUnavailableOrEmpty() {
@@ -155,6 +145,12 @@ ClipQ.Player = (() => {
                     ClipQ.App.nextClip();
                 }
             });
+            videoEl.addEventListener('pause', () => {
+                if (currentClip === clip && !videoEl.ended) setPausedState(true);
+            });
+            videoEl.addEventListener('play', () => {
+                if (currentClip === clip) setPausedState(false);
+            });
             videoEl.addEventListener('error', (e) => {
                 console.warn(`HTML5 video playback error (${videoId}), falling back to iframe`, e);
                 if (currentClip === clip) onErrorFallback();
@@ -183,7 +179,7 @@ ClipQ.Player = (() => {
 
             const assets = Array.isArray(clipData.assets) ? clipData.assets : [];
             const transcodesFailed = assets.length > 0 && assets.every(a => a?.creationState === 'FAILED');
-            const noQualities = !Array.isArray(clipData.videoQualities) || clipData.videoQualities.length === 0;
+            const qualities = Array.isArray(clipData.videoQualities) ? clipData.videoQualities : [];
             const sig = clipData.playbackAccessToken?.signature;
             const rawToken = clipData.playbackAccessToken?.value;
             if (!sig || !rawToken) return null;
@@ -191,9 +187,10 @@ ClipQ.Player = (() => {
             let clipUri = '';
             try { clipUri = JSON.parse(rawToken)?.clip_uri || ''; } catch { clipUri = ''; }
             const isHevcSource = typeof clipUri === 'string' && /\/hevc\//i.test(clipUri);
-            if (!transcodesFailed && !noQualities && !isHevcSource) return null;
-
-            const safeBase = safeUrl(clipUri);
+            const rawSource = (transcodesFailed || qualities.length === 0 || isHevcSource)
+                ? (clipUri || qualities[0]?.sourceURL || '')
+                : (qualities[0]?.sourceURL || clipUri || '');
+            const safeBase = safeUrl(rawSource);
             if (!safeBase) return null;
             return { url: `${safeBase}?sig=${encodeURIComponent(sig)}&token=${encodeURIComponent(rawToken)}` };
         } catch {
@@ -227,10 +224,15 @@ ClipQ.Player = (() => {
             tiktokUnmutePending = false;
         }
 
-        if (data.type === 'onStateChange' && data.value === 1 && tiktokUnmutePending) {
-            sendTiktokCommand('unMute');
-            sendTiktokCommand('setVolume', 100);
-            tiktokUnmutePending = false;
+        if (data.type === 'onStateChange' && data.value === 1) {
+            if (tiktokUnmutePending) {
+                sendTiktokCommand('unMute');
+                sendTiktokCommand('setVolume', 100);
+                tiktokUnmutePending = false;
+            }
+            setPausedState(false);
+        } else if (data.type === 'onStateChange' && data.value === 2) {
+            setPausedState(true);
         } else if (data.type === 'onStateChange' && data.value === 0 && ClipQ.App.isAutoplay()) {
             ClipQ.App.nextClip();
         }
@@ -239,9 +241,12 @@ ClipQ.Player = (() => {
     function playClip(clip) {
         if (!clip) { showEmpty(); return; }
         currentClip = clip;
+        paused = false;
+        remainingAutoplayMs = 0;
+        autoplayDeadline = 0;
         tiktokUnmutePending = clip.provider === 'tiktok';
-
         clearAutoplayTimeout();
+        syncPlaybackButtons();
 
         const playerArea = document.getElementById('player-area');
         if (!playerArea) return;
@@ -258,11 +263,7 @@ ClipQ.Player = (() => {
                 return;
             }
 
-            playerArea.innerHTML = `
-            <div class="player-loading">
-                <div class="player-empty-icon">⏳</div>
-                <div class="player-loading-text">${esc(t('player.loading_instagram'))}</div>
-            </div>`;
+            playerArea.innerHTML = `<div class="player-loading"><div class="player-empty-icon">⏳</div><div class="player-loading-text">${esc(t('player.loading_instagram'))}</div></div>`;
 
             ClipQ.fetchWithAuth(`/api/video-url?url=${encodeURIComponent(clip.url)}`)
                 .then(res => {
@@ -340,24 +341,71 @@ ClipQ.Player = (() => {
         }
     }
 
-    function clearAutoplayTimeout() {
-        clearTimeout(playTimeout);
-        playTimeout = null;
-    }
-
-    function startAutoplayTimeout(clip) {
-        if (!ClipQ.App.isAutoplay()) return;
-
+    function getClipTimeoutMs(clip) {
         let durationSec = 0;
         if (clip.meta && clip.meta.duration) {
             durationSec = ClipQ.Providers.parseDurationSeconds(clip.meta.duration);
         }
-        const durationMs = durationSec > 0 ? durationSec * 1000 : 45000;
+        return (durationSec > 0 ? durationSec * 1000 : 45000) + 2000;
+    }
+
+    function scheduleAutoplayTimer(clip, waitMs) {
+        clearTimeout(playTimeout);
+        autoplayDeadline = Date.now() + waitMs;
+        remainingAutoplayMs = waitMs;
         playTimeout = setTimeout(() => {
-            if (ClipQ.App.isAutoplay() && currentClip === clip) {
+            if (ClipQ.App.isAutoplay() && currentClip === clip && !paused) {
                 ClipQ.App.nextClip();
             }
-        }, durationMs + 2000);
+        }, waitMs);
+    }
+
+    function clearAutoplayTimeout() {
+        clearTimeout(playTimeout);
+        playTimeout = null;
+        autoplayDeadline = 0;
+        remainingAutoplayMs = 0;
+    }
+
+    function startAutoplayTimeout(clip) {
+        if (!ClipQ.App.isAutoplay() || paused) return;
+        scheduleAutoplayTimer(clip, getClipTimeoutMs(clip));
+    }
+
+    function setPausedState(nextPaused) {
+        const val = Boolean(nextPaused);
+        if (paused === val) return;
+        paused = val;
+        if (paused) {
+            if (playTimeout) {
+                remainingAutoplayMs = Math.max(2000, autoplayDeadline - Date.now());
+                clearTimeout(playTimeout);
+                playTimeout = null;
+            }
+        } else if (ClipQ.App?.isAutoplay?.() && currentClip && !document.querySelector('#player-area video')) {
+            scheduleAutoplayTimer(currentClip, remainingAutoplayMs || getClipTimeoutMs(currentClip));
+        }
+        syncPlaybackButtons();
+    }
+
+    function togglePause() {
+        if (!currentClip) return false;
+        const nextPaused = !paused;
+        const videoEl = document.querySelector('#player-area video');
+        if (videoEl) {
+            if (nextPaused) videoEl.pause();
+            else videoEl.play().catch(() => {});
+        } else if (currentClip.provider === 'youtube') {
+            const iframe = document.querySelector('#player-area iframe');
+            iframe?.contentWindow?.postMessage(
+                JSON.stringify({ event: 'command', func: nextPaused ? 'pauseVideo' : 'playVideo', args: [] }),
+                'https://www.youtube.com'
+            );
+        } else if (currentClip.provider === 'tiktok') {
+            sendTiktokCommand(nextPaused ? 'pause' : 'play');
+        }
+        setPausedState(nextPaused);
+        return nextPaused;
     }
 
     function updateInfo(clip) {
@@ -422,18 +470,16 @@ ClipQ.Player = (() => {
 
     function showEmpty() {
         currentClip = null;
+        paused = false;
         tiktokUnmutePending = false;
         clearAutoplayTimeout();
         const playerArea = document.getElementById('player-area');
         if (playerArea) {
-            playerArea.innerHTML = `
-            <div class="player-empty">
-                <div class="player-empty-icon">🎬</div>
-                <div class="player-empty-text">${esc(t('player.waiting'))}</div>
-            </div>`;
+            playerArea.innerHTML = `<div class="player-empty"><div class="player-empty-icon">🎬</div><div class="player-empty-text">${esc(t('player.waiting'))}</div></div>`;
         }
         const detailsEl = document.getElementById('clip-details');
         if (detailsEl) detailsEl.innerHTML = `<div class="clip-placeholder">${esc(t('player.no_clip'))}</div>`;
+        syncPlaybackButtons();
     }
 
     function refreshLanguage() {
@@ -445,6 +491,7 @@ ClipQ.Player = (() => {
     }
 
     function getCurrent() { return currentClip; }
+    function isPaused() { return paused; }
 
-    return { playClip, showEmpty, getCurrent, refreshLanguage, clearAutoplayTimeout };
+    return { playClip, showEmpty, getCurrent, isPaused, togglePause, refreshLanguage, clearAutoplayTimeout };
 })();

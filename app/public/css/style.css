@@ -178,13 +178,13 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 .queue-thumb.clip-placeholder, .history-thumb.clip-placeholder { background:var(--color-border); font-size:24px; }
 
 /* PLAYER CONTROLS */
-.player-controls { display:grid; grid-template-columns:auto auto auto; align-items:center; gap:8px 14px; flex-shrink:0; }
-.ctrl-btn { padding:12px 22px; font-size:17px; font-weight:600; background:color-mix(in srgb, var(--color-accent) 12%, transparent); color:var(--color-text-bright); border:1px solid color-mix(in srgb, var(--color-accent) 20%, transparent); border-radius:30px; transition:all .2s; }
+.player-controls { display:grid; grid-template-columns:auto auto auto auto; align-items:center; gap:8px 10px; flex-shrink:0; }
+.ctrl-btn { padding:10px 16px; font-size:15px; font-weight:600; white-space:nowrap; background:color-mix(in srgb, var(--color-accent) 12%, transparent); color:var(--color-text-bright); border:1px solid color-mix(in srgb, var(--color-accent) 20%, transparent); border-radius:30px; transition:all .2s; }
 .ctrl-btn:hover:not(:disabled) { background:color-mix(in srgb, var(--color-accent) 25%, transparent); transform:translateY(-1px); }
+.ctrl-btn:disabled { opacity:.45; cursor:not-allowed; }
 .ctrl-btn.primary { background:var(--color-accent); color:#fff; border-color:var(--color-accent); box-shadow:0 2px 12px var(--color-accent-glow); }
 .ctrl-btn.primary:hover:not(:disabled) { background:var(--color-accent-hover); }
-.ctrl-btn-share { grid-column:2 / span 2; padding:6px 16px; font-size:13px; border-radius:20px; width:100%; }
-.ctrl-btn-share:disabled { opacity:.45; cursor:not-allowed; }
+.ctrl-btn-share { grid-column:2 / span 3; padding:6px 16px; font-size:13px; border-radius:20px; width:100%; }
 .autoplay-toggle { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:var(--border-radius-sm); background:rgba(255,255,255,.03); color:inherit; border:1px solid var(--color-border); transition:all .2s; user-select:none; }
 .autoplay-toggle:hover { background:rgba(255,255,255,.06); }
 .autoplay-toggle .toggle-switch { width:36px; height:20px; flex-shrink:0; }

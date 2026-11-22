@@ -144,6 +144,7 @@ SYNC_TEST_JS = """
             const parsed = JSON.parse(opts?.body || '{}');
             const slug = parsed?.variables?.slug || '';
             if (slug === 'DeadTwitch1') return new Response(JSON.stringify({ data: { clip: null } }), { status: 200 });
+            if (slug === 'EmbedOnlyClip') return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'CREATED' }], playbackAccessToken: null, videoQualities: [] } } }), { status: 200 });
             if (slug === 'FailedTranscodeClip') {
                 return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'FAILED' }], playbackAccessToken: { signature: 'sig123', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4' }) }, videoQualities: [] } } }), { status: 200 });
             }
@@ -307,7 +308,15 @@ SYNC_TEST_JS = """
         const videoEl = document.getElementById('twitch-video-player');
         out.twitchFallbackVideoSrc = videoEl?.getAttribute('src') || '';
         out.videoVolumeRestored = Boolean(videoEl && Math.abs(videoEl.volume - 0.42) < 0.01 && videoEl.muted === true);
-        ClipQ.Player.playClip({ provider: 'twitch', clipId: 'NormalClip1', url: 'https://www.twitch.tv/skuuii/clip/NormalClip1', meta: { title: 'Normal Clip', channel: 'skuuii' } });
+        ClipQ.Player.playClip({ provider: 'youtube', clipId: 'TestYtPause1', url: 'https://youtu.be/TestYtPause1', meta: { title: 'YT Clip' } });
+        await new Promise(r => setTimeout(r, 30));
+        const ytIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
+        const pauseBtn = document.getElementById('btn-pause'), prevRect = document.getElementById('btn-prev')?.getBoundingClientRect(), pauseRect = pauseBtn?.getBoundingClientRect(), nextRectPause = document.getElementById('btn-next')?.getBoundingClientRect();
+        pauseBtn?.click();
+        const pausedAfter1 = Boolean(ClipQ.Player.isPaused() && pauseBtn?.getAttribute('aria-pressed') === 'true' && pauseBtn?.textContent.includes('Resume'));
+        pauseBtn?.click();
+        out.pauseResumeOk = Boolean(ytIframeSrc.includes('enablejsapi=1') && prevRect && pauseRect && nextRectPause && pauseRect.left > prevRect.right && nextRectPause.left > pauseRect.right && pausedAfter1 && !ClipQ.Player.isPaused() && pauseBtn?.textContent.includes('Pause'));
+        ClipQ.Player.playClip({ provider: 'twitch', clipId: 'EmbedOnlyClip', url: 'https://www.twitch.tv/skuuii/clip/EmbedOnlyClip', meta: { title: 'Embed Clip', channel: 'skuuii' } });
         await new Promise(r => setTimeout(r, 40));
         out.twitchNormalIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
         ClipQ.Player.showEmpty();
@@ -326,7 +335,7 @@ SYNC_TEST_JS = """
         ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'NormalClip1', url: 'https://clips.twitch.tv/NormalClip1', meta: { title: 'OK' } }, 'u3');
         document.getElementById('btn-next')?.click();
         await new Promise(r => setTimeout(r, 80));
-        out.brokenAutoSkipped = Boolean(document.querySelector('#player-area iframe')?.getAttribute('src')?.includes('NormalClip1') && ClipQ.Queue.getItems().length === 0);
+        out.brokenAutoSkipped = ClipQ.Player.getCurrent()?.clipId === 'NormalClip1' && ClipQ.Queue.getItems().length === 0;
         const shareBtn = document.getElementById('btn-share-chat');
         const nextRect = document.getElementById('btn-next')?.getBoundingClientRect();
         const shareRect = shareBtn?.getBoundingClientRect();
@@ -466,6 +475,7 @@ def assert_sync_report(report):
             'brokenAutoSkipped',
             'blockedSideBySide',
             'shareInChatRapidOk',
+            'pauseResumeOk',
             'historySearchOk',
             'historyPlatformFilterOk',
             'backupImported',
@@ -476,7 +486,7 @@ def assert_sync_report(report):
     assert report['twitchFallbackVideoSrc'].startswith(
         'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4?sig=sig123'
     ), f'Twitch failed-transcode video fallback failed: {report}'
-    assert report['twitchNormalIframeSrc'].startswith('https://clips.twitch.tv/embed?clip=NormalClip1'), (
+    assert report['twitchNormalIframeSrc'].startswith('https://clips.twitch.tv/embed?clip=EmbedOnlyClip'), (
         f'Normal Twitch embed failed: {report}'
     )
     assert report['obsTwitchMetaTitle'] == 'OBS Clip Title', f'OBS Twitch meta fallback failed: {report}'

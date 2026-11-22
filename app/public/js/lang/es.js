@@ -27,6 +27,8 @@ ClipQ.I18n.register('es', {
     'player.waiting': 'Esperando clips...',
     'player.no_clip': 'Ningún clip cargado',
     'player.previous': '← Anterior',
+    'player.pause': '⏸ Pausar',
+    'player.resume': '▶ Reanudar',
     'player.start': '▶ Iniciar',
     'player.next': 'Siguiente →',
     'player.share_chat': 'Compartir en el chat',

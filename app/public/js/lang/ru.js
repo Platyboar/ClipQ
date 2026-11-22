@@ -27,6 +27,8 @@ ClipQ.I18n.register('ru', {
     'player.waiting': 'Ожидание клипов...',
     'player.no_clip': 'Нет загруженного клипа',
     'player.previous': '← Назад',
+    'player.pause': '⏸ Пауза',
+    'player.resume': '▶ Продолжить',
     'player.start': '▶ Старт',
     'player.next': 'Вперед →',
     'player.share_chat': 'Отправить в чат',

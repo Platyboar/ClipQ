@@ -27,6 +27,8 @@ ClipQ.I18n.register('ja', {
     'player.waiting': 'クリップを待機中...',
     'player.no_clip': 'クリップが読み込まれていません',
     'player.previous': '← 前へ',
+    'player.pause': '⏸ 一時停止',
+    'player.resume': '▶ 再開',
     'player.start': '▶ スタート',
     'player.next': '次へ →',
     'player.share_chat': 'チャットに共有',
