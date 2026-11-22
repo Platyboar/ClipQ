@@ -30,6 +30,7 @@ export default [
             sourceType: "module",
             globals: {
                 ...globals.serviceworker,
+                WebSocketPair: "readonly",
             },
         },
         rules: {

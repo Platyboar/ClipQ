@@ -2,6 +2,14 @@
  * sync-api.js — Twitch-authenticated D1 persistence endpoints for ClipQ
  */
 
+import {
+    authenticateObsKey,
+    authenticateObsKeyValue,
+    ensureObsTable,
+    getOrCreateObsKey,
+    rotateObsKey,
+    syncObsProfile,
+} from './obs-auth.js';
 import { jsonResponse } from './proxy.js';
 
 const DEFAULT_TWITCH_CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
@@ -48,6 +56,7 @@ export async function authenticateTwitchRequest(request, env) {
         const identity = {
             userId: String(data.user_id),
             login: String(data.login || ''),
+            authMethod: 'twitch',
         };
         if (tokenCache.size >= TOKEN_CACHE_MAX) {
             tokenCache.clear();
@@ -60,6 +69,12 @@ export async function authenticateTwitchRequest(request, env) {
     } catch {
         return null;
     }
+}
+
+export async function authenticateRequest(request, env) {
+    const twitchIdentity = await authenticateTwitchRequest(request, env);
+    if (twitchIdentity) return twitchIdentity;
+    return authenticateObsKey(request, env);
 }
 
 async function readJsonBody(request) {
@@ -106,13 +121,47 @@ async function fetchHistoryPage(db, userId, limit, offset) {
     return { items, rawCount: rawRows.length };
 }
 
-async function handleGetInitial(db, identity, reqUrl) {
-    const limit = Math.min(2000, Math.max(1, Number.parseInt(reqUrl.searchParams.get('limit') || '', 10) || INITIAL_HISTORY_LIMIT));
-    const offset = Math.max(0, Number.parseInt(reqUrl.searchParams.get('historyOffset') || '', 10) || 0);
+async function notifyRoom(env, userId, payload) {
+    if (!env?.CLIPQ_ROOM || !userId) return;
+    try {
+        const roomId = env.CLIPQ_ROOM.idFromName(String(userId));
+        const stub = env.CLIPQ_ROOM.get(roomId);
+        await stub.fetch(new Request('https://clipq-room/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }));
+    } catch { /* ignore transient room notification failures */ }
+}
 
+function formatConfigRow(cfgRow) {
+    return cfgRow ? {
+        settings: safeParseJson(cfgRow.settings_json, {}),
+        customDesign: safeParseJson(cfgRow.custom_design_json, null),
+        customLayout: safeParseJson(cfgRow.custom_layout_json, null),
+        queue: safeParseJson(cfgRow.queue_json, null),
+        language: cfgRow.language || 'en',
+        autoplay: cfgRow.autoplay === 1,
+        updatedAt: cfgRow.updated_at || 0,
+    } : null;
+}
+
+async function handleGetInitial(db, identity, reqUrl) {
     const cfgRow = await db.prepare(
         'SELECT twitch_login, settings_json, custom_design_json, custom_layout_json, queue_json, language, autoplay, updated_at FROM user_configs WHERE twitch_user_id = ?'
     ).bind(identity.userId).first();
+
+    if (reqUrl.searchParams.get('configOnly') === '1') {
+        return jsonResponse({
+            exists: Boolean(cfgRow),
+            userId: identity.userId,
+            login: identity.login,
+            config: formatConfigRow(cfgRow),
+        });
+    }
+
+    const limit = Math.min(2000, Math.max(1, Number.parseInt(reqUrl.searchParams.get('limit') || '', 10) || INITIAL_HISTORY_LIMIT));
+    const offset = Math.max(0, Number.parseInt(reqUrl.searchParams.get('historyOffset') || '', 10) || 0);
 
     const countRow = await db.prepare(
         'SELECT COUNT(*) AS cnt FROM clip_history WHERE twitch_user_id = ?'
@@ -126,24 +175,26 @@ async function handleGetInitial(db, identity, reqUrl) {
     const memory = (memResult?.results || []).map((row) => row.clip_key).filter(Boolean);
 
     const exists = Boolean(cfgRow || historyTotal > 0 || memory.length > 0);
-    return jsonResponse({
+    const payload = {
         exists,
         userId: identity.userId,
         login: identity.login,
-        config: cfgRow ? {
-            settings: safeParseJson(cfgRow.settings_json, {}),
-            customDesign: safeParseJson(cfgRow.custom_design_json, null),
-            customLayout: safeParseJson(cfgRow.custom_layout_json, null),
-            queue: safeParseJson(cfgRow.queue_json, null),
-            language: cfgRow.language || 'en',
-            autoplay: cfgRow.autoplay === 1,
-            updatedAt: cfgRow.updated_at || 0,
-        } : null,
+        config: formatConfigRow(cfgRow),
         history,
         historyTotal,
         hasMoreHistory: offset + limit < historyTotal,
         memory,
-    });
+    };
+
+    if (identity.authMethod === 'obs') {
+        payload.displayName = identity.displayName || identity.login;
+        payload.avatar = identity.avatar || '';
+        payload.isObsSession = true;
+    } else {
+        payload.obsKey = await getOrCreateObsKey(db, identity);
+    }
+
+    return jsonResponse(payload);
 }
 
 async function handleGetHistoryPage(db, identity, reqUrl) {
@@ -187,13 +238,13 @@ async function handleExportAll(db, identity) {
     });
 }
 
-async function handlePutConfig(request, db, identity) {
+async function handlePutConfig(request, db, identity, env) {
     const parsed = await readJsonBody(request);
     if (parsed.error) return parsed.error;
     const body = parsed.data;
 
     const existing = await db.prepare(
-        'SELECT settings_json, custom_design_json, custom_layout_json, queue_json, language, autoplay FROM user_configs WHERE twitch_user_id = ?'
+        'SELECT twitch_login, settings_json, custom_design_json, custom_layout_json, queue_json, language, autoplay FROM user_configs WHERE twitch_user_id = ?'
     ).bind(identity.userId).first();
 
     const nextSettings = Object.prototype.hasOwnProperty.call(body, 'settings')
@@ -215,6 +266,22 @@ async function handlePutConfig(request, db, identity) {
         ? (body.autoplay ? 1 : 0)
         : (existing?.autoplay ? 1 : 0);
 
+    const unchanged = Boolean(
+        existing &&
+        existing.twitch_login === identity.login &&
+        existing.settings_json === nextSettings &&
+        (existing.custom_design_json ?? null) === nextCustomDesign &&
+        (existing.custom_layout_json ?? null) === nextCustomLayout &&
+        (existing.queue_json ?? null) === nextQueue &&
+        (existing.language || 'en') === nextLanguage &&
+        Number(existing.autoplay || 0) === nextAutoplay
+    );
+
+    if (unchanged) {
+        return jsonResponse({ ok: true, changed: false });
+    }
+
+    const updatedAt = Date.now();
     await db.prepare(
         'INSERT INTO user_configs ' +
         '(twitch_user_id, twitch_login, settings_json, custom_design_json, custom_layout_json, queue_json, language, autoplay, updated_at) ' +
@@ -237,10 +304,17 @@ async function handlePutConfig(request, db, identity) {
         nextQueue,
         nextLanguage,
         nextAutoplay,
-        Date.now()
+        updatedAt
     ).run();
 
-    return jsonResponse({ ok: true });
+    if (identity.authMethod === 'twitch' && body.profile && typeof body.profile === 'object') {
+        await syncObsProfile(db, identity, body.profile);
+    }
+
+    const source = typeof body.clientId === 'string' ? body.clientId.slice(0, 64) : '';
+    await notifyRoom(env, identity.userId, { type: 'sync', updatedAt, source });
+
+    return jsonResponse({ ok: true, changed: true, updatedAt });
 }
 
 async function handlePostHistory(request, db, identity) {
@@ -305,25 +379,66 @@ async function handlePostMemory(request, db, identity) {
 }
 
 async function handleDeleteAllUserData(db, identity) {
+    await ensureObsTable(db);
     await db.batch([
         db.prepare('DELETE FROM clip_history WHERE twitch_user_id = ?').bind(identity.userId),
         db.prepare('DELETE FROM clip_memory WHERE twitch_user_id = ?').bind(identity.userId),
         db.prepare('DELETE FROM user_configs WHERE twitch_user_id = ?').bind(identity.userId),
+        db.prepare('DELETE FROM obs_tokens WHERE twitch_user_id = ?').bind(identity.userId),
     ]);
     return jsonResponse({ ok: true });
 }
 
-export async function handleSyncRequest(request, reqUrl, env) {
+async function handlePostObsKey(request, db, identity) {
+    const parsed = await readJsonBody(request);
+    if (parsed.error) return parsed.error;
+    return rotateObsKey(db, identity, parsed.data);
+}
+
+export async function handleSyncWebSocket(request, reqUrl, env) {
     if (!env?.DB) {
         return jsonResponse({ error: 'Database not configured' }, 501);
     }
-    const identity = await authenticateTwitchRequest(request, env);
+    if (request.method.toUpperCase() !== 'GET') {
+        return jsonResponse({ error: 'Method not allowed' }, 405);
+    }
+    const obsKey = reqUrl.searchParams.get('obsKey') || '';
+    const identity = await authenticateObsKeyValue(obsKey, env);
+    if (!identity) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
+    if (!env?.CLIPQ_ROOM) {
+        return jsonResponse({ error: 'Live sync room not configured' }, 501);
+    }
+    const roomId = env.CLIPQ_ROOM.idFromName(identity.userId);
+    const stub = env.CLIPQ_ROOM.get(roomId);
+    return stub.fetch(request);
+}
+
+export async function handleSyncRequest(request, reqUrl, env) {
+    const path = reqUrl.pathname;
+    if (path === '/api/sync/ws') {
+        return handleSyncWebSocket(request, reqUrl, env);
+    }
+    if (!env?.DB) {
+        return jsonResponse({ error: 'Database not configured' }, 501);
+    }
+    const identity = await authenticateRequest(request, env);
     if (!identity) {
         return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
-    const path = reqUrl.pathname;
     const method = request.method.toUpperCase();
+    const isObsForbidden =
+        identity.authMethod === 'obs' &&
+        (
+            (path === '/api/sync' && method === 'DELETE') ||
+            (path === '/api/sync/export' && method === 'GET') ||
+            (path === '/api/sync/obs-key' && method === 'POST')
+        );
+    if (isObsForbidden) {
+        return jsonResponse({ error: 'Forbidden in OBS mode' }, 403);
+    }
 
     try {
         if (path === '/api/sync' && method === 'GET') {
@@ -332,6 +447,9 @@ export async function handleSyncRequest(request, reqUrl, env) {
         if (path === '/api/sync' && method === 'DELETE') {
             return await handleDeleteAllUserData(env.DB, identity);
         }
+        if (path === '/api/sync/obs-key' && method === 'POST') {
+            return await handlePostObsKey(request, env.DB, identity);
+        }
         if (path === '/api/sync/history' && method === 'GET') {
             return await handleGetHistoryPage(env.DB, identity, reqUrl);
         }
@@ -339,7 +457,7 @@ export async function handleSyncRequest(request, reqUrl, env) {
             return await handleExportAll(env.DB, identity);
         }
         if (path === '/api/sync/config' && method === 'PUT') {
-            return await handlePutConfig(request, env.DB, identity);
+            return await handlePutConfig(request, env.DB, identity, env);
         }
         if (path === '/api/sync/history' && method === 'POST') {
             return await handlePostHistory(request, env.DB, identity);

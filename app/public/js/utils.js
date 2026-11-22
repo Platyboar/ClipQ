@@ -6,6 +6,31 @@ window.ClipQ = window.ClipQ || {};
 (() => {
     'use strict';
 
+    function reportClientError(payload) {
+        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+        try {
+            fetch('/log-error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        } catch { /* ignore logging transport failures */ }
+    }
+    window.onerror = (message, source, lineno, colno, error) => {
+        reportClientError({ message, source, lineno, colno, error: error ? error.stack : null });
+        return false;
+    };
+    window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason;
+        reportClientError({
+            message: reason && reason.message ? reason.message : String(reason || 'Unhandled rejection'),
+            source: 'unhandledrejection',
+            lineno: 0,
+            colno: 0,
+            error: reason && reason.stack ? reason.stack : null
+        });
+    });
+
     const ROLE_BADGES = {
         broadcaster: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1',
         leadMod: 'https://assets.help.twitch.tv/article/img/000002212-07.png',
@@ -57,13 +82,34 @@ window.ClipQ = window.ClipQ || {};
     }
 
     function fetchWithAuth(url, options = {}) {
-        const token = window.ClipQ.Auth && window.ClipQ.Auth.getToken ? window.ClipQ.Auth.getToken() : null;
-        if (!token) return fetch(url, options);
+        const obsKey = window.ClipQ.Auth && window.ClipQ.Auth.getActiveObsKey ? window.ClipQ.Auth.getActiveObsKey() : null;
+        const token = !obsKey && window.ClipQ.Auth && window.ClipQ.Auth.getToken ? window.ClipQ.Auth.getToken() : null;
+        if (!obsKey && !token) return fetch(url, options);
         const headers = new Headers(options.headers || {});
-        if (!headers.has('Authorization')) {
+        if (obsKey && !headers.has('X-ClipQ-Obs-Key')) {
+            headers.set('X-ClipQ-Obs-Key', obsKey);
+        } else if (token && !headers.has('Authorization')) {
             headers.set('Authorization', `Bearer ${token}`);
         }
         return fetch(url, { ...options, headers });
+    }
+
+    function buildRoleBadge(roles) {
+        if (!roles) return '';
+        const roleDefs = [
+            ['isBroadcaster', 'broadcaster', 'roles.broadcaster'],
+            ['isLeadMod', 'leadMod', 'roles.lead_mod'],
+            ['isMod', 'mod', 'roles.mod'],
+            ['isVip', 'vip', 'roles.vip']
+        ];
+        const match = roleDefs.find(([flag]) => roles[flag]);
+        if (!match) return '';
+        const [, badgeKey, i18nKey] = match;
+        const badgeUrl = sanitizeUrl(ROLE_BADGES[badgeKey]);
+        if (!badgeUrl) return '';
+        const rawLabel = window.ClipQ.I18n && window.ClipQ.I18n.t ? window.ClipQ.I18n.t(i18nKey) : badgeKey;
+        const label = escapeHtml(rawLabel);
+        return `<img class="badge-role" src="${escapeHtml(badgeUrl)}" title="${label}" alt="${label}">`;
     }
 
     /** Parse an integer strictly, falling back only on NaN (preserving 0). */
@@ -164,6 +210,7 @@ window.ClipQ = window.ClipQ || {};
         escapeHtml,
         sanitizeUrl,
         fetchWithAuth,
+        buildRoleBadge,
         intOrDefault,
         getToggleState,
         setToggleState,

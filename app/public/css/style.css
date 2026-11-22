@@ -30,6 +30,7 @@
   --color-text-dim:        rgba(102,102,102,1);
   --color-text-bright:     rgba(255,255,255,1);
   --color-text-accent:     rgba(232,128,128,1);
+  --color-chat-text:       rgba(204,204,204,1);
   --sidebar-width:         750px;
   --menubar-height:        48px;
   --facecam-height:        420px;
@@ -39,6 +40,8 @@
   --border-radius-sm:      8px;
   --gap:                   8px;
   --font-family:           'Inter', sans-serif;
+  --chat-font-family:      'Inter', sans-serif;
+  --chat-font-size:        13px;
   --font-size-sm:          12px;
   --font-size-base:        14px;
   --font-size-lg:          16px;
@@ -94,8 +97,10 @@ a.btn:hover { text-decoration:none; }
 .language-btn .lang-flag { width:28px; height:18px; object-fit:cover; border-radius:2px; display:block; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
 .language-selector.fade-out { opacity:0; transform:translateY(-10px); transition:all .3s ease-in; }
 #twitch-login-btn.slide-in { animation:slide-up .4s ease-out; }
+.obs-error-banner { max-width:440px; margin:0 16px 20px; padding:12px 16px; border-radius:var(--border-radius-sm); background:color-mix(in srgb, var(--color-danger) 18%, transparent); border:1px solid var(--color-danger); color:var(--color-text-bright); font-size:var(--font-size-sm); text-align:center; line-height:1.5; }
 
 /* MENUBAR */
+body.obs-mode.obs-hide-topbar #menubar { display:none; }
 #menubar { display:flex; align-items:center; justify-content:space-between; height:var(--menubar-height); padding:0 16px; background:var(--color-menubar); border-bottom:1px solid var(--color-border); z-index:100; }
 .menu-left { display:flex; align-items:center; gap:20px; }
 .menu-left h1 { font-size:var(--font-size-xl); font-weight:700; background:linear-gradient(135deg,var(--color-accent),var(--color-accent-gradient)); background-clip:text; -webkit-text-fill-color:transparent; }
@@ -186,7 +191,25 @@ a.btn:hover { text-decoration:none; }
 #sidebar { grid-area:sidebar; display:flex; flex-direction:column; gap:var(--gap); overflow:hidden; }
 .sidebar-chat-ad-row { display:flex; gap:var(--gap); flex-shrink:0; }
 #ad-area { width:var(--chat-height); height:var(--chat-height); flex-shrink:0; background:var(--color-ad-bg); border:1px solid var(--color-border); border-radius:var(--border-radius); display:flex; align-items:center; justify-content:center; color:var(--color-text-dim); }
-#chat-area { flex:1; height:var(--chat-height); background:var(--color-chat-bg); border:1px solid var(--color-border-chat); border-radius:var(--border-radius); }
+#chat-area { flex:1; height:var(--chat-height); background:var(--color-chat-bg); border:1px solid var(--color-border-chat); border-radius:var(--border-radius); overflow:hidden; }
+.chat-messages { width:100%; height:100%; overflow:hidden auto; padding:8px 10px; display:flex; flex-direction:column; gap:4px; font-family:var(--chat-font-family); font-size:var(--chat-font-size); line-height:1.4; }
+.chat-messages.dir-bottom > .chat-msg:first-child { margin-top:auto; }
+.chat-messages.dir-top > .chat-msg { margin-top:0; }
+.chat-msg { overflow-wrap:anywhere; color:var(--color-text); }
+.chat-messages.anim-slide.dir-bottom .chat-msg-enter { animation:chat-slide-up .26s cubic-bezier(0.22,1,0.36,1) both; }
+.chat-messages.anim-slide.dir-top .chat-msg-enter { animation:chat-slide-down .26s cubic-bezier(0.22,1,0.36,1) both; }
+
+@keyframes chat-slide-up { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)} }
+
+@keyframes chat-slide-down { from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)} }
+
+@media (prefers-reduced-motion:reduce) { .chat-messages.anim-slide .chat-msg-enter { animation:none; } }
+.chat-msg-badges { display:inline; vertical-align:middle; }
+.chat-badge { width:16px; height:16px; }
+body.chat-badges-hidden .chat-msg-badges { display:none; }
+.chat-msg-author { font-weight:600; color:var(--color-text-accent); }
+.chat-msg-sep { color:var(--color-text-dim); }
+.chat-msg-text { color:var(--color-chat-text); }
 #facecam-area { height:var(--facecam-height); flex-shrink:0; background:var(--color-facecam-bg); border:1px solid var(--color-border-facecam); border-radius:var(--border-radius); }
 #queue-section { flex:1; display:flex; flex-direction:column; background:var(--color-queue-bg); border:1px solid var(--color-border-queue); border-radius:var(--border-radius); overflow:hidden; min-height:0; }
 .queue-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px 6px; margin-bottom:6px; flex-shrink:0; }

@@ -6,6 +6,22 @@ SYNC_TEST_JS = """
 
     const loginUrl = new URL(ClipQ.Auth.getLoginUrl());
     out.loginRedirectMatchesOrigin = loginUrl.searchParams.get('redirect_uri') === (window.location.origin + '/');
+    out.normalMenubarVisible = getComputedStyle(document.getElementById('menubar')).display !== 'none';
+    out.obsUrlValue = document.getElementById('set-obs-url')?.value || '';
+    history.replaceState(null, '', '/obs/obs_key_alpha_1234567890');
+    document.body.classList.toggle('obs-mode', ClipQ.Auth.isObsMode());
+    ClipQ.Settings.applyTopbarVisibility({ obsShowTopbar: false });
+    out.obsKeyExtractedFromPath = ClipQ.Auth.getUrlObsKey();
+    out.obsMenubarHiddenOnPath = ClipQ.Auth.isObsMode() && getComputedStyle(document.getElementById('menubar')).display === 'none';
+    ClipQ.Settings.applyTopbarVisibility({ obsShowTopbar: true });
+    out.obsMenubarShownWhenTopbarOn = ClipQ.Auth.isObsMode() && getComputedStyle(document.getElementById('menubar')).display !== 'none';
+    history.replaceState(null, '', '/?obs=1');
+    ClipQ.Settings.applyTopbarVisibility({ obsShowTopbar: false });
+    out.obsDetectedOnQuery = ClipQ.Auth.isObsMode();
+    history.replaceState(null, '', '/');
+    document.body.classList.toggle('obs-mode', ClipQ.Auth.isObsMode());
+    ClipQ.Settings.applyTopbarVisibility({ obsShowTopbar: false });
+    out.browserMenubarAlwaysVisible = getComputedStyle(document.getElementById('menubar')).display !== 'none';
     out.localFlagsAllPresent = ClipQ.I18n.getAvailableLanguages().every(
         l => typeof l.flag === 'string' && l.flag.startsWith('/img/flags/') && l.flag.endsWith('.png')
     );
@@ -42,17 +58,30 @@ SYNC_TEST_JS = """
         else cloudHistoryPage1.push(entry);
     }
 
-    const calls = { putConfig: 0, keepalivePut: false, proxyAuthOk: false, postHistory: 0, postMemory: 0, deleteAll: 0 };
+    const calls = { putConfig: 0, keepalivePut: false, proxyAuthOk: false, obsSyncOk: false, obsTwitchMetaOk: false, postHistory: 0, postMemory: 0, deleteAll: 0 };
     const origFetch = window.fetch.bind(window);
     window.fetch = async (url, opts) => {
         const u = typeof url === 'string' ? url : '';
         const method = (opts?.method || 'GET').toUpperCase();
+        const hdrs = new Headers(opts?.headers || {});
         if (u === '/health') {
             return new Response(JSON.stringify({ ok: true, sync: true }), { status: 200 });
         }
         if (u.startsWith('/api/oembed')) {
-            calls.proxyAuthOk = new Headers(opts?.headers || {}).get('Authorization') === 'Bearer mock_test_token';
+            calls.proxyAuthOk = hdrs.get('Authorization') === 'Bearer mock_test_token';
             return new Response(JSON.stringify({ title: 'Mock' }), { status: 200 });
+        }
+        if (u.startsWith('/api/twitch-meta')) {
+            calls.obsTwitchMetaOk = hdrs.get('X-ClipQ-Obs-Key') === 'obs_key_beta_9876543210';
+            return new Response(JSON.stringify({
+                configured: true,
+                available: true,
+                unavailable: false,
+                meta: { title: 'OBS Clip Title', channel: 'Streamer', duration: 22 }
+            }), { status: 200 });
+        }
+        if (u === '/api/sync/obs-key' && method === 'POST') {
+            return new Response(JSON.stringify({ obsKey: 'obs_key_beta_9876543210' }), { status: 200 });
         }
         if (u.startsWith('/api/sync/history?offset=')) {
             return new Response(JSON.stringify({ items: cloudHistoryPage2, offset: 500, hasMore: false }), { status: 200 });
@@ -78,12 +107,21 @@ SYNC_TEST_JS = """
             return new Response(JSON.stringify({ ok: true }), { status: 200 });
         }
         if (u.startsWith('/api/sync?limit=')) {
+            const obsHdr = hdrs.get('X-ClipQ-Obs-Key');
+            if (obsHdr === 'obs_key_revoked_00000000') {
+                return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+            }
+            if (obsHdr === 'obs_key_beta_9876543210') {
+                calls.obsSyncOk = true;
+            }
             return new Response(JSON.stringify({
                 exists: true,
                 userId: '99999',
                 login: 'teststreamer',
+                displayName: 'TestStreamer',
+                obsKey: obsHdr ? undefined : 'obs_key_alpha_1234567890',
                 config: {
-                    settings: { appTitle: 'SyncedTitle', providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true } },
+                    settings: { appTitle: 'SyncedTitle', providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true }, design: { showBadges: true, showChat: true } },
                     customDesign: null,
                     customLayout: null,
                     queue: null,
@@ -120,10 +158,76 @@ SYNC_TEST_JS = """
         document.getElementById('user-menu-toggle').click();
         document.getElementById('dropdown-settings').click();
         out.onlineDeleteCloudVisible = !document.getElementById('settings-delete-cloud')?.classList.contains('hidden');
+        out.obsCoverInitiallyMasked = document.getElementById('obs-url-group')?.classList.contains('obs-masked');
+        document.getElementById('reveal-obs-url-btn').click();
+        out.obsCoverUnmaskedOnClick = !document.getElementById('obs-url-group')?.classList.contains('obs-masked');
+        document.querySelector('.modal-tabs .tab[data-stab="design"]').click();
+        out.obsCoverRemaskedOnTabLeave = document.getElementById('obs-url-group')?.classList.contains('obs-masked');
+        document.querySelector('.modal-tabs .tab[data-stab="general"]').click();
+        document.getElementById('reveal-obs-url-btn').click();
+
+        const putBeforeNoOp = calls.putConfig;
+        document.getElementById('settings-save').click();
+        await new Promise(r => setTimeout(r, 80));
+        out.noOpSaveSkippedSync = calls.putConfig === putBeforeNoOp;
+
+        out.personalObsUrlValue = document.getElementById('set-obs-url')?.value || '';
+        out.regenerateObsBtnVisible = !document.getElementById('regenerate-obs-url-btn')?.classList.contains('hidden');
+        const nextObsKey = await ClipQ.Sync.regenerateObsKey();
+        ClipQ.Settings.populateUI();
+        out.regeneratedObsUrlValue = nextObsKey ? (document.getElementById('set-obs-url')?.value || '') : '';
         document.getElementById('settings-close').click();
+        out.obsCoverRemaskedOnClose = document.getElementById('obs-url-group')?.classList.contains('obs-masked');
+
+        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatDirection: 'bottom' });
+        ClipQ.ChatFeed.appendMessage({
+            id: 'msg_1',
+            username: 'ChatViewer<xss>',
+            login: 'chatviewer',
+            color: '#ff5500',
+            badges: { moderator: '1', subscriber: '12' },
+            roles: { isMod: true },
+            message: 'Hello <img src=x onerror="window.__chatXss=1"> https://clips.twitch.tv/ClipOne'
+        });
+        ClipQ.ChatFeed.appendMessage({
+            id: 'msg_2',
+            username: 'SecondUser',
+            login: 'seconduser',
+            color: 'red;position:fixed',
+            roles: {},
+            message: 'https://clips.twitch.tv/OnlyUrlClip'
+        });
+        out.chatCountInitial = document.querySelectorAll('#chat-messages .chat-msg').length;
+        out.chatMultiBadgeCount = document.querySelectorAll('#chat-messages .chat-msg')[0]?.querySelectorAll('.chat-badge').length || 0;
+        out.chatXssPrevented = typeof window.__chatXss === 'undefined';
+        out.chatInvalidColorBlocked = !document.querySelectorAll('#chat-messages .chat-msg-author')[1]?.getAttribute('style');
+        document.getElementById('design-chat-show-badges').click();
+        out.chatBadgesHiddenClass = document.body.classList.contains('chat-badges-hidden');
+        document.getElementById('design-chat-show-badges').click();
+        document.getElementById('design-chat-show-links').click();
+        out.chatUrlsStripped = document.querySelectorAll('#chat-messages .chat-msg').length === 1 &&
+            !document.querySelector('#chat-messages .chat-msg-text')?.textContent.includes('https://');
+        document.getElementById('design-chat-show-links').click();
+        document.getElementById('design-show-chat').click();
+        out.chatMessagesHidden = document.getElementById('chat-messages')?.classList.contains('hidden');
+        out.chatOptionsCollapsed = document.getElementById('design-chat-options')?.classList.contains('hidden');
+        document.getElementById('design-show-chat').click();
+        ClipQ.ChatFeed.removeMessage('msg_1');
+        out.chatCountAfterDeleteMsg = document.querySelectorAll('#chat-messages .chat-msg').length;
+        ClipQ.ChatFeed.removeUserMessages('seconduser');
+        out.chatCountAfterDeleteUser = document.querySelectorAll('#chat-messages .chat-msg').length;
+
+        const invalidObsRes = await ClipQ.Sync.initObsSession('obs_key_revoked_00000000');
+        out.invalidObsRejected = invalidObsRes && invalidObsRes.ok === false && invalidObsRes.invalid === true;
+        const obsRes = await ClipQ.Sync.initObsSession('obs_key_beta_9876543210');
+        out.obsSessionLoaded = Boolean(obsRes && obsRes.ok && obsRes.user?.displayName === 'TestStreamer');
+        const obsTwitchMeta = await ClipQ.Providers.getProvider('twitch').fetchMeta('GoodClip1', null);
+        out.obsTwitchMetaTitle = obsTwitchMeta?.title || '';
+        ClipQ.Auth.setActiveObsKey(null);
+        await ClipQ.Sync.init({ id: '99999', login: 'teststreamer' });
 
         await ClipQ.fetchWithAuth('/api/oembed?url=https://www.youtube.com/oembed');
-        ClipQ.Sync.scheduleConfigSave();
+        ClipQ.App.setClipLimit(7);
         window.dispatchEvent(new Event('pagehide'));
         await new Promise(r => setTimeout(r, 40));
 
@@ -132,6 +236,8 @@ SYNC_TEST_JS = """
         out.deletedCloud = deleted && !ClipQ.Sync.isAvailable() && localStorage.getItem('clipq_history') === null;
         out.calls = calls;
     } finally {
+        ClipQ.Auth.setActiveObsKey(null);
+        document.body.classList.remove('chat-badges-hidden');
         window.fetch = origFetch;
         localStorage.removeItem('clipq_settings');
         localStorage.removeItem('clipq_history');
@@ -150,6 +256,20 @@ SYNC_TEST_JS = """
 def assert_sync_report(report):
     """Assert dynamic OAuth redirect, local assets, and cloud sync (>500 history) checks passed."""
     assert report['loginRedirectMatchesOrigin'], f'OAuth redirect URI not dynamic: {report}'
+    assert report['normalMenubarVisible'], f'Menubar unexpectedly hidden outside OBS mode: {report}'
+    assert report['obsUrlValue'].endswith('/obs'), f'Unexpected offline OBS URL value: {report}'
+    assert report['obsKeyExtractedFromPath'] == 'obs_key_alpha_1234567890', f'OBS key extraction failed: {report}'
+    assert report['obsMenubarHiddenOnPath'] and report['obsDetectedOnQuery'], f'OBS mode check failed: {report}'
+    assert report['obsMenubarShownWhenTopbarOn'] and report['browserMenubarAlwaysVisible'], (
+        f'Show Topbar toggle behavior failed: {report}'
+    )
+    assert report['obsCoverInitiallyMasked'] and report['obsCoverUnmaskedOnClick'], (
+        f'OBS reveal cover toggle failed: {report}'
+    )
+    assert report['obsCoverRemaskedOnTabLeave'] and report['obsCoverRemaskedOnClose'], (
+        f'OBS reveal auto-remask failed: {report}'
+    )
+    assert report['noOpSaveSkippedSync'], f'No-op save unexpectedly sent sync PUT: {report}'
     assert report['localFlagsAllPresent'], f'Non-local flags detected: {report}'
     assert report['aboutPrivacyRendered'], f'About privacy section missing: {report}'
     assert report['removeExampleText'] == 'Ex: !clipq remove <URL | all | user>', report['removeExampleText']
@@ -165,7 +285,33 @@ def assert_sync_report(report):
         'cardsAfterMore': 400,
     }, f'History pagination failed: {report["historyPaging"]}'
     assert report['onlineDeleteCloudVisible'], f'Delete cloud button hidden when online: {report}'
-    assert report['calls']['proxyAuthOk'], f'Proxy fetch missing Twitch Bearer token: {report}'
+    assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890'), (
+        f'Personal OBS URL missing: {report}'
+    )
+    assert report['regenerateObsBtnVisible'], f'Regenerate OBS button hidden when online: {report}'
+    assert report['regeneratedObsUrlValue'].endswith('/obs/obs_key_beta_9876543210'), (
+        f'Regenerated OBS URL mismatch: {report}'
+    )
+    assert (
+        report['chatCountInitial'] == 2
+        and report['chatMultiBadgeCount'] == 2
+        and report['chatXssPrevented']
+        and report['chatInvalidColorBlocked']
+    ), f'Live chat feed rendering/XSS check failed: {report}'
+    assert (
+        report['chatBadgesHiddenClass']
+        and report['chatUrlsStripped']
+        and report['chatMessagesHidden']
+        and report['chatOptionsCollapsed']
+    ), f'Chat/Badge/Link toggles failed: {report}'
+    assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, (
+        f'Chat moderation deletion failed: {report}'
+    )
+    assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
+    assert report['obsTwitchMetaTitle'] == 'OBS Clip Title', f'OBS Twitch meta fallback failed: {report}'
+    assert report['calls']['proxyAuthOk'] and report['calls']['obsSyncOk'] and report['calls']['obsTwitchMetaOk'], (
+        f'Proxy/OBS auth header check failed: {report}'
+    )
     assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
         f'pagehide keepalive config flush failed: {report}'
     )

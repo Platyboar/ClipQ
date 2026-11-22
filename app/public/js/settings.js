@@ -13,6 +13,7 @@ ClipQ.Settings = (() => {
         return {
             channel: '',
             appTitle: 'ClipQ',
+            obsShowTopbar: false,
             providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true },
             userClipLimit: 0,
             ageLimitDays: 0,
@@ -23,7 +24,18 @@ ClipQ.Settings = (() => {
             memory: {
                 bypassRoles: { leadMod: true, mod: false }
             },
-            design: { colors: {}, fontFamily: 'Inter', showBadges: true },
+            design: {
+                colors: {},
+                fontFamily: 'Inter',
+                showBadges: true,
+                showChat: true,
+                chatFontFamily: 'Inter',
+                chatFontSize: 13,
+                chatShowBadges: true,
+                chatShowLinks: true,
+                chatAnimation: 'slide',
+                chatDirection: 'bottom'
+            },
             layout: ClipQ.SettingsLayout.getDefaultLayout()
         };
     }
@@ -68,8 +80,36 @@ ClipQ.Settings = (() => {
         }
 
         if (current.design && ClipQ.Design) ClipQ.Design.applyAll(current.design);
+        if (current.design && ClipQ.ChatFeed) ClipQ.ChatFeed.applySettings(current.design);
         if (current.layout && ClipQ.Layout) ClipQ.Layout.apply(current.layout);
+        applyTopbarVisibility(current);
         return current;
+    }
+
+    function applyTopbarVisibility(settings) {
+        const s = settings || get();
+        const isObs = ClipQ.Auth && ClipQ.Auth.isObsMode ? ClipQ.Auth.isObsMode() : false;
+        document.body.classList.toggle('obs-hide-topbar', isObs && s.obsShowTopbar !== true);
+    }
+
+    function hideObsUrlCover() {
+        document.getElementById('obs-url-group')?.classList.add('obs-masked');
+        document.getElementById('reveal-obs-url-btn')?.classList.remove('hidden');
+    }
+
+    function revealObsUrlCover() {
+        document.getElementById('obs-url-group')?.classList.remove('obs-masked');
+        document.getElementById('reveal-obs-url-btn')?.classList.add('hidden');
+    }
+
+    function bindToggleSwitch(id, onChange) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', () => {
+            const active = !ClipQ.getToggleState(id);
+            ClipQ.setToggleState(id, active);
+            onChange(active);
+        });
     }
 
     function save(settings) {
@@ -121,6 +161,15 @@ ClipQ.Settings = (() => {
 
         const channelText = document.getElementById('set-channel-text');
         if (channelText) channelText.textContent = s.channel || '';
+        const obsUrlEl = document.getElementById('set-obs-url');
+        const obsKey = ClipQ.Sync && ClipQ.Sync.getObsKey ? ClipQ.Sync.getObsKey() : null;
+        if (obsUrlEl) {
+            obsUrlEl.value = obsKey ? `${window.location.origin}/obs/${obsKey}` : `${window.location.origin}/obs`;
+        }
+        const regenerateObsBtn = document.getElementById('regenerate-obs-url-btn');
+        if (regenerateObsBtn) {
+            regenerateObsBtn.classList.toggle('hidden', !(ClipQ.Sync && ClipQ.Sync.isAvailable()));
+        }
         const deleteCloudBtn = document.getElementById('settings-delete-cloud');
         if (deleteCloudBtn) {
             deleteCloudBtn.classList.toggle('hidden', !(ClipQ.Sync && ClipQ.Sync.isAvailable()));
@@ -166,7 +215,11 @@ ClipQ.Settings = (() => {
         document.getElementById('history-count-text').innerHTML =
             t('settings.history.count', { count: ClipQ.Queue.getHistory().length });
 
+        ClipQ.setToggleState('set-obs-show-topbar', s.obsShowTopbar === true);
         ClipQ.setToggleState('design-show-badges', s.design.showBadges !== false);
+        ClipQ.setToggleState('design-show-chat', s.design.showChat !== false);
+        ClipQ.setToggleState('design-chat-show-badges', s.design.chatShowBadges !== false);
+        ClipQ.setToggleState('design-chat-show-links', s.design.chatShowLinks !== false);
         if (ClipQ.Design) ClipQ.Design.populate(s.design);
         if (s.layout) ClipQ.SettingsLayout.applyToUI(s.layout);
     }
@@ -187,10 +240,14 @@ ClipQ.Settings = (() => {
 
         const designVals = ClipQ.Design ? ClipQ.Design.readValues() : { colors: {}, fontFamily: 'Inter' };
         designVals.showBadges = ClipQ.getToggleState('design-show-badges');
+        designVals.showChat = ClipQ.getToggleState('design-show-chat');
+        designVals.chatShowBadges = ClipQ.getToggleState('design-chat-show-badges');
+        designVals.chatShowLinks = ClipQ.getToggleState('design-chat-show-links');
 
         return {
             channel: get().channel,
             appTitle: document.getElementById('set-app-title').value.trim() || 'ClipQ',
+            obsShowTopbar: ClipQ.getToggleState('set-obs-show-topbar'),
             providers,
             userClipLimit: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-user-clip-limit').value, 0)),
             ageLimitDays: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-age-limit').value, 0)),
@@ -205,11 +262,15 @@ ClipQ.Settings = (() => {
     }
 
     function applyAndSave() {
+        const prevJson = JSON.stringify(get());
+        const prevLang = ClipQ.I18n.getLanguage();
         const newSettings = readFromUI();
-        save(newSettings);
-
         const selectedLang = document.getElementById('set-language').value;
-        if (selectedLang !== ClipQ.I18n.getLanguage()) {
+        const langChanged = selectedLang !== prevLang;
+        const settingsChanged = JSON.stringify(newSettings) !== prevJson;
+        if (!settingsChanged && !langChanged) return;
+
+        if (langChanged) {
             ClipQ.I18n.setLanguage(selectedLang);
             if (ClipQ.Design && ClipQ.Design.renderSwatches) ClipQ.Design.renderSwatches();
             ClipQ.SettingsLayout.renderOrderingUI();
@@ -218,11 +279,14 @@ ClipQ.Settings = (() => {
             if (ClipQ.App.updateNextButton) ClipQ.App.updateNextButton();
             if (ClipQ.Player && ClipQ.Player.refreshLanguage) ClipQ.Player.refreshLanguage();
         }
+        save(newSettings);
+        applyTopbarVisibility(newSettings);
 
         const titleEl = document.getElementById('app-title');
         if (titleEl) titleEl.textContent = newSettings.appTitle || 'ClipQ';
 
         if (newSettings.layout && ClipQ.Layout) ClipQ.Layout.apply(newSettings.layout);
+        if (ClipQ.ChatFeed) ClipQ.ChatFeed.applySettings(newSettings.design);
 
         if (ClipQ.Queue.cleanupHistory()) {
             if (ClipQ.Player && ClipQ.Player.showEmpty) ClipQ.Player.showEmpty();
@@ -234,6 +298,7 @@ ClipQ.Settings = (() => {
 
     function closeModal(keepDesign) {
         if (ClipQ.Design) ClipQ.Design.closePicker();
+        hideObsUrlCover();
         if (keepDesign !== true) {
             if (ClipQ.Design) ClipQ.Design.revertToOriginal();
             const s = load();
@@ -259,19 +324,26 @@ ClipQ.Settings = (() => {
         ClipQ.SettingsCommands.initListeners();
         ClipQ.SettingsLayout.initListeners();
 
-        const badgesSwitch = document.getElementById('design-show-badges');
-        if (badgesSwitch) {
-            badgesSwitch.addEventListener('click', () => {
-                const active = !ClipQ.getToggleState('design-show-badges');
-                ClipQ.setToggleState('design-show-badges', active);
-                get().design.showBadges = active;
-                if (ClipQ.App.renderQueueList) ClipQ.App.renderQueueList();
-            });
-        }
+        document.getElementById('reveal-obs-url-btn')?.addEventListener('click', revealObsUrlCover);
+        bindToggleSwitch('set-obs-show-topbar', () => {});
+        bindToggleSwitch('design-show-badges', (active) => {
+            if (ClipQ.App.renderQueueList) ClipQ.App.renderQueueList(active);
+        });
+        bindToggleSwitch('design-show-chat', (active) => {
+            document.getElementById('design-chat-options')?.classList.toggle('hidden', !active);
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setVisible(active);
+        });
+        bindToggleSwitch('design-chat-show-badges', (active) => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('showBadges', active);
+        });
+        bindToggleSwitch('design-chat-show-links', (active) => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('showLinks', active);
+        });
 
         document.querySelectorAll('.modal-tabs .tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 if (ClipQ.Design) ClipQ.Design.closePicker();
+                if (tab.dataset.stab !== 'general') hideObsUrlCover();
                 document.querySelectorAll('.modal-tabs .tab').forEach(el => el.classList.remove('active'));
                 document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
                 tab.classList.add('active');
@@ -307,10 +379,43 @@ ClipQ.Settings = (() => {
             }
         });
 
-        const settingsLogoutBtn = document.getElementById('settings-logout');
-        if (settingsLogoutBtn) {
-            settingsLogoutBtn.addEventListener('click', () => ClipQ.Auth.logout());
+        document.getElementById('settings-logout')?.addEventListener('click', () => ClipQ.Auth.logout());
+
+        const copyObsBtn = document.getElementById('copy-obs-url-btn');
+        if (copyObsBtn) {
+            let copyResetTimer = null;
+            copyObsBtn.addEventListener('click', async () => {
+                const obsInput = document.getElementById('set-obs-url');
+                if (!obsInput) return;
+                try {
+                    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(obsInput.value);
+                    else { obsInput.focus(); obsInput.select(); }
+                } catch { obsInput.focus(); obsInput.select(); }
+                copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copied');
+                clearTimeout(copyResetTimer);
+                copyResetTimer = setTimeout(() => {
+                    copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copy');
+                    copyResetTimer = null;
+                }, 1500);
+            });
         }
+
+        const regenerateObsBtn = document.getElementById('regenerate-obs-url-btn');
+        regenerateObsBtn?.addEventListener('click', async () => {
+            if (!ClipQ.Sync?.regenerateObsKey) return;
+            const confirmed = await ClipQ.confirmAction({
+                message: ClipQ.I18n.t('settings.general.confirm_obs_regenerate'),
+                yesLabel: ClipQ.I18n.t('history.confirm_yes'),
+                cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
+            });
+            if (!confirmed) return;
+            regenerateObsBtn.disabled = true;
+            try {
+                const nextKey = await ClipQ.Sync.regenerateObsKey();
+                const obsInput = document.getElementById('set-obs-url');
+                if (nextKey && obsInput) obsInput.value = `${window.location.origin}/obs/${nextKey}`;
+            } finally { regenerateObsBtn.disabled = false; }
+        });
 
         document.getElementById('settings-close').addEventListener('click', () => closeModal(false));
         document.getElementById('settings-cancel').addEventListener('click', () => closeModal(false));
@@ -332,49 +437,31 @@ ClipQ.Settings = (() => {
             closeModal(true);
         });
 
-        const exportBtn = document.getElementById('settings-export');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                if (ClipQ.Sync) ClipQ.Sync.exportBackup();
-            });
-        }
+        document.getElementById('settings-export')?.addEventListener('click', () => {
+            if (ClipQ.Sync) ClipQ.Sync.exportBackup();
+        });
 
-        const deleteCloudBtn = document.getElementById('settings-delete-cloud');
-        if (deleteCloudBtn) {
-            deleteCloudBtn.addEventListener('click', async () => {
-                const confirmed = await ClipQ.confirmAction({
-                    message: ClipQ.I18n.t('settings.general.confirm_delete_cloud'),
-                    yesLabel: ClipQ.I18n.t('history.confirm_yes'),
-                    cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
-                });
-                if (!confirmed || !ClipQ.Sync) return;
-                const ok = await ClipQ.Sync.deleteAllCloudData();
-                if (ok) {
-                    alert(ClipQ.I18n.t('settings.general.delete_cloud_done'));
-                    ClipQ.Auth.logout();
-                } else {
-                    alert(ClipQ.I18n.t('settings.general.delete_cloud_error'));
-                }
+        document.getElementById('settings-delete-cloud')?.addEventListener('click', async () => {
+            const confirmed = await ClipQ.confirmAction({
+                message: ClipQ.I18n.t('settings.general.confirm_delete_cloud'),
+                yesLabel: ClipQ.I18n.t('history.confirm_yes'),
+                cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
             });
-        }
+            if (!confirmed || !ClipQ.Sync) return;
+            const ok = await ClipQ.Sync.deleteAllCloudData();
+            alert(ClipQ.I18n.t(ok ? 'settings.general.delete_cloud_done' : 'settings.general.delete_cloud_error'));
+            if (ok) ClipQ.Auth.logout();
+        });
 
-        const settingsResetBtn = document.getElementById('settings-reset');
-        if (settingsResetBtn) {
-            settingsResetBtn.addEventListener('click', async () => {
-                if (!confirm(ClipQ.I18n.t('settings.general.confirm_reset'))) return;
-                try {
-                    localStorage.removeItem(STORAGE_KEY);
-                    localStorage.removeItem('clipq_custom_defaults');
-                    localStorage.removeItem('clipq_layout_custom_defaults');
-                    localStorage.removeItem('clipq_autoplay');
-                } catch { /* ignore storage errors */ }
-                current = cloneDefaultSettings();
-                if (ClipQ.Sync && ClipQ.Sync.isAvailable()) {
-                    await ClipQ.Sync.scheduleConfigSave(true);
-                }
-                window.location.reload();
+        document.getElementById('settings-reset')?.addEventListener('click', async () => {
+            if (!confirm(ClipQ.I18n.t('settings.general.confirm_reset'))) return;
+            ['clipq_custom_defaults', 'clipq_layout_custom_defaults', 'clipq_autoplay', STORAGE_KEY].forEach((k) => {
+                try { localStorage.removeItem(k); } catch { /* ignore storage errors */ }
             });
-        }
+            current = cloneDefaultSettings();
+            if (ClipQ.Sync?.isAvailable()) await ClipQ.Sync.scheduleConfigSave(true);
+            window.location.reload();
+        });
     }
 
     return {
@@ -384,6 +471,8 @@ ClipQ.Settings = (() => {
         isUserBlocked,
         isStreamerBlocked,
         hasCommandPermission,
+        applyTopbarVisibility,
+        hideObsUrlCover,
         initUI,
         populateUI
     };

@@ -15,5 +15,19 @@
             "database_name": "clipq-db",
             "database_id": "a0ed414c-73d7-460b-835b-08a6c3ae704c"
         }
+    ],
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "CLIPQ_ROOM",
+                "class_name": "ClipQRoom"
+            }
+        ]
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes": ["ClipQRoom"]
+        }
     ]
 }

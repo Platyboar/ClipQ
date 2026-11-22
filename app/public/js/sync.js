@@ -23,49 +23,63 @@ ClipQ.Sync = (() => {
     let ready = false;
     let suppressPush = false;
     let configTimer = null;
+    let activeObsKey = null;
+    let accountObsKey = null;
+    let lastSyncedConfigJson = null;
 
     function getToken() {
         return ClipQ.Auth && ClipQ.Auth.getToken ? ClipQ.Auth.getToken() : null;
     }
 
+    function readStorage(key) {
+        try { return localStorage.getItem(key); } catch { return null; }
+    }
+
+    function setStorage(key, val) {
+        try {
+            if (val === null || val === undefined) localStorage.removeItem(key);
+            else localStorage.setItem(key, val);
+        } catch { /* ignore storage errors */ }
+    }
+
     function readJson(key, fallback) {
         try {
             const raw = localStorage.getItem(key);
-            if (!raw) return fallback;
-            return JSON.parse(raw);
-        } catch {
-            return fallback;
-        }
+            return raw ? JSON.parse(raw) : fallback;
+        } catch { return fallback; }
     }
 
     function writeJson(key, value) {
-        try {
-            if (value === null || value === undefined) {
-                localStorage.removeItem(key);
-            } else {
-                localStorage.setItem(key, JSON.stringify(value));
-            }
-        } catch { /* ignore storage quota errors */ }
+        setStorage(key, (value === null || value === undefined) ? null : JSON.stringify(value));
     }
 
     function clearCachedState(includeOwner) {
-        CACHE_KEYS.forEach((key) => {
-            try {
-                localStorage.removeItem(key);
-            } catch { /* ignore storage errors */ }
-        });
-        if (includeOwner) {
-            try {
-                localStorage.removeItem(OWNER_KEY);
-            } catch { /* ignore storage errors */ }
-        }
+        CACHE_KEYS.forEach((key) => setStorage(key, null));
+        if (includeOwner) setStorage(OWNER_KEY, null);
+    }
+
+    async function checkSyncHealth() {
+        const resp = await fetch('/health');
+        if (!resp.ok) return false;
+        const health = await resp.json();
+        return Boolean(health && health.sync === true);
+    }
+
+    function fireSync(path, method, payload) {
+        if (!available || !ready || suppressPush) return;
+        const opts = payload ? { method, body: JSON.stringify(payload) } : { method };
+        authFetch(path, opts).catch(() => {});
     }
 
     async function authFetch(path, options = {}) {
-        const token = getToken();
-        if (!token) return null;
         const headers = new Headers(options.headers || {});
-        headers.set('Authorization', `Bearer ${token}`);
+        if (activeObsKey) {
+            headers.set('X-ClipQ-Obs-Key', activeObsKey);
+        } else {
+            const token = getToken();
+            if (!token) return null;
+            headers.set('Authorization', `Bearer ${token}`);
+        }
         if (options.body && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
         }
@@ -89,19 +103,37 @@ ClipQ.Sync = (() => {
         };
     }
 
+    function serializeCoreConfig(payload) {
+        return JSON.stringify(payload);
+    }
+
+    function hasConfigChanged() {
+        return lastSyncedConfigJson === null || serializeCoreConfig(buildConfigPayload()) !== lastSyncedConfigJson;
+    }
+
     async function pushConfigNow(useKeepalive = false) {
         if (!available || !ready || suppressPush) return;
-        const body = JSON.stringify(buildConfigPayload());
+        const corePayload = buildConfigPayload();
+        const coreJson = serializeCoreConfig(corePayload);
+        if (lastSyncedConfigJson !== null && coreJson === lastSyncedConfigJson) return;
+
+        const wirePayload = { ...corePayload };
+        const user = !activeObsKey && ClipQ.Auth && ClipQ.Auth.getUser ? ClipQ.Auth.getUser() : null;
+        if (user) {
+            wirePayload.profile = { displayName: user.displayName || user.login || '', avatar: user.avatar || '' };
+        }
+        if (ClipQ.SyncLive && ClipQ.SyncLive.getClientId) {
+            wirePayload.clientId = ClipQ.SyncLive.getClientId();
+        }
+        const body = JSON.stringify(wirePayload);
         try {
-            await authFetch('/api/sync/config', {
-                method: 'PUT',
-                body,
-                keepalive: Boolean(useKeepalive),
-            });
+            const resp = await authFetch('/api/sync/config', { method: 'PUT', body, keepalive: Boolean(useKeepalive) });
+            if (resp && resp.ok) lastSyncedConfigJson = coreJson;
         } catch {
             if (useKeepalive) {
                 try {
-                    await authFetch('/api/sync/config', { method: 'PUT', body });
+                    const retry = await authFetch('/api/sync/config', { method: 'PUT', body });
+                    if (retry && retry.ok) lastSyncedConfigJson = coreJson;
                 } catch { /* ignore transient offline errors */ }
             }
         }
@@ -113,9 +145,8 @@ ClipQ.Sync = (() => {
             clearTimeout(configTimer);
             configTimer = null;
         }
-        if (immediate) {
-            return pushConfigNow(false);
-        }
+        if (!hasConfigChanged()) return Promise.resolve();
+        if (immediate) return pushConfigNow(false);
         configTimer = setTimeout(() => {
             configTimer = null;
             pushConfigNow(false);
@@ -143,34 +174,55 @@ ClipQ.Sync = (() => {
         }
     }
 
-    function applyCloudState(data) {
+    function applyCloudState(data, options = {}) {
         const config = data.config || null;
         if (config) {
             if (typeof config.language === 'string' && config.language) {
-                try {
-                    localStorage.setItem('clipq_language', config.language);
-                } catch { /* ignore storage errors */ }
-                if (ClipQ.I18n && ClipQ.I18n.setLanguage) {
-                    ClipQ.I18n.setLanguage(config.language);
-                }
+                setStorage('clipq_language', config.language);
+                if (ClipQ.I18n?.setLanguage) ClipQ.I18n.setLanguage(config.language);
             }
-            try {
-                localStorage.setItem('clipq_autoplay', config.autoplay ? 'true' : 'false');
-            } catch { /* ignore storage errors */ }
+            setStorage('clipq_autoplay', config.autoplay ? 'true' : 'false');
             writeJson('clipq_custom_defaults', config.customDesign || null);
             writeJson('clipq_layout_custom_defaults', config.customLayout || null);
-            if (config.settings && typeof config.settings === 'object' && Object.keys(config.settings).length > 0) {
-                writeJson('clipq_settings', config.settings);
-            } else {
-                writeJson('clipq_settings', null);
-            }
+            const hasSettings = config.settings && typeof config.settings === 'object' && Object.keys(config.settings).length > 0;
+            writeJson('clipq_settings', hasSettings ? config.settings : null);
         }
-        if (ClipQ.Memory && ClipQ.Memory.applyCloudSnapshot) {
-            ClipQ.Memory.applyCloudSnapshot(Array.isArray(data.memory) ? data.memory : []);
+        if (options.configOnly) {
+            if (config && ClipQ.Queue?.applyRemoteQueue) ClipQ.Queue.applyRemoteQueue(config.queue);
+            return;
         }
-        if (ClipQ.Queue && ClipQ.Queue.applyCloudSnapshot) {
+        if (ClipQ.Memory?.applyCloudSnapshot) ClipQ.Memory.applyCloudSnapshot(Array.isArray(data.memory) ? data.memory : []);
+        if (ClipQ.Queue?.applyCloudSnapshot) {
             ClipQ.Queue.applyCloudSnapshot(config ? config.queue : null, Array.isArray(data.history) ? data.history : []);
         }
+    }
+
+    async function pullRemoteConfig() {
+        if (!available || !ready) return;
+        try {
+            const resp = await authFetch('/api/sync?configOnly=1');
+            if (!resp || !resp.ok) return;
+            const data = await resp.json();
+            if (!data || !data.config) return;
+            suppressPush = true;
+            try {
+                applyCloudState({ config: data.config }, { configOnly: true });
+                lastSyncedConfigJson = serializeCoreConfig(buildConfigPayload());
+            } finally {
+                suppressPush = false;
+            }
+            if (ClipQ.App && ClipQ.App.applyRemoteConfig) {
+                ClipQ.App.applyRemoteConfig();
+            }
+        } catch { /* ignore transient remote sync failures */ }
+    }
+
+    function connectLiveSync() {
+        const wsKey = activeObsKey || accountObsKey;
+        if (!available || !wsKey || !ClipQ.SyncLive) return;
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${proto}//${window.location.host}/api/sync/ws?obsKey=${encodeURIComponent(wsKey)}`;
+        ClipQ.SyncLive.connect(wsUrl, pullRemoteConfig);
     }
 
     async function loadRemainingHistory(initialCount) {
@@ -216,41 +268,36 @@ ClipQ.Sync = (() => {
     async function init(user) {
         available = false;
         ready = false;
+        activeObsKey = null;
+        accountObsKey = null;
+        lastSyncedConfigJson = null;
+        if (ClipQ.SyncLive) ClipQ.SyncLive.disconnect();
         const token = getToken();
         if (!token) return false;
 
         try {
-            const healthResp = await fetch('/health');
-            if (!healthResp.ok) return false;
-            const health = await healthResp.json();
-            if (!health || health.sync !== true) return false;
-
+            if (!(await checkSyncHealth())) return false;
             const resp = await authFetch(`/api/sync?limit=${HISTORY_PAGE_SIZE}`);
             if (!resp || !resp.ok) return false;
             const data = await resp.json();
 
             available = true;
+            accountObsKey = typeof data.obsKey === 'string' && data.obsKey ? data.obsKey : null;
             const userId = String(user?.id || data.userId || '');
-            let previousOwner = null;
-            try {
-                previousOwner = localStorage.getItem(OWNER_KEY);
-            } catch { /* ignore storage errors */ }
+            const previousOwner = readStorage(OWNER_KEY);
 
             suppressPush = true;
             try {
                 if (data.exists) {
                     applyCloudState(data);
+                    lastSyncedConfigJson = serializeCoreConfig(buildConfigPayload());
                     ready = true;
                 } else {
                     ready = true;
                     const differentUser = Boolean(previousOwner && userId && previousOwner !== userId);
                     await seedInitialCloudData(differentUser);
                 }
-                if (userId) {
-                    try {
-                        localStorage.setItem(OWNER_KEY, userId);
-                    } catch { /* ignore storage errors */ }
-                }
+                if (userId) setStorage(OWNER_KEY, userId);
             } finally {
                 suppressPush = false;
             }
@@ -258,6 +305,7 @@ ClipQ.Sync = (() => {
             if (data.exists && data.hasMoreHistory && Array.isArray(data.history)) {
                 loadRemainingHistory(data.history.length);
             }
+            connectLiveSync();
             return true;
         } catch {
             available = false;
@@ -267,40 +315,24 @@ ClipQ.Sync = (() => {
     }
 
     function recordHistoryClip(item) {
-        if (!available || !ready || suppressPush || !item) return;
-        authFetch('/api/sync/history', {
-            method: 'POST',
-            body: JSON.stringify({ items: [item] }),
-        }).catch(() => {});
+        if (item) fireSync('/api/sync/history', 'POST', { items: [item] });
     }
 
     function deleteHistoryClip(id) {
-        if (!available || !ready || suppressPush || !id) return;
-        authFetch(`/api/sync/history?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+        if (id) fireSync(`/api/sync/history?id=${encodeURIComponent(id)}`, 'DELETE');
     }
 
-    function clearHistory() {
-        if (!available || !ready || suppressPush) return;
-        authFetch('/api/sync/history', { method: 'DELETE' }).catch(() => {});
-    }
+    function clearHistory() { fireSync('/api/sync/history', 'DELETE'); }
 
     function pruneHistoryBefore(cutoff) {
-        if (!available || !ready || suppressPush || !cutoff) return;
-        authFetch(`/api/sync/history?before=${encodeURIComponent(cutoff)}`, { method: 'DELETE' }).catch(() => {});
+        if (cutoff) fireSync(`/api/sync/history?before=${encodeURIComponent(cutoff)}`, 'DELETE');
     }
 
     function recordMemoryKey(key) {
-        if (!available || !ready || suppressPush || !key) return;
-        authFetch('/api/sync/memory', {
-            method: 'POST',
-            body: JSON.stringify({ keys: [key] }),
-        }).catch(() => {});
+        if (key) fireSync('/api/sync/memory', 'POST', { keys: [key] });
     }
 
-    function clearMemory() {
-        if (!available || !ready || suppressPush) return;
-        authFetch('/api/sync/memory', { method: 'DELETE' }).catch(() => {});
-    }
+    function clearMemory() { fireSync('/api/sync/memory', 'DELETE'); }
 
     async function exportBackup() {
         let payload = null;
@@ -329,14 +361,103 @@ ClipQ.Sync = (() => {
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     }
 
+    async function initObsSession(urlKey) {
+        available = false;
+        ready = false;
+        activeObsKey = null;
+        accountObsKey = null;
+        lastSyncedConfigJson = null;
+        if (ClipQ.SyncLive) ClipQ.SyncLive.disconnect();
+        if (!urlKey) return { ok: false, invalid: true };
+
+        try {
+            if (!(await checkSyncHealth())) return { ok: false, syncDisabled: true };
+
+            activeObsKey = urlKey;
+            const resp = await authFetch(`/api/sync?limit=${HISTORY_PAGE_SIZE}`);
+            if (!resp || resp.status === 401 || resp.status === 403) {
+                activeObsKey = null;
+                return { ok: false, invalid: Boolean(resp) };
+            }
+            if (!resp.ok) {
+                activeObsKey = null;
+                return { ok: false };
+            }
+
+            const data = await resp.json();
+            const obsUser = {
+                id: String(data.userId || ''),
+                login: String(data.login || ''),
+                displayName: String(data.displayName || data.login || ''),
+                avatar: String(data.avatar || ''),
+            };
+            if (!obsUser.id || !obsUser.login) {
+                activeObsKey = null;
+                return { ok: false, invalid: true };
+            }
+
+            if (ClipQ.Auth?.setActiveObsKey) ClipQ.Auth.setActiveObsKey(urlKey);
+            available = true;
+            suppressPush = true;
+            try {
+                if (data.exists) applyCloudState(data);
+                else {
+                    clearCachedState(false);
+                    ClipQ.Memory?.applyCloudSnapshot?.([]);
+                    ClipQ.Queue?.applyCloudSnapshot?.(null, []);
+                }
+                lastSyncedConfigJson = serializeCoreConfig(buildConfigPayload());
+                ready = true;
+                setStorage(OWNER_KEY, obsUser.id);
+            } finally { suppressPush = false; }
+
+            if (data.exists && data.hasMoreHistory && Array.isArray(data.history)) loadRemainingHistory(data.history.length);
+            connectLiveSync();
+            return { ok: true, user: obsUser };
+        } catch {
+            activeObsKey = null;
+            available = false;
+            ready = false;
+            return { ok: false };
+        }
+    }
+
+    function getObsKey() { return accountObsKey; }
+
+    async function regenerateObsKey() {
+        if (!available || activeObsKey) return null;
+        try {
+            const user = ClipQ.Auth && ClipQ.Auth.getUser ? ClipQ.Auth.getUser() : null;
+            const resp = await authFetch('/api/sync/obs-key', {
+                method: 'POST',
+                body: JSON.stringify({
+                    displayName: user?.displayName || user?.login || '',
+                    avatar: user?.avatar || '',
+                }),
+            });
+            if (!resp || !resp.ok) return null;
+            const data = await resp.json();
+            if (typeof data?.obsKey === 'string' && data.obsKey) {
+                accountObsKey = data.obsKey;
+                connectLiveSync();
+                return accountObsKey;
+            }
+        } catch { /* ignore network errors */ }
+        return null;
+    }
+
     async function deleteAllCloudData() {
         if (!available) return false;
         try {
             const resp = await authFetch('/api/sync', { method: 'DELETE' });
             if (!resp || !resp.ok) return false;
+            if (ClipQ.SyncLive) ClipQ.SyncLive.disconnect();
             clearCachedState(true);
             available = false;
             ready = false;
+            activeObsKey = null;
+            accountObsKey = null;
+            lastSyncedConfigJson = null;
             return true;
         } catch {
             return false;
@@ -354,6 +475,9 @@ ClipQ.Sync = (() => {
 
     return {
         init,
+        initObsSession,
+        getObsKey,
+        regenerateObsKey,
         isAvailable,
         scheduleConfigSave,
         recordHistoryClip,

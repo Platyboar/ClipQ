@@ -463,6 +463,13 @@ ClipQ.Queue = (() => {
         notifyUpdate();
     }
 
+    function applyRemoteQueue(cloudQueue) {
+        items = Array.isArray(cloudQueue?.items) ? [...cloudQueue.items] : [];
+        normalizeStoredList(items, Date.now());
+        saveQueueCache();
+        notifyUpdate();
+    }
+
     function prependCloudHistory(olderItems) {
         if (!Array.isArray(olderItems) || olderItems.length === 0) return;
         const existingIds = new Set(history.map(item => item.id).filter(Boolean));
@@ -480,6 +487,6 @@ ClipQ.Queue = (() => {
         extractAndPlay, previousFromHistory, removeById, removeByMsgId,
         removeSubmitter, removeByUrl, removeOwnClipByUrl, clear,
         removeHistoryById, clearHistory, setUpdateCallback, cleanupHistory,
-        applyCloudSnapshot, prependCloudHistory
+        applyCloudSnapshot, applyRemoteQueue, prependCloudHistory
     };
 })();

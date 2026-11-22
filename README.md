@@ -7,17 +7,20 @@ Developed with the help of Google Antigravity.
 
 **Live Web App:** **https://clipq.platyboar.workers.dev/**
 
+**Personal OBS-Browser-Link:** Copy your unique OBS link inside **Settings → General** (hidden behind a reveal button by default and re-generatable anytime). It opens ClipQ inside OBS without requiring a separate Twitch login, optionally hides the top bar via **Show Topbar** (only in OBS), and receives live updates from Browser sessions via WebSocket whenever configuration or queue changes occur.
+
 - Open the URL directly in your browser — no download, Python setup, or extra account required.
 - Sign in using **Connect with Twitch** only.
-- When using the online version, your settings, design, layout, clip memory, and unlimited clip history are persisted in the EU (Cloudflare D1) under your Twitch User ID, with JSON export and one-click server data deletion under **Settings → General**.
+- When using the online version, your settings, design, layout, clip memory, unique OBS token, and unlimited clip history are persisted in the EU (Cloudflare D1 + Durable Object WebSocket Hibernation) under your Twitch User ID, with JSON export and one-click server data deletion under **Settings → General**. *(Optional Worker secret `TWITCH_CLIENT_SECRET` enables Twitch clip metadata, durations, and channel chat badges inside OBS without user login.)*
 
 > Prefer running everything on your own machine? You can also self-host ClipQ locally using the Windows executable or Python source instructions below.
 
 ## Features
 
 - 🎬 **Multi-Platform Clips** — Twitch, YouTube, TikTok, and Instagram clips
-- 💬 **Chat Integration** — Viewers submit clips by pasting links in chat
+- 💬 **Live Channel Chat & Formatting** — Toggleable live Twitch chat (`Activate Chat`) at the top of `Settings → Design` with custom font, size, text color, Twitch chat badges (`Mod`, `VIP`, `Sub`, `Broadcaster`), link filtering, direction, and slide animation
 - 🔧 **Chat Commands** — Moderators (and configurable roles) can control the queue via chat
+- 🔗 **Personal OBS-Browser-Link & Live Sync** — Reveal-protected unique per-user URL, **Show Topbar** OBS toggle, and real-time diff-checked Browser → OBS WebSocket sync
 - 🛡️ **Role-Based Permissions** — Configure which roles (Broadcaster, Lead Mod, Mod, VIP, All) can use each command
 - 🌍 **Multi-Language** — English, German, Spanish, Russian, Portuguese, French, Japanese, and Italian included (Spanish, Russian, Portuguese, French, Japanese, and Italian were translated using AI; easily extendable)
 - 🎨 **Customizable Design & Layout** — Colors, fonts, and layout (component ordering, sidebar position, info bar placement, and component visibility) are fully customizable and can be saved as defaults

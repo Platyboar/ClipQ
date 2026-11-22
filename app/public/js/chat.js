@@ -65,6 +65,7 @@ ClipQ.Chat = (() => {
         activeClient.on('messagedeleted', onMessageDeleted);
         activeClient.on('timeout', onTimeout);
         activeClient.on('ban', onBan);
+        activeClient.on('clearchat', onClearChat);
 
         activeClient.on('connected', (addr, port) => {
             if (activeClient !== client) return;
@@ -137,17 +138,24 @@ ClipQ.Chat = (() => {
 
         if (targetMsgId) {
             ClipQ.Queue.removeByMsgId(targetMsgId);
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.removeMessage(targetMsgId);
         }
     }
 
     function onTimeout(channel, username, reason, duration) {
         console.log(`[Chat] ⏱ User "${username}" timed out for ${duration}s`);
         ClipQ.Queue.removeSubmitter(username);
+        if (ClipQ.ChatFeed) ClipQ.ChatFeed.removeUserMessages(username);
     }
 
     function onBan(channel, username) {
         console.log(`[Chat] 🚫 User "${username}" banned`);
         ClipQ.Queue.removeSubmitter(username);
+        if (ClipQ.ChatFeed) ClipQ.ChatFeed.removeUserMessages(username);
+    }
+
+    function onClearChat() {
+        if (ClipQ.ChatFeed) ClipQ.ChatFeed.clear();
     }
 
     // ==================== MESSAGE HANDLING ====================
@@ -169,6 +177,22 @@ ClipQ.Chat = (() => {
         const isVip = hasBadge('vip');
 
         const userRoles = { isBroadcaster, isLeadMod, isMod, isVip };
+
+        if (userstate['room-id'] && ClipQ.ChatBadges && ClipQ.ChatBadges.loadForChannel) {
+            ClipQ.ChatBadges.loadForChannel(userstate['room-id']);
+        }
+
+        if (ClipQ.ChatFeed && ClipQ.ChatFeed.appendMessage) {
+            ClipQ.ChatFeed.appendMessage({
+                id: msgId,
+                username,
+                login,
+                color: userstate.color,
+                badges,
+                roles: userRoles,
+                message
+            });
+        }
 
         const commandResult = handleCommand(message, username, login, userRoles);
         if (commandResult === 'handled') return;

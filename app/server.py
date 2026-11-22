@@ -30,6 +30,8 @@ ALLOWED_VIDEO_HOSTS = {
     'vt.tiktok.com',
 }
 YOUTUBE_ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,32}$')
+TWITCH_CLIP_ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,128}$')
+TWITCH_VOD_ID_RE = re.compile(r'^\d{1,32}$')
 
 IS_FROZEN = getattr(sys, 'frozen', False)
 
@@ -246,6 +248,25 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(200, payload)
             except Exception as e:
                 self._send_json(500, {'error': str(e)})
+            return
+
+        if parsed.path == '/api/twitch-meta':
+            params = urllib.parse.parse_qs(parsed.query)
+            meta_type = (params.get('type', [''])[0] or '').strip().lower()
+            meta_id = (params.get('id', [''])[0] or '').strip()
+            if meta_type == 'clip' and not TWITCH_CLIP_ID_RE.fullmatch(meta_id):
+                self._send_json(400, {'error': 'Invalid or missing clip id'})
+                return
+            if meta_type in ('vod', 'badges') and not TWITCH_VOD_ID_RE.fullmatch(meta_id):
+                self._send_json(400, {'error': f'Invalid or missing {meta_type} id'})
+                return
+            if meta_type not in ('clip', 'vod', 'badges'):
+                self._send_json(400, {'error': 'Invalid type parameter'})
+                return
+            if meta_type == 'badges':
+                self._send_json(200, {'configured': False, 'badges': None})
+                return
+            self._send_json(200, {'configured': False, 'available': True, 'meta': None})
             return
 
         if parsed.path.startswith('/api/'):

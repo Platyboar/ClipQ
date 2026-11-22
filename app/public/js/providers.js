@@ -40,18 +40,21 @@ ClipQ.Providers = (() => {
         return res.ok ? res.data : null;
     }
 
+    async function fetchTwitchMetaProxy(type, id) {
+        if (!ClipQ.Auth?.getActiveObsKey?.()) return null;
+        try {
+            const res = await ClipQ.fetchWithAuth(`/api/twitch-meta?type=${type}&id=${encodeURIComponent(id)}`);
+            return res.ok ? await res.json() : null;
+        } catch { return null; }
+    }
+
     async function fetchTwitchBroadcaster(userId, token) {
         if (!userId) return { avatarUrl: '', login: '' };
         try {
             const data = await twitchFetchJson(`users?id=${encodeURIComponent(userId)}`, token);
             const user = data?.data?.[0];
-            return {
-                avatarUrl: user?.profile_image_url || '',
-                login: (user?.login || '').toLowerCase()
-            };
-        } catch {
-            return { avatarUrl: '', login: '' };
-        }
+            return { avatarUrl: user?.profile_image_url || '', login: (user?.login || '').toLowerCase() };
+        } catch { return { avatarUrl: '', login: '' }; }
     }
 
     const IG_RESERVED_PATHS = new Set(['reel', 'reels', 'p', 'tv', 'share', 'explore', 'stories', 'accounts', 'direct', 'about', 'legal', 'developer']);
@@ -113,17 +116,22 @@ ClipQ.Providers = (() => {
                 return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(id)}&parent=${getEmbedParent()}&autoplay=true&muted=false`;
             },
             async isClipAvailable(id, token) {
-                if (!id || !token) return true;
+                if (!id) return true;
                 try {
+                    if (!token) {
+                        const proxyRes = await fetchTwitchMetaProxy('clip', id);
+                        return proxyRes ? proxyRes.available !== false : true;
+                    }
                     const res = await twitchFetchStatus(`clips?id=${encodeURIComponent(id)}`, token);
-                    if (!res.ok) return true;
-                    return Array.isArray(res.data?.data) && res.data.data.length > 0;
-                } catch {
-                    return true;
-                }
+                    return !res.ok || (Array.isArray(res.data?.data) && res.data.data.length > 0);
+                } catch { return true; }
             },
             async fetchMeta(id, token) {
                 try {
+                    if (!token) {
+                        const proxyRes = await fetchTwitchMetaProxy('clip', id);
+                        return proxyRes?.unavailable ? { unavailable: true } : (proxyRes?.meta || null);
+                    }
                     const res = await twitchFetchStatus(`clips?id=${encodeURIComponent(id)}`, token);
                     if (!res.ok) return null;
                     const clip = res.data?.data?.[0];
@@ -182,6 +190,7 @@ ClipQ.Providers = (() => {
             },
             async fetchMeta(id, token) {
                 try {
+                    if (!token) return (await fetchTwitchMetaProxy('vod', id))?.meta || null;
                     const data = await twitchFetchJson(`videos?id=${encodeURIComponent(id)}`, token);
                     const video = data?.data?.[0];
                     if (!video) return null;
@@ -212,12 +221,8 @@ ClipQ.Providers = (() => {
                 /(?:https?:\/\/)?youtu\.be\/([A-Za-z0-9_-]+)/i,
                 /(?:https?:\/\/)?(?:(?:www|m)\.)?youtube\.com\/(?:shorts|live)\/([A-Za-z0-9_-]+)/i
             ],
-            extractId(url) {
-                return matchFirstPattern(this.patterns, url);
-            },
-            getEmbedUrl(id) {
-                return `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1`;
-            },
+            extractId(url) { return matchFirstPattern(this.patterns, url); },
+            getEmbedUrl(id) { return `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1`; },
             async fetchMeta(id) {
                 const fallback = {
                     title: 'YouTube Video',
@@ -267,9 +272,7 @@ ClipQ.Providers = (() => {
                 /(?:https?:\/\/)?(?:vm|vt)\.tiktok\.com\/([A-Za-z0-9]+)/i,
                 /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/t\/([A-Za-z0-9]+)/i
             ],
-            extractId(url) {
-                return matchFirstPattern(this.patterns, url);
-            },
+            extractId(url) { return matchFirstPattern(this.patterns, url); },
             extractChannel(url) {
                 const m = (url || '').match(/tiktok\.com\/@([\w.-]+)\/video\/\d+/i);
                 return m ? m[1].toLowerCase() : null;

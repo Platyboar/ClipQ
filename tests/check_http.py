@@ -59,6 +59,22 @@ def run_http_checks():
             assert resp.status == 200
             assert b'ClipQ' in resp.read()
 
+        with urllib.request.urlopen(f'{base}/obs', timeout=5) as resp:
+            assert resp.status == 200
+            assert b'ClipQ' in resp.read()
+
+        with urllib.request.urlopen(f'{base}/obs/sample_obs_key_1234567890', timeout=5) as resp:
+            assert resp.status == 200
+            assert b'ClipQ' in resp.read()
+
+        with urllib.request.urlopen(f'{base}/api/twitch-meta?type=clip&id=ValidClip123', timeout=5) as resp:
+            assert resp.status == 200
+            assert json.loads(resp.read().decode()) == {'configured': False, 'available': True, 'meta': None}
+
+        with urllib.request.urlopen(f'{base}/api/twitch-meta?type=badges&id=11111', timeout=5) as resp:
+            assert resp.status == 200
+            assert json.loads(resp.read().decode()) == {'configured': False, 'badges': None}
+
         unknown_body = _expect_http_error(f'{base}/api/unknown', 404)
         assert json.loads(unknown_body) == {'error': 'Not found'}
 
@@ -66,6 +82,9 @@ def run_http_checks():
         _expect_http_error(f'{base}/api/video-url', 400)
         _expect_http_error(f'{base}/api/youtube-meta?id=bad!id', 400)
         _expect_http_error(f'{base}/api/youtube-meta', 400)
+        _expect_http_error(f'{base}/api/twitch-meta?type=invalid&id=123', 400)
+        _expect_http_error(f'{base}/api/twitch-meta?type=vod&id=notanumber', 400)
+        _expect_http_error(f'{base}/api/twitch-meta?type=badges&id=bad!', 400)
 
         for blocked_url in (
             f'{base}/api/oembed?url=http://127.0.0.1/evil',
@@ -130,7 +149,7 @@ def run_http_checks():
     assert vercel_video_url.normalize_allowed_video_url('http://169.254.169.254/latest') is None
     assert vercel_video_url.normalize_allowed_video_url('https://www.tiktok.com:8443/@u/video/1') is None
 
-    return {'status': 'ok', 'endpoints_verified': 18}
+    return {'status': 'ok', 'endpoints_verified': 25}
 
 
 if __name__ == '__main__':

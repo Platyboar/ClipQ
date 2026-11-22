@@ -15,31 +15,35 @@ ClipQ.App = (() => {
     async function init() {
         // Apply saved language immediately
         ClipQ.I18n.applyToDOM();
+        document.body.classList.toggle('obs-mode', ClipQ.Auth.isObsMode());
+        if (ClipQ.Settings && ClipQ.Settings.applyTopbarVisibility) ClipQ.Settings.applyTopbarVisibility();
 
         const hashToken = ClipQ.Auth.parseTokenFromHash();
-        const savedToken = ClipQ.Auth.getToken();
-        const token = hashToken || savedToken;
+        const urlObsKey = ClipQ.Auth.getUrlObsKey ? ClipQ.Auth.getUrlObsKey() : null;
+        if (!hashToken && urlObsKey && ClipQ.Sync?.initObsSession) {
+            const obsRes = await ClipQ.Sync.initObsSession(urlObsKey);
+            if (obsRes?.ok && obsRes.user) { await startApp(obsRes.user, { obsSession: true }); return; }
+            if (obsRes?.invalid) { showLogin({ obsInvalid: true }); return; }
+        }
 
+        const token = hashToken || ClipQ.Auth.getToken();
         if (token) {
             const authStatus = await ClipQ.Auth.validate(token);
-            if (authStatus && authStatus.valid) {
-                let user = ClipQ.Auth.getUser();
-                if (!user) user = await ClipQ.Auth.fetchUser(token);
-                if (user) {
-                    await startApp(user);
-                    return;
-                }
-            } else if (authStatus && authStatus.unauthorized) {
+            if (authStatus?.valid) {
+                const user = ClipQ.Auth.getUser() || await ClipQ.Auth.fetchUser(token);
+                if (user) { await startApp(user); return; }
+            } else if (authStatus?.unauthorized) {
                 ClipQ.Auth.clearSession();
             }
         }
-
         showLogin();
     }
 
-    function showLogin() {
+    function showLogin(options = {}) {
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('app-screen').classList.add('hidden');
+        const obsErr = document.getElementById('obs-error-banner');
+        if (obsErr) obsErr.classList.toggle('hidden', !options.obsInvalid);
 
         const hasLang = ClipQ.I18n.hasLanguage();
         const langSelector = document.getElementById('language-selector');
@@ -96,7 +100,7 @@ ClipQ.App = (() => {
         });
     }
 
-    async function startApp(user) {
+    async function startApp(user, options = {}) {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
 
@@ -106,13 +110,14 @@ ClipQ.App = (() => {
         else avatarEl.removeAttribute('src');
         document.getElementById('user-name').textContent = user.displayName;
 
-        if (ClipQ.Sync) await ClipQ.Sync.init(user);
+        if (ClipQ.Sync && !options.obsSession) await ClipQ.Sync.init(user);
 
         const settings = ClipQ.Settings.load();
         if (!settings.channel) {
             settings.channel = user.login;
             ClipQ.Settings.save(settings);
         }
+        if (user?.id && ClipQ.ChatBadges) ClipQ.ChatBadges.loadForChannel(user.id);
 
         const titleEl = document.getElementById('app-title');
         if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';
@@ -293,6 +298,7 @@ ClipQ.App = (() => {
 
         document.getElementById('dropdown-settings').addEventListener('click', () => {
             setDropdownOpen(false);
+            ClipQ.Settings.hideObsUrlCover();
             ClipQ.Settings.populateUI();
             document.getElementById('settings-overlay').classList.remove('hidden');
         });
@@ -355,23 +361,6 @@ ClipQ.App = (() => {
         return `<div class="queue-provider-icon"><img src="${ClipQ.escapeHtml(url)}" alt="${ClipQ.escapeHtml(provider)}"></div>`;
     }
 
-    function buildRoleBadge(roles) {
-        if (!roles) return '';
-        const roleDefs = [
-            ['isBroadcaster', 'broadcaster', 'roles.broadcaster'],
-            ['isLeadMod', 'leadMod', 'roles.lead_mod'],
-            ['isMod', 'mod', 'roles.mod'],
-            ['isVip', 'vip', 'roles.vip']
-        ];
-        const match = roleDefs.find(([flag]) => roles[flag]);
-        if (!match) return '';
-        const [, badgeKey, i18nKey] = match;
-        const badgeUrl = ClipQ.sanitizeUrl(ClipQ.ROLE_BADGES[badgeKey]);
-        if (!badgeUrl) return '';
-        const label = ClipQ.escapeHtml(t(i18nKey));
-        return `<img class="badge-role" src="${ClipQ.escapeHtml(badgeUrl)}" title="${label}" alt="${label}">`;
-    }
-
     function bindThumbFallback(container) {
         container.addEventListener('error', (e) => {
             const img = e.target;
@@ -398,7 +387,7 @@ ClipQ.App = (() => {
             : `<div class="${baseClass} clip-placeholder">🎬</div>`;
     }
 
-    function renderQueueList() {
+    function renderQueueList(showBadgesOverride) {
         const items = ClipQ.Queue.getItems();
         const container = document.getElementById('queue-list');
         const countEl = document.getElementById('queue-count');
@@ -408,16 +397,15 @@ ClipQ.App = (() => {
         countTabEl.textContent = items.length > 0 ? `(${items.length})` : '';
 
         if (items.length === 0) {
-            const emptyMsgHtml = t('queue.empty_message')
-                .split(/<br\s*\/?>/i)
-                .map(ClipQ.escapeHtml)
-                .join('<br>');
+            const emptyMsgHtml = t('queue.empty_message').split(/<br\s*\/?>/i).map(ClipQ.escapeHtml).join('<br>');
             container.innerHTML = `<div class="queue-empty">${emptyMsgHtml}</div>`;
             return;
         }
 
         const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-        const showBadges = ClipQ.Settings.get().design.showBadges !== false;
+        const showBadges = typeof showBadgesOverride === 'boolean'
+            ? showBadgesOverride
+            : (ClipQ.Settings.get().design.showBadges !== false);
 
         container.innerHTML = items.map(item => {
             const meta = item.meta || {};
@@ -425,7 +413,7 @@ ClipQ.App = (() => {
             const icon = getProviderIcon(item.provider);
 
             const submittersList = (item.submitters || []).map(sub => {
-                const badge = (showBadges && item.submitterRoles) ? buildRoleBadge(item.submitterRoles[sub]) : '';
+                const badge = (showBadges && item.submitterRoles) ? ClipQ.buildRoleBadge(item.submitterRoles[sub]) : '';
                 return `${badge}${ClipQ.escapeHtml(sub)}`;
             }).join(', ');
 
@@ -437,20 +425,15 @@ ClipQ.App = (() => {
                 })()
                 : '';
 
-            return `
-                <div class="queue-item" data-id="${ClipQ.escapeHtml(item.id)}" tabindex="0" role="button" title="${ClipQ.escapeHtml(t('queue.click_to_play'))}">
-                    <div class="queue-thumb-wrap">
-                        ${thumbMarkup}
-                        ${icon}
-                    </div>
-                    <div class="queue-item-info">
-                        <div class="queue-item-title">${ClipQ.escapeHtml(meta.title || 'Clip')}</div>
-                        <div class="queue-item-channel">${ClipQ.escapeHtml(meta.channel || item.provider)} • ${submittersList}${item.isPushed ? ` • <span class="badge-pushed">${ClipQ.escapeHtml(t('queue.pushed'))}</span>` : ''}</div>
-                    </div>
-                    ${pushBadge}
-                    <button type="button" class="queue-item-delete" title="${ClipQ.escapeHtml(t('queue.delete'))}" aria-label="${ClipQ.escapeHtml(t('queue.delete'))}">${trashIcon}</button>
+            return `<div class="queue-item" data-id="${ClipQ.escapeHtml(item.id)}" tabindex="0" role="button" title="${ClipQ.escapeHtml(t('queue.click_to_play'))}">
+                <div class="queue-thumb-wrap">${thumbMarkup}${icon}</div>
+                <div class="queue-item-info">
+                    <div class="queue-item-title">${ClipQ.escapeHtml(meta.title || 'Clip')}</div>
+                    <div class="queue-item-channel">${ClipQ.escapeHtml(meta.channel || item.provider)} • ${submittersList}${item.isPushed ? ` • <span class="badge-pushed">${ClipQ.escapeHtml(t('queue.pushed'))}</span>` : ''}</div>
                 </div>
-            `;
+                ${pushBadge}
+                <button type="button" class="queue-item-delete" title="${ClipQ.escapeHtml(t('queue.delete'))}" aria-label="${ClipQ.escapeHtml(t('queue.delete'))}">${trashIcon}</button>
+            </div>`;
         }).join('');
     }
 
@@ -489,10 +472,27 @@ ClipQ.App = (() => {
 
     function isAutoplay() { return autoplay; }
 
+    function applyRemoteConfig() {
+        const settings = ClipQ.Settings.load();
+        const titleEl = document.getElementById('app-title');
+        if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';
+        try { autoplay = localStorage.getItem('clipq_autoplay') === 'true'; } catch { autoplay = false; }
+        if (!autoplay && ClipQ.Player?.clearAutoplayTimeout) ClipQ.Player.clearAutoplayTimeout();
+        updateAutoplayUI();
+        if (ClipQ.Design?.renderSwatches) ClipQ.Design.renderSwatches();
+        if (ClipQ.SettingsLayout?.renderOrderingUI) ClipQ.SettingsLayout.renderOrderingUI();
+        if (ClipQ.Player?.refreshLanguage) ClipQ.Player.refreshLanguage();
+        renderQueueList();
+        renderHistory();
+        updateNextButton();
+        const overlay = document.getElementById('settings-overlay');
+        if (overlay && !overlay.classList.contains('hidden')) ClipQ.Settings.populateUI();
+    }
+
     document.addEventListener('DOMContentLoaded', () => ClipQ.App.init());
 
     return {
         init, nextClip, skipUnavailableClip, setQueueOpen, isAutoplay, setAutoplay,
-        setClipLimit, setProvider, renderQueueList, renderHistory, updateNextButton
+        setClipLimit, setProvider, renderQueueList, renderHistory, updateNextButton, applyRemoteConfig
     };
 })();

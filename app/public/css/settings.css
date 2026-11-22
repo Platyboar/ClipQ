@@ -36,8 +36,19 @@
 .channel-text-group { display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
 .channel-name-text { flex:1; text-align:center; font-weight:600; color:var(--color-text-bright); font-size:var(--font-size-xl); }
 .channel-text-group .btn { white-space:nowrap; }
+.obs-url-reveal-wrap { position:relative; }
+.obs-url-group { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.obs-url-group.obs-masked { visibility:hidden; pointer-events:none; user-select:none; }
+.obs-url-group .form-input { flex:1; min-width:220px; font-family:monospace; }
+.obs-url-group .btn { white-space:nowrap; }
+.obs-url-cover { position:absolute; inset:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; border-radius:var(--border-radius-sm); background:var(--color-queue-item); color:var(--color-text-bright); border:1px solid var(--color-border); font-weight:600; transition:background .15s, border-color .15s; z-index:2; }
+.obs-url-cover:hover { background:var(--color-queue-item-hover); border-color:var(--color-accent); }
 
 /* DESIGN TAB & COLOR PICKER */
+.design-chat-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--color-border); }
+.design-chat-options { display:flex; flex-direction:column; gap:14px; margin-top:12px; padding:14px; border-radius:var(--border-radius-sm); background:rgba(255,255,255,.02); border:1px solid var(--color-border); }
+.design-chat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px 16px; align-items:start; }
+.design-chat-color-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .design-group { margin-bottom:20px; }
 .design-group-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--color-text-dim); margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--color-border); }
 .design-swatches { display:flex; flex-wrap:wrap; gap:6px; }

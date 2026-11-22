@@ -11,8 +11,35 @@ ClipQ.Auth = (() => {
     const REDIRECT_URI = `${window.location.origin}/`;
     const TOKEN_KEY = 'clipq_token';
     const USER_KEY = 'clipq_user';
+    const OBS_REDIRECT_KEY = 'clipq_obs_redirect';
+    const OBS_KEY_PATH_RE = /^\/obs\/([A-Za-z0-9_-]{16,128})\/?$/i;
+    let activeObsKey = null;
+
+    function getUrlObsKey() {
+        const match = window.location.pathname.match(OBS_KEY_PATH_RE);
+        return match ? match[1] : null;
+    }
+
+    function isObsMode() {
+        if (getUrlObsKey()) return true;
+        const obsParam = new URLSearchParams(window.location.search).get('obs');
+        if (obsParam === '0') return false;
+        return obsParam === '1' || /^\/obs\/?$/i.test(window.location.pathname);
+    }
+
+    function setActiveObsKey(key) {
+        activeObsKey = key || null;
+    }
+
+    function getActiveObsKey() {
+        return activeObsKey;
+    }
 
     function getLoginUrl() {
+        try {
+            if (isObsMode()) sessionStorage.setItem(OBS_REDIRECT_KEY, '1');
+            else sessionStorage.removeItem(OBS_REDIRECT_KEY);
+        } catch { /* ignore sessionStorage errors */ }
         const scopes = 'chat:read';
         return `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${ClipQ.CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
     }
@@ -26,8 +53,13 @@ ClipQ.Auth = (() => {
             try {
                 localStorage.setItem(TOKEN_KEY, token);
             } catch { /* ignore storage quota errors */ }
-            // Clean URL
-            history.replaceState(null, '', window.location.pathname);
+            let restoreObs = false;
+            try {
+                restoreObs = sessionStorage.getItem(OBS_REDIRECT_KEY) === '1';
+                sessionStorage.removeItem(OBS_REDIRECT_KEY);
+            } catch { /* ignore sessionStorage errors */ }
+            // Clean URL and restore /obs path after OAuth redirect back to origin root
+            history.replaceState(null, '', restoreObs ? '/obs' : window.location.pathname);
             return token;
         }
         return null;
@@ -82,6 +114,7 @@ ClipQ.Auth = (() => {
     }
 
     function clearSession() {
+        activeObsKey = null;
         try {
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(USER_KEY);
@@ -96,5 +129,8 @@ ClipQ.Auth = (() => {
         window.location.reload();
     }
 
-    return { getLoginUrl, parseTokenFromHash, getToken, fetchUser, getUser, validate, clearSession, logout };
+    return {
+        getLoginUrl, parseTokenFromHash, getToken, fetchUser, getUser,
+        validate, clearSession, logout, isObsMode, getUrlObsKey, setActiveObsKey, getActiveObsKey
+    };
 })();

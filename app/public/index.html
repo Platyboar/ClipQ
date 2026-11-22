@@ -2,41 +2,14 @@
 <html lang="en">
 
 <head>
-    <script>
-        (function () {
-            function reportError(payload) {
-                if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
-                try {
-                    fetch('/log-error', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    }).catch(() => {});
-                } catch (_) {}
-            }
-            window.onerror = function (message, source, lineno, colno, error) {
-                reportError({ message, source, lineno, colno, error: error ? error.stack : null });
-                return false;
-            };
-            window.addEventListener('unhandledrejection', function (event) {
-                const reason = event.reason;
-                reportError({
-                    message: reason && reason.message ? reason.message : String(reason || 'Unhandled rejection'),
-                    source: 'unhandledrejection',
-                    lineno: 0,
-                    colno: 0,
-                    error: reason && reason.stack ? reason.stack : null
-                });
-            });
-        })();
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>ClipQ — Clip Queue</title>
     <meta name="description" content="ClipQ - Twitch Clip Queue for Streamers">
-    <link rel="stylesheet" href="/css/fonts.css?v=33">
-    <link rel="stylesheet" href="/css/style.css?v=33">
-    <link rel="stylesheet" href="/css/settings.css?v=33">
+    <link rel="stylesheet" href="/css/fonts.css?v=36">
+    <link rel="stylesheet" href="/css/style.css?v=36">
+    <link rel="stylesheet" href="/css/settings.css?v=36">
 </head>
 
 <body>
@@ -45,21 +18,17 @@
     <div id="login-screen" class="screen">
         <div class="login-logo">ClipQ</div>
         <p class="login-subtitle" data-i18n="login.subtitle">Clip Queue for your Stream</p>
+        <p id="obs-error-banner" class="obs-error-banner hidden" data-i18n="login.obs_invalid_key">This OBS link is invalid or was regenerated. Copy your current link from Settings → General in your browser.</p>
 
         <!-- Language Selector (shown on first visit) -->
         <div id="language-selector" class="language-selector">
             <p class="language-prompt" data-i18n="login.select_language">Select Language</p>
-            <div class="language-options" id="language-options">
-                <!-- Populated dynamically by app.js -->
-            </div>
+            <div class="language-options" id="language-options"></div>
         </div>
 
         <!-- Twitch Login Button (hidden until language is selected) -->
         <button type="button" id="twitch-login-btn" class="hidden">
-            <svg viewBox="0 0 24 24">
-                <path
-                    d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" /></svg>
             <span data-i18n="login.connect_twitch">Connect with Twitch</span>
         </button>
     </div>
@@ -111,7 +80,7 @@
             <!-- Sidebar -->
             <aside id="sidebar">
                 <div class="sidebar-chat-ad-row">
-                    <div id="chat-area"></div>
+                    <div id="chat-area"><div id="chat-messages" class="chat-messages" aria-live="polite"></div></div>
                     <div id="ad-area"></div>
                 </div>
                 <div id="facecam-area"></div>
@@ -172,9 +141,7 @@
                     <div class="form-group">
                         <label class="form-label" for="set-language" data-i18n="settings.general.language">Language</label>
                         <div class="form-hint" data-i18n="settings.general.language_hint">Choose the display language of the app</div>
-                        <select class="form-input" id="set-language">
-                            <!-- Populated dynamically -->
-                        </select>
+                        <select class="form-input" id="set-language"></select>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="set-app-title" data-i18n="settings.general.app_title">App Name</label>
@@ -187,6 +154,27 @@
                         <div class="channel-text-group">
                             <span class="channel-name-text" id="set-channel-text"></span>
                             <button type="button" class="btn btn-danger" id="settings-logout" data-i18n="menu.logout">Logout</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-obs-url" data-i18n="settings.general.obs_url">OBS-Browser-Link</label>
+                        <div class="form-hint" data-i18n="settings.general.obs_url_hint">Personal link for OBS Browser Source without the top menu bar. Keep it private and regenerate it if shared accidentally.</div>
+                        <div class="obs-url-reveal-wrap">
+                            <button type="button" class="obs-url-cover" id="reveal-obs-url-btn" data-i18n="settings.general.obs_reveal">Show OBS-Browser-Link</button>
+                            <div class="obs-url-group obs-masked" id="obs-url-group">
+                                <input type="text" class="form-input" id="set-obs-url" readonly>
+                                <button type="button" class="btn btn-primary" id="copy-obs-url-btn" data-i18n="settings.general.obs_copy">Copy</button>
+                                <button type="button" class="btn btn-ghost hidden" id="regenerate-obs-url-btn" data-i18n="settings.general.obs_regenerate">Regenerate</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="toggle-row">
+                            <div>
+                                <span class="form-label" id="obs-show-topbar-label" data-i18n="settings.general.obs_show_topbar">Show Topbar</span>
+                                <div class="form-hint" data-i18n="settings.general.obs_show_topbar_hint">Shows the top menu bar inside OBS as well (when off, it is hidden only in OBS and always remains visible in your browser)</div>
+                            </div>
+                            <button type="button" class="toggle-switch" id="set-obs-show-topbar" role="switch" aria-checked="false" aria-labelledby="obs-show-topbar-label"></button>
                         </div>
                     </div>
                     <div class="settings-action-bar">
@@ -226,11 +214,7 @@
                     <div class="form-group">
                         <label class="form-label" for="set-blocked-users" data-i18n="settings.queue.blocked_users">Blocked Users</label>
                         <div class="form-hint" data-i18n="settings.queue.blocked_users_hint">One name per line. Messages from these users will be ignored.</div>
-                        <textarea class="form-textarea" id="set-blocked-users">streamlabs
-nightbot
-streamelements
-fossabot
-moobot</textarea>
+                        <textarea class="form-textarea" id="set-blocked-users"></textarea>
                     </div>
                 </div>
                 <!-- Commands Tab -->
@@ -249,11 +233,49 @@ moobot</textarea>
                 </div>
                 <!-- Design Tab -->
                 <div class="settings-tab-content" id="stab-design">
+                    <div class="design-chat-section">
+                        <div class="toggle-row">
+                            <div>
+                                <span class="form-label" id="design-show-chat-label" data-i18n="settings.design.show_chat">Activate Chat</span>
+                                <div class="form-hint" data-i18n="settings.design.show_chat_hint">Display live Twitch chat inside the Chat Box</div>
+                            </div>
+                            <button type="button" class="toggle-switch active" id="design-show-chat" role="switch" aria-checked="true" aria-labelledby="design-show-chat-label"></button>
+                        </div>
+                        <div class="design-chat-options" id="design-chat-options">
+                            <div class="design-chat-grid">
+                                <div><label class="form-label" for="design-chat-font" data-i18n="settings.design.chat_font">Chat Font</label><select class="form-input" id="design-chat-font"></select></div>
+                                <div>
+                                    <label class="form-label" for="design-chat-font-size" data-i18n="settings.design.chat_font_size">Chat Font Size</label>
+                                    <div class="slider-row"><input type="range" class="form-input" id="design-chat-font-size" min="11" max="26" value="13"><span id="design-chat-font-size-val" class="slider-value">13px</span></div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="design-chat-animation" data-i18n="settings.design.chat_animation">Message Appearance</label>
+                                    <select class="form-input" id="design-chat-animation"><option value="slide" data-i18n="settings.design.chat_anim_slide">Slide in smoothly</option><option value="none" data-i18n="settings.design.chat_anim_none">Appear immediately</option></select>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="design-chat-direction" data-i18n="settings.design.chat_direction">Message Direction</label>
+                                    <select class="form-input" id="design-chat-direction"><option value="bottom" data-i18n="settings.design.chat_dir_bottom">From bottom up</option><option value="top" data-i18n="settings.design.chat_dir_top">From top down</option></select>
+                                </div>
+                            </div>
+                            <div class="design-chat-color-row">
+                                <span class="form-label" data-i18n="settings.design.chat_color">Chat Text Color</span>
+                                <button type="button" class="color-swatch" id="design-chat-color-swatch" data-var="--color-chat-text" data-i18n-title="settings.design.chat_color" title="Chat Text Color"><div class="swatch-color-wrap"><div class="swatch-checker"></div><div class="swatch-color"></div></div></button>
+                            </div>
+                            <div class="toggle-row">
+                                <span class="form-label" id="design-chat-badges-label" data-i18n="settings.design.chat_show_badges">Show Chat Badges</span>
+                                <button type="button" class="toggle-switch active" id="design-chat-show-badges" role="switch" aria-checked="true" aria-labelledby="design-chat-badges-label"></button>
+                            </div>
+                            <div class="toggle-row">
+                                <span class="form-label" id="design-chat-links-label" data-i18n="settings.design.chat_show_links">Show Links</span>
+                                <button type="button" class="toggle-switch active" id="design-chat-show-links" role="switch" aria-checked="true" aria-labelledby="design-chat-links-label"></button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <div class="toggle-row">
                             <div>
                                 <span class="form-label" id="design-show-badges-label" data-i18n="settings.design.show_badges">Show Badges</span>
-                                <div class="form-hint" data-i18n="settings.design.show_badges_hint">Show Twitch roles (Moderator, VIP, Streamer) in the queue</div>
+                                <div class="form-hint" data-i18n="settings.design.show_badges_hint">Show Twitch roles (Broadcaster, Lead Mod, Moderator, VIP) in the queue</div>
                             </div>
                             <button type="button" class="toggle-switch active" id="design-show-badges" role="switch" aria-checked="true" aria-labelledby="design-show-badges-label"></button>
                         </div>
@@ -261,18 +283,7 @@ moobot</textarea>
                     <div class="form-group">
                         <label class="form-label" for="design-font-select" data-i18n="settings.design.font">Font</label>
                         <div class="form-hint" data-i18n="settings.design.font_hint">Choose a font for the entire app</div>
-                        <select class="form-input" id="design-font-select">
-                            <option value="Inter">Inter</option>
-                            <option value="Roboto">Roboto</option>
-                            <option value="Open Sans">Open Sans</option>
-                            <option value="Montserrat">Montserrat</option>
-                            <option value="Lato">Lato</option>
-                            <option value="Poppins">Poppins</option>
-                            <option value="Outfit">Outfit</option>
-                            <option value="Nunito">Nunito</option>
-                            <option value="Raleway">Raleway</option>
-                            <option value="Source Sans 3">Source Sans 3</option>
-                        </select>
+                        <select class="form-input" id="design-font-select"></select>
                     </div>
                     <div id="design-colors-container"></div>
                     <div class="form-group settings-action-bar">
@@ -388,9 +399,7 @@ moobot</textarea>
                     <div class="form-group" id="layout-ordering-group">
                         <span class="form-label" data-i18n="settings.layout.ordering">Component Order</span>
                         <div class="form-hint" data-i18n="settings.layout.ordering_hint">Determine the vertical position of each active component in the sidebar</div>
-                        <div id="layout-ordering-list" class="ordering-list">
-                            <!-- Populated dynamically -->
-                        </div>
+                        <div id="layout-ordering-list" class="ordering-list"></div>
                     </div>
                     <div class="form-group settings-action-bar">
                         <button type="button" class="btn btn-primary" id="layout-set-default-btn" data-i18n="settings.design.set_default">Set as Default</button>
@@ -453,30 +462,33 @@ moobot</textarea>
 
     <!-- Scripts -->
     <script src="/js/tmi.min.js"></script>
-    <script src="/js/utils.js?v=33"></script>
-    <script src="/js/i18n.js?v=33"></script>
-    <script src="/js/lang/de.js?v=33"></script>
-    <script src="/js/lang/en.js?v=33"></script>
-    <script src="/js/lang/es.js?v=33"></script>
-    <script src="/js/lang/ru.js?v=33"></script>
-    <script src="/js/lang/pt.js?v=33"></script>
-    <script src="/js/lang/fr.js?v=33"></script>
-    <script src="/js/lang/ja.js?v=33"></script>
-    <script src="/js/lang/it.js?v=33"></script>
-    <script src="/js/providers.js?v=33"></script>
-    <script src="/js/memory.js?v=33"></script>
-    <script src="/js/layout.js?v=33"></script>
-    <script src="/js/settings-commands.js?v=33"></script>
-    <script src="/js/settings-layout.js?v=33"></script>
-    <script src="/js/settings.js?v=33"></script>
-    <script src="/js/design-picker.js?v=33"></script>
-    <script src="/js/design.js?v=33"></script>
-    <script src="/js/auth.js?v=33"></script>
-    <script src="/js/sync.js?v=33"></script>
-    <script src="/js/queue.js?v=33"></script>
-    <script src="/js/player.js?v=33"></script>
-    <script src="/js/chat.js?v=33"></script>
-    <script src="/js/app.js?v=33"></script>
+    <script src="/js/utils.js?v=36"></script>
+    <script src="/js/i18n.js?v=36"></script>
+    <script src="/js/lang/de.js?v=36"></script>
+    <script src="/js/lang/en.js?v=36"></script>
+    <script src="/js/lang/es.js?v=36"></script>
+    <script src="/js/lang/ru.js?v=36"></script>
+    <script src="/js/lang/pt.js?v=36"></script>
+    <script src="/js/lang/fr.js?v=36"></script>
+    <script src="/js/lang/ja.js?v=36"></script>
+    <script src="/js/lang/it.js?v=36"></script>
+    <script src="/js/providers.js?v=36"></script>
+    <script src="/js/memory.js?v=36"></script>
+    <script src="/js/layout.js?v=36"></script>
+    <script src="/js/settings-commands.js?v=36"></script>
+    <script src="/js/settings-layout.js?v=36"></script>
+    <script src="/js/chat-badges.js?v=36"></script>
+    <script src="/js/chat-feed.js?v=36"></script>
+    <script src="/js/settings.js?v=36"></script>
+    <script src="/js/design-picker.js?v=36"></script>
+    <script src="/js/design.js?v=36"></script>
+    <script src="/js/auth.js?v=36"></script>
+    <script src="/js/sync-live.js?v=36"></script>
+    <script src="/js/sync.js?v=36"></script>
+    <script src="/js/queue.js?v=36"></script>
+    <script src="/js/player.js?v=36"></script>
+    <script src="/js/chat.js?v=36"></script>
+    <script src="/js/app.js?v=36"></script>
 </body>
 
 </html>

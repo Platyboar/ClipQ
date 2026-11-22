@@ -238,7 +238,8 @@ ClipQ.Player = (() => {
         }
 
         const token = ClipQ.Auth?.getToken?.();
-        if (clip.provider === 'twitch' && token && typeof provider.isClipAvailable === 'function') {
+        const hasAuth = Boolean(token || ClipQ.Auth?.getActiveObsKey?.());
+        if (clip.provider === 'twitch' && hasAuth && typeof provider.isClipAvailable === 'function') {
             provider.isClipAvailable(clip.clipId, token).then((available) => {
                 if (!available && currentClip === clip) {
                     console.warn(`[Player] Removing unavailable Twitch clip without archiving: ${clip.clipId}`);

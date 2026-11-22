@@ -105,6 +105,7 @@ ClipQ.Design = (() => {
         '--color-text-dim': 'rgba(102,102,102,1)',
         '--color-text-bright': 'rgba(255,255,255,1)',
         '--color-text-accent': 'rgba(232,128,128,1)',
+        '--color-chat-text': 'rgba(204,204,204,1)',
     };
 
     const FONTS = [
@@ -123,9 +124,13 @@ ClipQ.Design = (() => {
     let originalValues = {};
     let originalInlineValues = {};
 
-    function applyFont(fontName) {
+    function getFontValue(fontName) {
         const font = FONTS.find(f => f.name === fontName);
-        if (font) document.documentElement.style.setProperty('--font-family', font.value);
+        return font ? font.value : FONTS[0].value;
+    }
+
+    function applyFont(fontName) {
+        document.documentElement.style.setProperty('--font-family', getFontValue(fontName));
     }
 
     function readCssColor(cssVar) {
@@ -174,25 +179,67 @@ ClipQ.Design = (() => {
             `).join('');
         }
 
-        document.querySelectorAll('#stab-design .color-swatch').forEach(swatch => {
-            swatch.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const cssVar = swatch.dataset.var;
-                ClipQ.ColorPicker.open({
-                    anchorEl: swatch,
-                    initialColor: readCssColor(cssVar),
-                    onChange: (colorStr) => {
-                        document.documentElement.style.setProperty(cssVar, colorStr);
-                        const chip = swatch.querySelector('.swatch-color');
-                        if (chip) chip.style.background = colorStr;
-                    }
-                });
+        document.querySelectorAll('#design-colors-container .color-swatch').forEach(bindColorSwatch);
+    }
+
+    function bindColorSwatch(swatch) {
+        if (!swatch) return;
+        swatch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cssVar = swatch.dataset.var;
+            ClipQ.ColorPicker.open({
+                anchorEl: swatch,
+                initialColor: readCssColor(cssVar),
+                onChange: (colorStr) => {
+                    document.documentElement.style.setProperty(cssVar, colorStr);
+                    const chip = swatch.querySelector('.swatch-color');
+                    if (chip) chip.style.background = colorStr;
+                }
             });
         });
     }
 
+    function initChatControls() {
+        bindColorSwatch(document.getElementById('design-chat-color-swatch'));
+        const readChatTypo = () => ({
+            chatFontFamily: document.getElementById('design-chat-font')?.value || 'Inter',
+            chatFontSize: ClipQ.intOrDefault(document.getElementById('design-chat-font-size')?.value, 13)
+        });
+        document.getElementById('design-chat-font')?.addEventListener('change', () => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('fontFamily', readChatTypo());
+        });
+        const sizeSlider = document.getElementById('design-chat-font-size');
+        const sizeVal = document.getElementById('design-chat-font-size-val');
+        if (sizeSlider) {
+            sizeSlider.addEventListener('input', () => {
+                if (sizeVal) sizeVal.textContent = `${sizeSlider.value}px`;
+                if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('fontSize', readChatTypo());
+            });
+        }
+        document.getElementById('design-chat-animation')?.addEventListener('change', (e) => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('animation', e.target.value);
+        });
+        document.getElementById('design-chat-direction')?.addEventListener('change', (e) => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('direction', e.target.value);
+        });
+    }
+
+    function populateFontSelect(selectEl) {
+        if (!selectEl) return;
+        selectEl.innerHTML = '';
+        FONTS.forEach(font => {
+            const opt = document.createElement('option');
+            opt.value = font.name;
+            opt.textContent = font.name;
+            selectEl.appendChild(opt);
+        });
+    }
+
     function init() {
+        populateFontSelect(document.getElementById('design-font-select'));
+        populateFontSelect(document.getElementById('design-chat-font'));
         renderSwatches();
+        initChatControls();
 
         const fontSelect = document.getElementById('design-font-select');
         if (fontSelect) {
@@ -242,6 +289,19 @@ ClipQ.Design = (() => {
         applySwatchesFromMap((cssVar) => colors[cssVar] || readCssColor(cssVar));
         const fontSelect = document.getElementById('design-font-select');
         if (fontSelect) fontSelect.value = designSettings.fontFamily || 'Inter';
+
+        const chatFont = document.getElementById('design-chat-font');
+        if (chatFont) chatFont.value = designSettings.chatFontFamily || 'Inter';
+        const chatSizeVal = Math.max(11, Math.min(26, ClipQ.intOrDefault(designSettings.chatFontSize, 13)));
+        const chatSize = document.getElementById('design-chat-font-size');
+        const chatSizeLabel = document.getElementById('design-chat-font-size-val');
+        if (chatSize) chatSize.value = chatSizeVal;
+        if (chatSizeLabel) chatSizeLabel.textContent = `${chatSizeVal}px`;
+        const chatAnim = document.getElementById('design-chat-animation');
+        if (chatAnim) chatAnim.value = designSettings.chatAnimation === 'none' ? 'none' : 'slide';
+        const chatDir = document.getElementById('design-chat-direction');
+        if (chatDir) chatDir.value = designSettings.chatDirection === 'top' ? 'top' : 'bottom';
+        document.getElementById('design-chat-options')?.classList.toggle('hidden', designSettings.showChat === false);
     }
 
     function readValues() {
@@ -251,9 +311,17 @@ ClipQ.Design = (() => {
             if (val) colors[cssVar] = val;
         });
         const fontSelect = document.getElementById('design-font-select');
+        const chatFont = document.getElementById('design-chat-font');
+        const chatSize = document.getElementById('design-chat-font-size');
+        const chatAnim = document.getElementById('design-chat-animation');
+        const chatDir = document.getElementById('design-chat-direction');
         return {
             colors,
-            fontFamily: fontSelect ? fontSelect.value : 'Inter'
+            fontFamily: fontSelect ? fontSelect.value : 'Inter',
+            chatFontFamily: chatFont ? chatFont.value : 'Inter',
+            chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(chatSize?.value, 13))),
+            chatAnimation: chatAnim?.value === 'none' ? 'none' : 'slide',
+            chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom'
         };
     }
 
@@ -307,7 +375,11 @@ ClipQ.Design = (() => {
             if (custom && typeof custom === 'object') {
                 return {
                     colors: custom.colors && typeof custom.colors === 'object' ? custom.colors : {},
-                    fontFamily: custom.fontFamily || 'Inter'
+                    fontFamily: custom.fontFamily || 'Inter',
+                    chatFontFamily: custom.chatFontFamily || 'Inter',
+                    chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(custom.chatFontSize, 13))),
+                    chatAnimation: custom.chatAnimation === 'none' ? 'none' : 'slide',
+                    chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom'
                 };
             }
         } catch { /* ignore corrupt custom defaults */ }
@@ -316,21 +388,22 @@ ClipQ.Design = (() => {
 
     function resetToDefaults(useCustom) {
         closePicker();
-        let customColors = {};
-        let fontName = 'Inter';
+        let nextDesign = {
+            colors: {},
+            fontFamily: 'Inter',
+            chatFontFamily: 'Inter',
+            chatFontSize: 13,
+            chatAnimation: 'slide',
+            chatDirection: 'bottom'
+        };
         if (useCustom !== false) {
             const custom = getCustomDefaults();
-            if (custom) {
-                customColors = custom.colors;
-                fontName = custom.fontFamily;
-            }
+            if (custom) nextDesign = custom;
         }
 
-        applyAll({ colors: customColors, fontFamily: fontName });
-        applySwatchesFromMap((cssVar) => customColors[cssVar] || DEFAULT_COLORS[cssVar]);
-
-        const fontSelect = document.getElementById('design-font-select');
-        if (fontSelect) fontSelect.value = fontName;
+        applyAll(nextDesign);
+        populate(nextDesign);
+        if (ClipQ.ChatFeed) ClipQ.ChatFeed.applySettings({ ...ClipQ.Settings?.get()?.design, ...nextDesign });
     }
 
     return {
@@ -340,6 +413,7 @@ ClipQ.Design = (() => {
         saveOriginalValues,
         revertToOriginal,
         applyAll,
+        getFontValue,
         closePicker,
         renderSwatches
     };

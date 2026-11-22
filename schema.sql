@@ -28,3 +28,12 @@ CREATE TABLE IF NOT EXISTS clip_memory (
     created_at INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (twitch_user_id, clip_key)
 );
+
+CREATE TABLE IF NOT EXISTS obs_tokens (
+    obs_key TEXT PRIMARY KEY,
+    twitch_user_id TEXT NOT NULL UNIQUE,
+    twitch_login TEXT NOT NULL DEFAULT '',
+    twitch_display_name TEXT NOT NULL DEFAULT '',
+    twitch_avatar TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL DEFAULT 0
+);
