@@ -17,18 +17,17 @@ Developed with the help of Google Antigravity.
 
 ## Features
 
-- 🎬 **Multi-Platform Clips** — Twitch, YouTube, TikTok, and Instagram clips
-- 💬 **Live Channel Chat & Formatting** — Toggleable live Twitch chat (`Activate Chat`) at the top of `Settings → Design` with custom font, size, text color, Twitch chat badges (`Mod`, `VIP`, `Sub`, `Broadcaster`), link filtering, direction, and slide animation
-- 🔧 **Chat Commands** — Moderators (and configurable roles) can control the queue via chat
-- 🔗 **Personal OBS-Browser-Link & Live Sync** — Reveal-protected unique per-user URL, **Show Topbar** OBS toggle, and real-time diff-checked Browser → OBS WebSocket sync
+- 🎬 **Multi-Platform Clips** — Twitch Clips (direct highest-resolution MP4 with iframe fallback & HEVC support), Twitch VOD, YouTube, TikTok, and Instagram Reels
+- ⏯️ **Player Controls & Chat Sharing** — Fixed-width **Pause/Resume** toggle, **Previous/Next**, Autoplay timer pause/resume, persistent `<video>` volume/mute, and rapid **Share in Chat** button
+- 💬 **Live Channel Chat & Formatting** — Toggleable live Twitch chat (`Activate Chat`) in `Settings → Design` with Twitch, 7TV, BetterTTV, and FrankerFaceZ emotes, custom font/size/color, centered channel badges, link filtering, auto-hide timer, slide animations, and a live test message button
+- 🔧 **Chat Commands & Moderation** — Configurable `!clipq` commands (including `!clipq current`), blocked users/streamers/categories, max clip duration, time-windowed per-user clip limits (`Hours`/`Days`), and optional auto-removal on Twitch timeout/ban
+- 📊 **Smart Queue & History** — Queue header with clip count and total playable duration (excluding VODs and over-limit entries), broken clip auto-skip, plus searchable History with platform filter chips
+- 🔗 **Personal OBS-Browser-Link & Live Sync** — Reveal-protected unique per-user URL, **Show Topbar** OBS toggle, `1920x1080` canvas recommendation, and real-time diff-checked Browser → OBS WebSocket sync
 - 🛡️ **Role-Based Permissions** — Configure which roles (Broadcaster, Lead Mod, Mod, VIP, All) can use each command
 - 🌍 **Multi-Language** — English, German, Spanish, Russian, Portuguese, French, Japanese, and Italian included (Spanish, Russian, Portuguese, French, Japanese, and Italian were translated using AI; easily extendable)
-- 🎨 **Customizable Design & Layout** — Colors, fonts, and layout (component ordering, sidebar position, info bar placement, and component visibility) are fully customizable and can be saved as defaults
-- 📋 **Clip Memory** — Prevents duplicate clips from being re-queued
-- 📜 **History** — Browse previously watched clips
-- 💾 **Data Export & Deletion** — Export backups as JSON or delete stored online data anytime
-- 🚫 **Moderation** — Blocked users/streamers, auto-removal on timeout/ban
-- ◀️ **Autoplay** — Automatically advance to the next clip
+- 🎨 **Customizable Design & Layout** — Compact 12-column color swatch grid, fonts, and layout (component ordering, sidebar position, info bar placement, and visibility toggles) saved per account
+- 📋 **Clip Memory** — Prevents duplicate clips from being re-queued (with optional Mod/Lead Mod bypass)
+- 💾 **Data Export, Import & Deletion** — Export or restore full JSON backups and delete stored online data anytime under **Settings → General**
 
 ## Getting Started (Local Self-Hosting)
 
@@ -80,6 +79,7 @@ All commands use a configurable prefix (default: `!clipq`).
 |---------|-------------|---------------|
 | `!clipq next` | Play next clip | Broadcaster, Lead Mod, Mod |
 | `!clipq push [url]` | Push a clip to #1 in queue | Broadcaster, Lead Mod, Mod |
+| `!clipq current` | Post the current clip URL in chat | Broadcaster, Lead Mod, Mod |
 | `!clipq open` | Open the queue for submissions | Broadcaster, Lead Mod, Mod |
 | `!clipq close` | Close the queue | Broadcaster, Lead Mod, Mod |
 | `!clipq clear` | Clear the entire queue | Broadcaster, Lead Mod, Mod |
@@ -108,6 +108,12 @@ All commands use a configurable prefix (default: `!clipq`).
 - **Auth:** Twitch OAuth Implicit Grant Flow
 
 ## Changelog
+
+### v2.1.0
+
+- ⏯️ **Player Controls, Max Quality & Share in Chat** — Added a fixed-width **Pause/Resume** button (`⏸ Pause` / `▶ Resume`) between Previous and Next supporting direct `<video>` playback, YouTube (`enablejsapi=1`), TikTok, and autoplay timers; added Twitch GQL direct MP4 playback (including HEVC Error #4000 fallback) sorted explicitly for highest resolution and framerate, `yt-dlp` `format_sort` (`res`, `fps`, `br`), persistent HTML5 `<video>` volume/mute state, and rapid-click **Share in Chat** plus **`!clipq current`** (with OAuth `user:write:chat` scope enforcement).
+- 📊 **Queue Duration, Time-Windowed Limits & Moderation** — Displayed total playable queue duration (`count • mm:ss`, excluding `twitch_vod` and clips over `maxDurationSeconds`) in the queue header; added max clip duration limits, rolling time windows (`Hours`/`Days`) for per-user clip limits, **Blocked Categories / Games**, configurable Twitch timeout clip-removal toggle, and automatic skipping of broken/unavailable clips.
+- 💬 **Live Chat Emotes & Visual Refinement** — Added Twitch, 7TV, BetterTTV, and FrankerFaceZ emotes, configurable chat message auto-hide timers with slide transitions, a live **Send Test Message** button, stable height animations without chat bounce, vertically centered badges & usernames, compact 12-column Design color swatch alignment, History search & platform filter chips, and JSON backup import.
 
 ### v2.0.0
 
