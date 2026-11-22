@@ -14,9 +14,9 @@ ClipQ.ChatFeed = (() => {
     let showLinks = true;
     let direction = 'bottom';
     let animation = 'slide';
-    let enterMs = 260;
+    let enterMs = 350;
     let hideSeconds = 0;
-    let hideMode = 'fade';
+    let hideMode = 'slide';
     let exitMs = 350;
     let nextUid = 1;
     const expiryTimers = new Map();
@@ -48,7 +48,7 @@ ClipQ.ChatFeed = (() => {
         container.classList.toggle('anim-out-slide', hideMode === 'slide');
         container.classList.toggle('anim-out-fade', hideMode === 'fade');
         const root = document.documentElement.style;
-        if (enterMs !== 260) root.setProperty('--chat-enter-duration', `${enterMs}ms`);
+        if (enterMs !== 350) root.setProperty('--chat-enter-duration', `${enterMs}ms`);
         else root.removeProperty('--chat-enter-duration');
         if (exitMs !== 350) root.setProperty('--chat-exit-duration', `${exitMs}ms`);
         else root.removeProperty('--chat-exit-duration');
@@ -180,7 +180,7 @@ ClipQ.ChatFeed = (() => {
 
     function rescheduleTimersFromSettings(nextSec, nextMode, nextExitMs) {
         hideSeconds = Math.max(0, Math.min(3600, ClipQ.intOrDefault(nextSec, 0)));
-        hideMode = normalizeAnimMode(nextMode, 'fade');
+        hideMode = normalizeAnimMode(nextMode, 'slide');
         exitMs = clampDurationMs(nextExitMs, 350);
         clearAllTimers();
         const now = Date.now();
@@ -198,9 +198,9 @@ ClipQ.ChatFeed = (() => {
         showLinks = s.chatShowLinks !== false;
         direction = s.chatDirection === 'top' ? 'top' : 'bottom';
         animation = normalizeAnimMode(s.chatAnimation, 'slide');
-        enterMs = clampDurationMs(s.chatEnterMs, 260);
+        enterMs = clampDurationMs(s.chatEnterMs, 350);
         hideSeconds = Math.max(0, Math.min(3600, ClipQ.intOrDefault(s.chatHideSeconds, 0)));
-        hideMode = normalizeAnimMode(s.chatHideMode, 'fade');
+        hideMode = normalizeAnimMode(s.chatHideMode, 'slide');
         exitMs = clampDurationMs(s.chatExitMs, 350);
         entries.forEach((entry) => {
             entry._expiresAt = hideSeconds > 0 ? Date.now() + (hideSeconds * 1000) : 0;
@@ -234,7 +234,7 @@ ClipQ.ChatFeed = (() => {
         if (key === 'animation') {
             if (value && typeof value === 'object') {
                 animation = normalizeAnimMode(value.chatAnimation, 'slide');
-                enterMs = clampDurationMs(value.chatEnterMs, 260);
+                enterMs = clampDurationMs(value.chatEnterMs, 350);
             } else {
                 animation = normalizeAnimMode(value, 'slide');
             }

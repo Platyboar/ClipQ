@@ -231,11 +231,11 @@ ClipQ.Design = (() => {
         }
         const readInCfg = () => ({
             chatAnimation: normalizeMode(document.getElementById('design-chat-animation')?.value, 'slide', ['slide', 'fade', 'none']),
-            chatEnterMs: clampMs(document.getElementById('design-chat-enter-ms')?.value, 260)
+            chatEnterMs: clampMs(document.getElementById('design-chat-enter-ms')?.value, 350)
         });
         const readHideCfg = () => ({
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(document.getElementById('design-chat-hide-seconds')?.value, 0))),
-            chatHideMode: normalizeMode(document.getElementById('design-chat-hide-mode')?.value, 'fade', ['fade', 'slide', 'none']),
+            chatHideMode: normalizeMode(document.getElementById('design-chat-hide-mode')?.value, 'slide', ['slide', 'fade', 'none']),
             chatExitMs: clampMs(document.getElementById('design-chat-exit-ms')?.value, 350)
         });
         document.getElementById('design-chat-animation')?.addEventListener('change', () => {
@@ -336,11 +336,11 @@ ClipQ.Design = (() => {
         if (chatSize) chatSize.value = chatSizeVal;
         if (chatSizeLabel) chatSizeLabel.textContent = `${chatSizeVal}px`;
         const inMode = normalizeMode(designSettings.chatAnimation, 'slide', ['slide', 'fade', 'none']);
-        const outMode = normalizeMode(designSettings.chatHideMode, 'fade', ['fade', 'slide', 'none']);
+        const outMode = normalizeMode(designSettings.chatHideMode, 'slide', ['slide', 'fade', 'none']);
         const chatAnim = document.getElementById('design-chat-animation');
         if (chatAnim) chatAnim.value = inMode;
         const chatEnterMs = document.getElementById('design-chat-enter-ms');
-        if (chatEnterMs) chatEnterMs.value = clampMs(designSettings.chatEnterMs, 260);
+        if (chatEnterMs) chatEnterMs.value = clampMs(designSettings.chatEnterMs, 350);
         const chatDir = document.getElementById('design-chat-direction');
         if (chatDir) chatDir.value = designSettings.chatDirection === 'top' ? 'top' : 'bottom';
         const chatHideSec = document.getElementById('design-chat-hide-seconds');
@@ -374,10 +374,10 @@ ClipQ.Design = (() => {
             chatFontFamily: chatFont ? chatFont.value : 'Inter',
             chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(chatSize?.value, 13))),
             chatAnimation: normalizeMode(chatAnim?.value, 'slide', ['slide', 'fade', 'none']),
-            chatEnterMs: clampMs(chatEnterMs?.value, 260),
+            chatEnterMs: clampMs(chatEnterMs?.value, 350),
             chatDirection: chatDir?.value === 'top' ? 'top' : 'bottom',
             chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(chatHideSec?.value, 0))),
-            chatHideMode: normalizeMode(chatHideMode?.value, 'fade', ['fade', 'slide', 'none']),
+            chatHideMode: normalizeMode(chatHideMode?.value, 'slide', ['slide', 'fade', 'none']),
             chatExitMs: clampMs(chatExitMs?.value, 350)
         };
     }
@@ -436,10 +436,10 @@ ClipQ.Design = (() => {
                     chatFontFamily: custom.chatFontFamily || 'Inter',
                     chatFontSize: Math.max(11, Math.min(26, ClipQ.intOrDefault(custom.chatFontSize, 13))),
                     chatAnimation: normalizeMode(custom.chatAnimation, 'slide', ['slide', 'fade', 'none']),
-                    chatEnterMs: clampMs(custom.chatEnterMs, 260),
+                    chatEnterMs: clampMs(custom.chatEnterMs, 350),
                     chatDirection: custom.chatDirection === 'top' ? 'top' : 'bottom',
                     chatHideSeconds: Math.max(0, Math.min(3600, ClipQ.intOrDefault(custom.chatHideSeconds, 0))),
-                    chatHideMode: normalizeMode(custom.chatHideMode, 'fade', ['fade', 'slide', 'none']),
+                    chatHideMode: normalizeMode(custom.chatHideMode, 'slide', ['slide', 'fade', 'none']),
                     chatExitMs: clampMs(custom.chatExitMs, 350)
                 };
             }
@@ -455,10 +455,10 @@ ClipQ.Design = (() => {
             chatFontFamily: 'Inter',
             chatFontSize: 13,
             chatAnimation: 'slide',
-            chatEnterMs: 260,
+            chatEnterMs: 350,
             chatDirection: 'bottom',
             chatHideSeconds: 0,
-            chatHideMode: 'fade',
+            chatHideMode: 'slide',
             chatExitMs: 350
         };
         if (useCustom !== false) {

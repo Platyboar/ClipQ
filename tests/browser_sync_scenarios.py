@@ -280,6 +280,14 @@ SYNC_TEST_JS = """
         const expBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
         await new Promise(r => setTimeout(r, 1150));
         out.chatAutoExpired = expBefore === 1 && document.querySelectorAll('#chat-messages .chat-msg').length === 0;
+        document.getElementById('user-menu-toggle').click();
+        document.getElementById('dropdown-settings').click();
+        document.querySelector('.modal-tabs .tab[data-stab="design"]').click();
+        const row1Labels = Array.from(document.querySelectorAll('.design-chat-grid > div > .form-label')).slice(0, 3);
+        const row1Tops = Array.from(new Set(row1Labels.map(el => Math.round(el.getBoundingClientRect().top))));
+        out.chatRow1TopAligned = row1Labels.length === 3 && row1Tops.length === 1;
+        const designCfg = ClipQ.Design.readValues();
+        out.chatAnimDefaultsOk = designCfg.chatAnimation === 'slide' && designCfg.chatHideMode === 'slide' && designCfg.chatEnterMs === 350 && designCfg.chatExitMs === 350;
         const chatAnimSel = document.getElementById('design-chat-animation');
         const chatExitSel = document.getElementById('design-chat-hide-mode');
         chatAnimSel.value = 'none';
@@ -288,10 +296,14 @@ SYNC_TEST_JS = """
         chatAnimSel.value = 'fade';
         chatAnimSel.dispatchEvent(new Event('change'));
         out.enterSpeedShownOnFade = !document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden') && document.getElementById('chat-messages')?.classList.contains('anim-in-fade');
+        chatExitSel.value = 'fade';
+        chatExitSel.dispatchEvent(new Event('change'));
+        const fadeOutOk = document.getElementById('chat-messages')?.classList.contains('anim-out-fade');
         chatExitSel.value = 'slide';
         chatExitSel.dispatchEvent(new Event('change'));
-        out.exitSlideApplied = document.getElementById('chat-messages')?.classList.contains('anim-out-slide');
-        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatEnterMs: 260, chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'fade', chatExitMs: 350 });
+        out.exitSlideApplied = Boolean(fadeOutOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
+        document.getElementById('settings-close').click();
+        ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatEnterMs: 350, chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'slide', chatExitMs: 350 });
 
         const invalidObsRes = await ClipQ.Sync.initObsSession('obs_key_revoked_00000000');
         out.invalidObsRejected = invalidObsRes && invalidObsRes.ok === false && invalidObsRes.invalid === true;
@@ -402,6 +414,8 @@ def assert_sync_report(report):
     assert (
         report['chatScrollbarHidden']
         and report['chatAutoExpired']
+        and report['chatRow1TopAligned']
+        and report['chatAnimDefaultsOk']
         and report['enterSpeedHiddenOnNone']
         and report['enterSpeedShownOnFade']
         and report['exitSlideApplied']

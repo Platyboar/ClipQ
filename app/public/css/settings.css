@@ -49,18 +49,19 @@
 /* DESIGN TAB & COLOR PICKER */
 .design-chat-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--color-border); }
 .design-chat-options { display:flex; flex-direction:column; gap:14px; margin-top:12px; }
-.design-chat-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 16px; align-items:end; }
-.design-chat-color-cell { display:flex; flex-direction:column; gap:2px; }
-.design-chat-swatch { flex-direction:row; justify-content:flex-start; min-width:0; padding:3px 4px; }
+.design-chat-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 16px; align-items:start; }
+.design-chat-grid .slider-row { min-height:41px; }
+.design-chat-color-cell { display:flex; flex-direction:column; }
+.design-chat-swatch { flex-direction:row; justify-content:flex-start; min-width:0; min-height:41px; padding:0 4px; }
 
 @media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } }
 .design-group { margin-bottom:20px; }
 .design-group-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--color-text-dim); margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--color-border); }
 .design-swatches { display:flex; flex-wrap:wrap; gap:6px; }
-.color-swatch { display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; border-radius:8px; background:transparent; color:inherit; transition:background .15s, box-shadow .15s; min-width:60px; }
+.color-swatch { display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 4px; border-radius:8px; background:transparent; color:inherit; transition:background .15s, box-shadow .15s; min-width:54px; }
 .color-swatch:hover { background:rgba(255,255,255,.05); }
 .color-swatch.swatch-active { background:rgba(255,255,255,.08); box-shadow:0 0 0 1px var(--color-accent); }
-.swatch-color-wrap { position:relative; width:34px; height:34px; border-radius:50%; overflow:hidden; border:2px solid var(--color-border); transition:border-color .15s; }
+.swatch-color-wrap { position:relative; width:24px; height:24px; border-radius:50%; overflow:hidden; border:2px solid var(--color-border); transition:border-color .15s; }
 .color-swatch:hover .swatch-color-wrap { border-color:var(--color-text-dim); }
 .swatch-checker { position:absolute; inset:0; background:repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 50% / 6px 6px; }
 .swatch-color { position:absolute; inset:0; border-radius:50%; transition:background .1s; }
