@@ -97,6 +97,8 @@ def run_browser_checks():
     thread.start()
 
     tmp_profile = tempfile.mkdtemp(prefix='clipq_cdp_')
+    tmp_downloads = str(pathlib.Path(tmp_profile) / 'downloads')
+    pathlib.Path(tmp_downloads).mkdir(exist_ok=True)
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         cdp_port = sock.getsockname()[1]
@@ -121,6 +123,7 @@ def run_browser_checks():
         try:
             cdp.call('Runtime.enable')
             cdp.call('Page.enable')
+            cdp.call('Browser.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': tmp_downloads})
             cdp.call(
                 'Emulation.setDeviceMetricsOverride',
                 {'width': 1366, 'height': 768, 'deviceScaleFactor': 1, 'mobile': False},
