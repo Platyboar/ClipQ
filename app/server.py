@@ -176,6 +176,8 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
                 match = re.search(r'itemprop="datePublished" content="([^"]+)"', html)
                 date = match.group(1) if match else ''
                 self._send_json(200, {'createdAt': date})
+            except urllib.error.HTTPError as e:
+                self._send_json(502, {'error': f'Upstream HTTP {e.code}'})
             except Exception as e:
                 self._send_json(500, {'error': str(e)})
             return
@@ -200,6 +202,8 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Length', str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
+            except urllib.error.HTTPError as e:
+                self._send_json(502, {'error': f'Upstream HTTP {e.code}'})
             except Exception as e:
                 self._send_json(500, {'error': str(e)})
             return
@@ -246,6 +250,8 @@ class ClipQHandler(http.server.SimpleHTTPRequestHandler):
                         'webpage_url': info.get('webpage_url'),
                     }
                 self._send_json(200, payload)
+            except urllib.error.HTTPError as e:
+                self._send_json(502, {'error': f'Upstream HTTP {e.code}'})
             except Exception as e:
                 self._send_json(500, {'error': str(e)})
             return

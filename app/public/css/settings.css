@@ -29,6 +29,13 @@
 .provider-toggles { display:flex; flex-wrap:wrap; gap:8px; }
 .provider-chip { padding:6px 14px; border-radius:20px; font-size:var(--font-size-sm); font-weight:500; border:1px solid var(--color-border); background:transparent; color:var(--color-text-dim); transition:all .15s; }
 .provider-chip.active { background:var(--color-accent); color:#fff; border-color:var(--color-accent); }
+.user-limit-grid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) auto; gap:12px; align-items:end; }
+.user-limit-grid .form-hint { margin-bottom:4px; }
+.unit-switch { display:flex; border:1px solid var(--color-border); border-radius:var(--border-radius-sm); overflow:hidden; background:rgba(20,23,30,0.65); }
+.unit-switch-btn { padding:10px 14px; background:transparent; color:var(--color-text-dim); font-size:var(--font-size-base); font-weight:500; transition:all .15s; white-space:nowrap; }
+.unit-switch-btn + .unit-switch-btn { border-left:1px solid var(--color-border); }
+.unit-switch-btn:hover { color:var(--color-text); }
+.unit-switch-btn.active { background:var(--color-accent); color:#fff; }
 .settings-tab-content { display:none; }
 .settings-tab-content.active { display:block; }
 .settings-action-bar { margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); display:flex; gap:10px; flex-wrap:wrap; }
@@ -61,7 +68,7 @@
 .design-chat-options .toggle-row { padding:2px 0; margin-top:0; }
 .design-chat-actions { display:flex; justify-content:flex-start; margin-top:4px; }
 
-@media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } .design-chat-grid .design-chat-speed-wrap.hidden { display:none !important; } .design-group-row { display:block; } .design-group-divider { display:none; } .design-group-row .design-group { margin-bottom:14px; } .design-swatches { display:flex; flex-wrap:wrap; } .design-swatches .color-swatch { min-width:48px; } }
+@media (width <= 680px) { .design-chat-grid, .user-limit-grid { grid-template-columns:1fr; } .design-chat-grid .design-chat-speed-wrap.hidden { display:none !important; } .design-group-row { display:block; } .design-group-divider { display:none; } .design-group-row .design-group { margin-bottom:14px; } .design-swatches { display:flex; flex-wrap:wrap; } .design-swatches .color-swatch { min-width:48px; } }
 .design-group-row { display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); column-gap:4px; align-items:stretch; margin-bottom:14px; }
 .design-group { min-width:0; }
 .design-group-divider { position:relative; }

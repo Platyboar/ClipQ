@@ -57,6 +57,22 @@ ClipQ.Providers = (() => {
         } catch { return { avatarUrl: '', login: '' }; }
     }
 
+    async function isYoutubeResponseUnavailable(res) {
+        if (!res || res.ok) return false;
+        if (res.status === 401 || res.status === 403 || res.status === 404 || res.status === 410) return true;
+        try {
+            const body = await res.json();
+            return /Upstream HTTP (?:401|403|404|410)\b/.test(body?.error || '');
+        } catch {
+            return false;
+        }
+    }
+
+    async function fetchYoutubeOembed(id) {
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(id)}&format=json`;
+        return ClipQ.fetchWithAuth(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
+    }
+
     const IG_RESERVED_PATHS = new Set(['reel', 'reels', 'p', 'tv', 'share', 'explore', 'stories', 'accounts', 'direct', 'about', 'legal', 'developer']);
 
     function matchFirstPattern(patterns, url) {
@@ -188,22 +204,32 @@ ClipQ.Providers = (() => {
                 if (time) embed += `&time=${encodeURIComponent(time)}`;
                 return embed;
             },
+            async isClipAvailable(id, token) {
+                if (!id) return true;
+                try {
+                    if (!token) {
+                        const proxyRes = await fetchTwitchMetaProxy('vod', id);
+                        return proxyRes ? proxyRes.available !== false : true;
+                    }
+                    const res = await twitchFetchStatus(`videos?id=${encodeURIComponent(id)}`, token);
+                    return !res.ok || (Array.isArray(res.data?.data) && res.data.data.length > 0);
+                } catch { return true; }
+            },
             async fetchMeta(id, token) {
                 try {
-                    if (!token) return (await fetchTwitchMetaProxy('vod', id))?.meta || null;
-                    const data = await twitchFetchJson(`videos?id=${encodeURIComponent(id)}`, token);
-                    const video = data?.data?.[0];
-                    if (!video) return null;
+                    if (!token) {
+                        const proxyRes = await fetchTwitchMetaProxy('vod', id);
+                        return proxyRes?.unavailable ? { unavailable: true } : (proxyRes?.meta || null);
+                    }
+                    const res = await twitchFetchStatus(`videos?id=${encodeURIComponent(id)}`, token);
+                    if (!res.ok) return null;
+                    const video = res.data?.data?.[0];
+                    if (!video) return { unavailable: true };
 
                     const broadcaster = await fetchTwitchBroadcaster(video.user_id, token);
-
                     return {
-                        title: video.title,
-                        channel: video.user_name,
-                        avatarUrl: broadcaster.avatarUrl,
-                        category: 'Twitch VOD',
-                        creator: video.user_name,
-                        createdAt: video.created_at,
+                        title: video.title, channel: video.user_name, avatarUrl: broadcaster.avatarUrl,
+                        category: 'Twitch VOD', creator: video.user_name, createdAt: video.created_at,
                         thumbnail: video.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180'),
                         duration: parseDurationSeconds(video.duration)
                     };
@@ -223,45 +249,26 @@ ClipQ.Providers = (() => {
             ],
             extractId(url) { return matchFirstPattern(this.patterns, url); },
             getEmbedUrl(id) { return `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1`; },
+            async isClipAvailable(id) {
+                if (!id) return true;
+                try { return !(await isYoutubeResponseUnavailable(await fetchYoutubeOembed(id))); } catch { return true; }
+            },
             async fetchMeta(id) {
                 const fallback = {
-                    title: 'YouTube Video',
-                    channel: 'YouTube',
-                    authorUrl: '',
-                    avatarUrl: '',
-                    category: 'YouTube',
-                    creator: '',
-                    createdAt: null,
-                    thumbnail: `https://img.youtube.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`,
-                    duration: 0
+                    title: 'YouTube Video', channel: 'YouTube', authorUrl: '', avatarUrl: '', category: 'YouTube',
+                    creator: '', createdAt: null, thumbnail: `https://img.youtube.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`, duration: 0
                 };
                 try {
-                    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(id)}&format=json`;
-                    const res = await ClipQ.fetchWithAuth(`/api/oembed?url=${encodeURIComponent(oembedUrl)}`);
-                    if (!res.ok) return fallback;
+                    const res = await fetchYoutubeOembed(id);
+                    if (!res.ok) return (await isYoutubeResponseUnavailable(res)) ? { unavailable: true } : fallback;
                     const data = await res.json();
-
                     let createdAt = null;
                     try {
                         const metaRes = await ClipQ.fetchWithAuth(`/api/youtube-meta?id=${encodeURIComponent(id)}`);
-                        if (metaRes.ok) {
-                            const metaData = await metaRes.json();
-                            if (metaData.createdAt) createdAt = metaData.createdAt;
-                        }
-                    } catch (e) {
-                        console.warn('Could not fetch YouTube meta', e);
-                    }
-
-                    return {
-                        ...fallback,
-                        title: data.title || fallback.title,
-                        channel: data.author_name || fallback.channel,
-                        authorUrl: data.author_url || '',
-                        createdAt
-                    };
-                } catch {
-                    return fallback;
-                }
+                        if (metaRes.ok) createdAt = (await metaRes.json()).createdAt || null;
+                    } catch (e) { console.warn('Could not fetch YouTube meta', e); }
+                    return { ...fallback, title: data.title || fallback.title, channel: data.author_name || fallback.channel, authorUrl: data.author_url || '', createdAt };
+                } catch { return fallback; }
             }
         },
 

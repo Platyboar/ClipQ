@@ -69,6 +69,7 @@ SYNC_TEST_JS = """
         }
         if (u.startsWith('/api/oembed')) {
             calls.proxyAuthOk = hdrs.get('Authorization') === 'Bearer mock_test_token';
+            if (u.includes('DeadYt1')) return new Response(JSON.stringify({ error: 'Upstream HTTP 404' }), { status: 502 });
             return new Response(JSON.stringify({ title: 'Mock' }), { status: 200 });
         }
         if (u.startsWith('/api/twitch-meta')) {
@@ -156,32 +157,11 @@ SYNC_TEST_JS = """
         if (u === 'https://gql.twitch.tv/gql') {
             const parsed = JSON.parse(opts?.body || '{}');
             const slug = parsed?.variables?.slug || '';
+            if (slug === 'DeadTwitch1') return new Response(JSON.stringify({ data: { clip: null } }), { status: 200 });
             if (slug === 'FailedTranscodeClip') {
-                return new Response(JSON.stringify({
-                    data: {
-                        clip: {
-                            assets: [{ creationState: 'FAILED' }],
-                            playbackAccessToken: {
-                                signature: 'sig123',
-                                value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4' })
-                            },
-                            videoQualities: []
-                        }
-                    }
-                }), { status: 200 });
+                return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'FAILED' }], playbackAccessToken: { signature: 'sig123', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4' }) }, videoQualities: [] } } }), { status: 200 });
             }
-            return new Response(JSON.stringify({
-                data: {
-                    clip: {
-                        assets: [{ creationState: 'CREATED' }],
-                        playbackAccessToken: {
-                            signature: 'sig456',
-                            value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' })
-                        },
-                        videoQualities: [{ quality: '1080', sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }]
-                    }
-                }
-            }), { status: 200 });
+            return new Response(JSON.stringify({ data: { clip: { assets: [{ creationState: 'CREATED' }], playbackAccessToken: { signature: 'sig456', value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }) }, videoQualities: [{ quality: '1080', sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }] } } }), { status: 200 });
         }
         return origFetch(url, opts);
     };
@@ -349,15 +329,36 @@ SYNC_TEST_JS = """
         await ClipQ.Sync.init({ id: '99999', login: 'teststreamer' });
 
         ClipQ.Settings.get().maxDurationSeconds = 30;
-        const durRejectRes = ClipQ.Queue.addClip({
-            provider: 'twitch',
-            clipId: 'TooLongClip1',
-            url: 'https://clips.twitch.tv/TooLongClip1',
-            meta: { title: 'Long Clip', channel: 'test', duration: 60 },
-            submitter: 'tester',
-        });
+        const durRejectRes = ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'TooLongClip1', url: 'https://clips.twitch.tv/TooLongClip1', meta: { title: 'Long Clip', channel: 'test', duration: 60 } }, 'tester');
         out.maxDurationRejected = durRejectRes === 'duration';
         ClipQ.Settings.get().maxDurationSeconds = 0;
+
+        ClipQ.Queue.clear();
+        ClipQ.Queue.setOpen(true);
+        ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'DeadTwitch1', url: 'https://clips.twitch.tv/DeadTwitch1', meta: { title: 'Dead TW' } }, 'u1');
+        ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'DeadYt1', url: 'https://youtu.be/DeadYt1', meta: { title: 'Dead YT' } }, 'u2');
+        ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'NormalClip1', url: 'https://clips.twitch.tv/NormalClip1', meta: { title: 'OK' } }, 'u3');
+        document.getElementById('btn-next')?.click();
+        await new Promise(r => setTimeout(r, 80));
+        out.brokenAutoSkipped = Boolean(document.querySelector('#player-area iframe')?.getAttribute('src')?.includes('NormalClip1') && ClipQ.Queue.getItems().length === 0);
+        ClipQ.Player.showEmpty();
+
+        document.getElementById('dropdown-settings').click();
+        document.querySelector('.modal-tabs .tab[data-stab="queue"]').click();
+        document.getElementById('set-remove-timeout-clips').click();
+        document.getElementById('set-remove-timeout-clips').click();
+        document.getElementById('set-user-clip-limit').value = '1';
+        document.getElementById('set-user-clip-window').value = '24';
+        document.querySelector('#set-user-clip-unit [data-unit="days"]').click();
+        document.getElementById('settings-save-close').click();
+        const qCfg = ClipQ.Settings.get();
+        ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'WinClip1', url: 'https://youtu.be/WinClip1', meta: { title: 'W1' } }, 'winuser');
+        ClipQ.Queue.start();
+        ClipQ.Queue.next();
+        const winLimRes = ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'WinClip2', url: 'https://youtu.be/WinClip2', meta: { title: 'W2' } }, 'winuser');
+        out.userWindowLimitOk = qCfg.userClipLimitWindow === 24 && qCfg.userClipLimitUnit === 'days' && qCfg.removeClipsOnTimeout === true && winLimRes === 'limit';
+        qCfg.userClipLimit = 0;
+        qCfg.userClipLimitWindow = 0;
 
         await ClipQ.fetchWithAuth('/api/oembed?url=https://www.youtube.com/oembed');
         ClipQ.App.setClipLimit(7);
@@ -366,10 +367,7 @@ SYNC_TEST_JS = """
 
         await ClipQ.Backup.exportData();
         const importOk = await ClipQ.Backup.importData(JSON.stringify({
-            config: {
-                settings: { appTitle: 'ImportedTitle', maxDurationSeconds: 45 },
-                queue: { items: [], current: null },
-            },
+            config: { settings: { appTitle: 'ImportedTitle', maxDurationSeconds: 45 }, queue: { items: [], current: null } },
             history: [{ id: 'imp-1', provider: 'twitch', clipId: 'ImportedClip1', url: 'https://clips.twitch.tv/ImportedClip1', meta: { title: 'Imported Clip', channel: 'imp' }, submitters: ['alice'], playedAt: 1 }],
             memory: ['twitch:ImportedClip1'],
         }));
@@ -490,7 +488,9 @@ def assert_sync_report(report):
         f'Chat settings grid/spacing/color layout failed: {report}'
     )
     assert report['videoVolumeRestored'], f'Video volume/mute persistence failed: {report}'
-    assert report['maxDurationRejected'], f'Max clip duration rejection failed: {report}'
+    assert report['maxDurationRejected'] and report['userWindowLimitOk'] and report['brokenAutoSkipped'], (
+        f'Duration/window limit or broken clip skip failed: {report}'
+    )
     assert report['historySearchOk'], f'History search filter failed: {report}'
     assert report['backupImported'], f'Backup JSON import failed: {report}'
     assert report['deletedCloud'] and report['calls']['deleteAll'] == 1, f'Cloud deletion failed: {report}'

@@ -81,10 +81,15 @@ ClipQ.Player = (() => {
         return '';
     }
 
+    function skipUnavailableOrEmpty() {
+        if (ClipQ.App && ClipQ.App.skipUnavailableClip) ClipQ.App.skipUnavailableClip();
+        else showEmpty();
+    }
+
     function renderVerticalIframe(playerArea, embedUrl, extraClass = '') {
         const cleanEmbed = safeUrl(embedUrl);
         if (!cleanEmbed) {
-            showEmpty();
+            skipUnavailableOrEmpty();
             return;
         }
         const wrapClass = extraClass ? `vertical-embed-wrap ${esc(extraClass)}` : 'vertical-embed-wrap';
@@ -172,7 +177,9 @@ ClipQ.Player = (() => {
             if (!resp.ok) return null;
             const payload = await resp.json();
             const clipData = payload?.data?.clip;
-            if (!clipData) return null;
+            if (!clipData) {
+                return payload?.data && payload.data.clip === null ? { unavailable: true } : null;
+            }
 
             const assets = Array.isArray(clipData.assets) ? clipData.assets : [];
             const transcodesFailed = assets.length > 0 && assets.every(a => a?.creationState === 'FAILED');
@@ -188,7 +195,7 @@ ClipQ.Player = (() => {
 
             const safeBase = safeUrl(clipUri);
             if (!safeBase) return null;
-            return `${safeBase}?sig=${encodeURIComponent(sig)}&token=${encodeURIComponent(rawToken)}`;
+            return { url: `${safeBase}?sig=${encodeURIComponent(sig)}&token=${encodeURIComponent(rawToken)}` };
         } catch {
             return null;
         }
@@ -239,7 +246,7 @@ ClipQ.Player = (() => {
         const playerArea = document.getElementById('player-area');
         if (!playerArea) return;
         const provider = ClipQ.Providers.getProvider(clip.provider);
-        if (!provider) { showEmpty(); return; }
+        if (!provider) { skipUnavailableOrEmpty(); return; }
 
         if (clip.provider === 'instagram') {
             updateInfo(clip);
@@ -294,7 +301,7 @@ ClipQ.Player = (() => {
         }
 
         const embedUrl = safeUrl(provider.getEmbedUrl(clip.clipId, clip.url));
-        if (!embedUrl) { showEmpty(); return; }
+        if (!embedUrl) { skipUnavailableOrEmpty(); return; }
 
         if (clip.provider === 'twitch') {
             playerArea.innerHTML = '<div class="player-loading"><div class="player-empty-icon">⏳</div></div>';
@@ -303,10 +310,13 @@ ClipQ.Player = (() => {
                 renderEmbedIframe(playerArea, embedUrl);
                 startAutoplayTimeout(clip);
             };
-            resolveTwitchFallbackVideoUrl(clip.clipId).then((directUrl) => {
+            resolveTwitchFallbackVideoUrl(clip.clipId).then((res) => {
                 if (currentClip !== clip) return;
-                if (directUrl) {
-                    renderDirectVideo(playerArea, directUrl, 'twitch-video-player', clip, fallbackToEmbed);
+                if (res && res.unavailable) {
+                    console.warn(`[Player] Skipping unavailable Twitch clip: ${clip.clipId}`);
+                    skipUnavailableOrEmpty();
+                } else if (res && res.url) {
+                    renderDirectVideo(playerArea, res.url, 'twitch-video-player', clip, fallbackToEmbed);
                 } else {
                     fallbackToEmbed();
                 }
@@ -319,11 +329,12 @@ ClipQ.Player = (() => {
 
         const token = ClipQ.Auth?.getToken?.();
         const hasAuth = Boolean(token || ClipQ.Auth?.getActiveObsKey?.());
-        if (clip.provider === 'twitch' && hasAuth && typeof provider.isClipAvailable === 'function') {
+        const needsTwitchAuth = clip.provider === 'twitch' || clip.provider === 'twitch_vod';
+        if (typeof provider.isClipAvailable === 'function' && (!needsTwitchAuth || hasAuth)) {
             provider.isClipAvailable(clip.clipId, token).then((available) => {
                 if (!available && currentClip === clip) {
-                    console.warn(`[Player] Removing unavailable Twitch clip without archiving: ${clip.clipId}`);
-                    ClipQ.App.skipUnavailableClip();
+                    console.warn(`[Player] Removing unavailable ${clip.provider} clip without archiving: ${clip.clipId}`);
+                    skipUnavailableOrEmpty();
                 }
             });
         }

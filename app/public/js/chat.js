@@ -144,7 +144,10 @@ ClipQ.Chat = (() => {
 
     function onTimeout(channel, username, reason, duration) {
         console.log(`[Chat] ⏱ User "${username}" timed out for ${duration}s`);
-        ClipQ.Queue.removeSubmitter(username);
+        const removeOnTimeout = ClipQ.Settings?.get?.().removeClipsOnTimeout !== false;
+        if (removeOnTimeout && ClipQ.Queue.isQueueOpen()) {
+            ClipQ.Queue.removeSubmitter(username);
+        }
         if (ClipQ.ChatFeed) ClipQ.ChatFeed.removeUserMessages(username);
     }
 

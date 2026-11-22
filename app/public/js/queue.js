@@ -152,7 +152,7 @@ ClipQ.Queue = (() => {
     }
 
     function findSubmitterName(item, usernameOrLogin) {
-        if (!item || !usernameOrLogin) return null;
+        if (!item || !Array.isArray(item.submitters) || !usernameOrLogin) return null;
         const lower = usernameOrLogin.toLowerCase();
         return item.submitters.find(s =>
             s.toLowerCase() === lower ||
@@ -164,6 +164,7 @@ ClipQ.Queue = (() => {
         item.submitters = item.submitters.filter(s => s !== storedName);
         if (item.submitterRoles) delete item.submitterRoles[storedName];
         if (item.submitterLogins) delete item.submitterLogins[storedName];
+        if (item.submitterTimes) delete item.submitterTimes[storedName];
         if (item.pushedBy) delete item.pushedBy[storedName];
         if (item.msgIds) {
             for (const [mid, sub] of Object.entries(item.msgIds)) {
@@ -197,10 +198,7 @@ ClipQ.Queue = (() => {
 
         if (settings.ageLimitDays > 0 && clipData.meta && clipData.meta.createdAt) {
             const clipDate = new Date(clipData.meta.createdAt);
-            if (!Number.isNaN(clipDate.getTime())) {
-                const daysDiff = (Date.now() - clipDate.getTime()) / (1000 * 60 * 60 * 24);
-                if (daysDiff > settings.ageLimitDays) return 'age';
-            }
+            if (!Number.isNaN(clipDate.getTime()) && ((Date.now() - clipDate.getTime()) / 86400000) > settings.ageLimitDays) return 'age';
         }
         if (settings.maxDurationSeconds > 0 && clipData.meta && clipData.meta.duration) {
             const secs = ClipQ.Providers?.parseDurationSeconds ? ClipQ.Providers.parseDurationSeconds(clipData.meta.duration) : Number(clipData.meta.duration);
@@ -210,69 +208,63 @@ ClipQ.Queue = (() => {
         const hasReachedUserLimit = () => {
             if (isPushed || settings.userClipLimit <= 0) return false;
             const userKey = submitterLogin || submitter;
-            return items.filter(i => !!findSubmitterName(i, userKey)).length >= settings.userClipLimit;
+            const winVal = Math.max(0, ClipQ.intOrDefault(settings.userClipLimitWindow, 0));
+            if (winVal <= 0) return items.filter(i => !!findSubmitterName(i, userKey)).length >= settings.userClipLimit;
+            const cutoff = Date.now() - (winVal * (settings.userClipLimitUnit === 'days' ? 86400000 : 3600000));
+            const pool = [...items, ...(!playingFromHistory && currentPlaying ? [currentPlaying] : []), ...history];
+            const seen = new Set();
+            let count = 0;
+            for (const entry of pool) {
+                if (!entry || seen.has(entry)) continue;
+                seen.add(entry);
+                const subName = findSubmitterName(entry, userKey);
+                if (subName && (entry.submitterTimes?.[subName] || entry.addedAt || entry.watchedAt || 0) >= cutoff) count++;
+            }
+            return count >= settings.userClipLimit;
         };
 
         const existing = items.find(item => isSameClip(item, clipData.provider, clipData.clipId, clipData.url));
         if (existing) {
             const alreadySubmitted = !!findSubmitterName(existing, submitterLogin || submitter);
             if (!alreadySubmitted && hasReachedUserLimit()) return 'limit';
-
+            const now = Date.now();
             const storedKey = findSubmitterName(existing, submitterLogin || submitter) || submitter;
-            if (!alreadySubmitted) {
-                existing.submitters.push(storedKey);
-            }
-            if (!existing.submitterRoles) existing.submitterRoles = {};
+            if (!alreadySubmitted) existing.submitters.push(storedKey);
+            existing.submitterRoles = existing.submitterRoles || {};
             existing.submitterRoles[storedKey] = { isMod, isLeadMod, isVip, isBroadcaster };
-            if (!existing.submitterLogins) existing.submitterLogins = {};
+            existing.submitterLogins = existing.submitterLogins || {};
             existing.submitterLogins[storedKey] = submitterLogin;
-
-            if (!existing.msgIds) existing.msgIds = {};
+            existing.submitterTimes = existing.submitterTimes || {};
+            existing.submitterTimes[storedKey] = existing.submitterTimes[storedKey] || now;
+            existing.msgIds = existing.msgIds || {};
             if (msgId) existing.msgIds[msgId] = storedKey;
-
             if (isPushed) {
-                if (!existing.pushedBy) existing.pushedBy = {};
+                existing.pushedBy = existing.pushedBy || {};
                 existing.pushedBy[storedKey] = Math.max(existing.pushedBy[storedKey] || 0, priority);
-                existing.pushedAt = Date.now();
+                existing.pushedAt = now;
             }
-
             recalculateItemPriority(existing);
             sortByPush();
             saveAndNotify();
             return isPushed ? 'pushed' : 'added';
         }
 
-        if (currentPlaying && isSameClip(currentPlaying, clipData.provider, clipData.clipId, clipData.url)) {
-            return 'playing'; // Already playing
-        }
-
+        if (currentPlaying && isSameClip(currentPlaying, clipData.provider, clipData.clipId, clipData.url)) return 'playing';
         if (hasReachedUserLimit()) return 'limit';
 
-        const msgIds = {};
-        if (msgId) msgIds[msgId] = submitter;
-
-        const pushedBy = {};
-        if (isPushed && priority > 0) pushedBy[submitter] = priority;
-
         const now = Date.now();
+        const msgIds = msgId ? { [msgId]: submitter } : {};
+        const pushedBy = isPushed && priority > 0 ? { [submitter]: priority } : {};
         items.push({
             id: now + '_' + Math.random().toString(36).substring(2, 7),
-            provider: clipData.provider,
-            url: clipData.url,
-            clipId: clipData.clipId,
-            meta: clipData.meta || {},
+            provider: clipData.provider, url: clipData.url, clipId: clipData.clipId, meta: clipData.meta || {},
             submitters: [submitter],
             submitterRoles: { [submitter]: { isMod, isLeadMod, isVip, isBroadcaster } },
             submitterLogins: { [submitter]: submitterLogin },
-            pushedBy,
-            msgIds,
-            priority,
-            isPushed,
-            pushCount: 1,
-            addedAt: now,
-            pushedAt: isPushed ? now : 0
+            submitterTimes: { [submitter]: now },
+            pushedBy, msgIds, priority, isPushed, pushCount: 1,
+            addedAt: now, pushedAt: isPushed ? now : 0
         });
-
         sortByPush();
         saveAndNotify();
         return 'added';

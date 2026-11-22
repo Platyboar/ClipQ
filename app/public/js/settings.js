@@ -15,7 +15,10 @@ ClipQ.Settings = (() => {
             appTitle: 'ClipQ',
             obsShowTopbar: false,
             providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true },
+            removeClipsOnTimeout: true,
             userClipLimit: 0,
+            userClipLimitWindow: 0,
+            userClipLimitUnit: 'hours',
             ageLimitDays: 0,
             maxDurationSeconds: 0,
             historyRetentionDays: 0,
@@ -192,6 +195,14 @@ ClipQ.Settings = (() => {
         });
 
         document.getElementById('set-user-clip-limit').value = s.userClipLimit || 0;
+        const winEl = document.getElementById('set-user-clip-window');
+        if (winEl) winEl.value = s.userClipLimitWindow || 0;
+        const activeUnit = s.userClipLimitUnit === 'days' ? 'days' : 'hours';
+        document.querySelectorAll('#set-user-clip-unit .unit-switch-btn').forEach(btn => {
+            const on = btn.dataset.unit === activeUnit;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-pressed', String(on));
+        });
         document.getElementById('set-age-limit').value = s.ageLimitDays || 0;
         document.getElementById('set-max-duration').value = s.maxDurationSeconds || 0;
         document.getElementById('set-history-retention').value = s.historyRetentionDays || 0;
@@ -222,6 +233,7 @@ ClipQ.Settings = (() => {
             t('settings.history.count', { count: ClipQ.Queue.getHistory().length });
 
         ClipQ.setToggleState('set-obs-show-topbar', s.obsShowTopbar === true);
+        ClipQ.setToggleState('set-remove-timeout-clips', s.removeClipsOnTimeout !== false);
         ClipQ.setToggleState('design-show-badges', s.design.showBadges !== false);
         ClipQ.setToggleState('design-show-chat', s.design.showChat !== false);
         ClipQ.setToggleState('design-chat-show-badges', s.design.chatShowBadges !== false);
@@ -250,15 +262,20 @@ ClipQ.Settings = (() => {
         designVals.chatShowBadges = ClipQ.getToggleState('design-chat-show-badges');
         designVals.chatShowLinks = ClipQ.getToggleState('design-chat-show-links');
 
+        const nonNegInt = (id) => Math.max(0, ClipQ.intOrDefault(document.getElementById(id)?.value, 0));
+        const unitBtn = document.querySelector('#set-user-clip-unit .unit-switch-btn.active');
         return {
             channel: get().channel,
             appTitle: document.getElementById('set-app-title').value.trim() || 'ClipQ',
             obsShowTopbar: ClipQ.getToggleState('set-obs-show-topbar'),
             providers,
-            userClipLimit: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-user-clip-limit').value, 0)),
-            ageLimitDays: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-age-limit').value, 0)),
-            maxDurationSeconds: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-max-duration').value, 0)),
-            historyRetentionDays: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-history-retention').value, 0)),
+            removeClipsOnTimeout: ClipQ.getToggleState('set-remove-timeout-clips'),
+            userClipLimit: nonNegInt('set-user-clip-limit'),
+            userClipLimitWindow: nonNegInt('set-user-clip-window'),
+            userClipLimitUnit: unitBtn?.dataset.unit === 'days' ? 'days' : 'hours',
+            ageLimitDays: nonNegInt('set-age-limit'),
+            maxDurationSeconds: nonNegInt('set-max-duration'),
+            historyRetentionDays: nonNegInt('set-history-retention'),
             blockedUsers: document.getElementById('set-blocked-users').value.split('\n').map(u => u.trim()).filter(Boolean),
             blockedStreamers: document.getElementById('set-blocked-streamers').value.split('\n').map(u => u.trim()).filter(Boolean),
             commands: ClipQ.SettingsCommands.readFromUI(),
@@ -333,6 +350,16 @@ ClipQ.Settings = (() => {
 
         document.getElementById('reveal-obs-url-btn')?.addEventListener('click', revealObsUrlCover);
         bindToggleSwitch('set-obs-show-topbar', () => {});
+        bindToggleSwitch('set-remove-timeout-clips', () => {});
+        document.querySelectorAll('#set-user-clip-unit .unit-switch-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#set-user-clip-unit .unit-switch-btn').forEach(el => {
+                    const active = el === btn;
+                    el.classList.toggle('active', active);
+                    el.setAttribute('aria-pressed', String(active));
+                });
+            });
+        });
         bindToggleSwitch('design-show-badges', (active) => {
             if (ClipQ.App.renderQueueList) ClipQ.App.renderQueueList(active);
         });
@@ -368,22 +395,19 @@ ClipQ.Settings = (() => {
         document.getElementById('purge-memory-btn').addEventListener('click', () => {
             if (confirm(ClipQ.I18n.t('settings.memory.confirm_purge'))) {
                 ClipQ.Memory.purge();
-                document.getElementById('memory-count-text').innerHTML =
-                    ClipQ.I18n.t('settings.memory.count', { count: 0 });
+                document.getElementById('memory-count-text').innerHTML = ClipQ.I18n.t('settings.memory.count', { count: 0 });
             }
         });
 
         document.getElementById('purge-history-btn').addEventListener('click', () => {
-            if (confirm(ClipQ.I18n.t('settings.history.confirm_purge'))) {
-                const clearedPlayback = ClipQ.Queue.clearHistory();
-                document.getElementById('history-count-text').innerHTML =
-                    ClipQ.I18n.t('settings.history.count', { count: 0 });
-                if (clearedPlayback) {
-                    if (ClipQ.Player && ClipQ.Player.showEmpty) ClipQ.Player.showEmpty();
-                    if (ClipQ.App && ClipQ.App.updateNextButton) ClipQ.App.updateNextButton();
-                }
-                if (ClipQ.App && ClipQ.App.renderHistory) ClipQ.App.renderHistory();
+            if (!confirm(ClipQ.I18n.t('settings.history.confirm_purge'))) return;
+            const clearedPlayback = ClipQ.Queue.clearHistory();
+            document.getElementById('history-count-text').innerHTML = ClipQ.I18n.t('settings.history.count', { count: 0 });
+            if (clearedPlayback) {
+                if (ClipQ.Player) ClipQ.Player.showEmpty();
+                if (ClipQ.App) ClipQ.App.updateNextButton();
             }
+            if (ClipQ.App) ClipQ.App.renderHistory();
         });
 
         document.getElementById('settings-logout')?.addEventListener('click', () => ClipQ.Auth.logout());
@@ -400,17 +424,12 @@ ClipQ.Settings = (() => {
                 } catch { obsInput.focus(); obsInput.select(); }
                 copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copied');
                 clearTimeout(copyResetTimer);
-                copyResetTimer = setTimeout(() => {
-                    copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copy');
-                    copyResetTimer = null;
-                }, 1500);
+                copyResetTimer = setTimeout(() => { copyObsBtn.textContent = ClipQ.I18n.t('settings.general.obs_copy'); copyResetTimer = null; }, 1500);
             });
         }
 
         const confirmKey = (key) => ClipQ.confirmAction({
-            message: ClipQ.I18n.t(key),
-            yesLabel: ClipQ.I18n.t('history.confirm_yes'),
-            cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
+            message: ClipQ.I18n.t(key), yesLabel: ClipQ.I18n.t('history.confirm_yes'), cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
         });
 
         const regenerateObsBtn = document.getElementById('regenerate-obs-url-btn');
@@ -426,27 +445,14 @@ ClipQ.Settings = (() => {
 
         document.getElementById('settings-close').addEventListener('click', () => closeModal(false));
         document.getElementById('settings-cancel').addEventListener('click', () => closeModal(false));
-
         document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            const overlay = document.getElementById('settings-overlay');
-            if (!overlay || overlay.classList.contains('hidden')) return;
-            if (document.querySelector('.color-picker-popup') && ClipQ.Design) {
-                ClipQ.Design.closePicker();
-            } else {
-                closeModal(false);
-            }
+            if (e.key !== 'Escape' || document.getElementById('settings-overlay')?.classList.contains('hidden')) return;
+            if (document.querySelector('.color-picker-popup') && ClipQ.Design) ClipQ.Design.closePicker();
+            else closeModal(false);
         });
-
         document.getElementById('settings-save').addEventListener('click', () => applyAndSave());
-        document.getElementById('settings-save-close').addEventListener('click', () => {
-            applyAndSave();
-            closeModal(true);
-        });
-
-        document.getElementById('settings-export')?.addEventListener('click', () => {
-            if (ClipQ.Backup) ClipQ.Backup.exportData();
-        });
+        document.getElementById('settings-save-close').addEventListener('click', () => { applyAndSave(); closeModal(true); });
+        document.getElementById('settings-export')?.addEventListener('click', () => { if (ClipQ.Backup) ClipQ.Backup.exportData(); });
 
         const importInput = document.getElementById('settings-import-file');
         document.getElementById('settings-import')?.addEventListener('click', () => importInput?.click());
@@ -457,9 +463,7 @@ ClipQ.Settings = (() => {
             try {
                 const ok = ClipQ.Backup ? await ClipQ.Backup.importData(await file.text()) : false;
                 alert(ClipQ.I18n.t(ok ? 'settings.general.import_done' : 'settings.general.import_error'));
-            } catch {
-                alert(ClipQ.I18n.t('settings.general.import_error'));
-            }
+            } catch { alert(ClipQ.I18n.t('settings.general.import_error')); }
         });
 
         document.getElementById('settings-delete-cloud')?.addEventListener('click', async () => {
@@ -481,15 +485,7 @@ ClipQ.Settings = (() => {
     }
 
     return {
-        load,
-        save,
-        get,
-        isUserBlocked,
-        isStreamerBlocked,
-        hasCommandPermission,
-        applyTopbarVisibility,
-        hideObsUrlCover,
-        initUI,
-        populateUI
+        load, save, get, isUserBlocked, isStreamerBlocked,
+        hasCommandPermission, applyTopbarVisibility, hideObsUrlCover, initUI, populateUI
     };
 })();
