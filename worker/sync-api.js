@@ -6,11 +6,12 @@ import {
     authenticateObsKey,
     authenticateObsKeyValue,
     ensureObsTable,
-    getOrCreateObsKey,
+    getObsKeyState,
     rotateObsKey,
     syncObsProfile,
 } from './obs-auth.js';
 import { jsonResponse } from './proxy.js';
+import { fetchTwitchUserProfile } from './twitch-meta.js';
 
 const DEFAULT_TWITCH_CLIENT_ID = 'fvu8e09aa5f2xhomhll396ogkdyckb';
 const MAX_BODY_BYTES = 512 * 1024;
@@ -146,7 +147,7 @@ function formatConfigRow(cfgRow) {
     } : null;
 }
 
-async function handleGetInitial(db, identity, reqUrl) {
+async function handleGetInitial(db, identity, reqUrl, env) {
     const cfgRow = await db.prepare(
         'SELECT twitch_login, settings_json, custom_design_json, custom_layout_json, queue_json, language, autoplay, updated_at FROM user_configs WHERE twitch_user_id = ?'
     ).bind(identity.userId).first();
@@ -187,11 +188,23 @@ async function handleGetInitial(db, identity, reqUrl) {
     };
 
     if (identity.authMethod === 'obs') {
-        payload.displayName = identity.displayName || identity.login;
-        payload.avatar = identity.avatar || '';
+        let displayName = identity.displayName || identity.login;
+        let avatar = identity.avatar || '';
+        if (!avatar) {
+            const liveProfile = await fetchTwitchUserProfile(identity.userId, env);
+            if (liveProfile) {
+                displayName = liveProfile.displayName || displayName;
+                avatar = liveProfile.avatar || '';
+                await syncObsProfile(db, identity, { displayName, avatar });
+            }
+        }
+        payload.displayName = displayName;
+        payload.avatar = avatar;
         payload.isObsSession = true;
     } else {
-        payload.obsKey = await getOrCreateObsKey(db, identity);
+        const obsState = await getObsKeyState(db, identity);
+        payload.obsKey = obsState.obsKey;
+        if (obsState.needsProfile) payload.obsProfileMissing = true;
     }
 
     return jsonResponse(payload);
@@ -442,13 +455,20 @@ export async function handleSyncRequest(request, reqUrl, env) {
 
     try {
         if (path === '/api/sync' && method === 'GET') {
-            return await handleGetInitial(env.DB, identity, reqUrl);
+            return await handleGetInitial(env.DB, identity, reqUrl, env);
         }
         if (path === '/api/sync' && method === 'DELETE') {
             return await handleDeleteAllUserData(env.DB, identity);
         }
         if (path === '/api/sync/obs-key' && method === 'POST') {
             return await handlePostObsKey(request, env.DB, identity);
+        }
+        if (path === '/api/sync/obs-profile' && method === 'PUT') {
+            if (identity.authMethod === 'obs') return jsonResponse({ error: 'Forbidden in OBS mode' }, 403);
+            const parsed = await readJsonBody(request);
+            if (parsed.error) return parsed.error;
+            await syncObsProfile(env.DB, identity, parsed.data);
+            return jsonResponse({ ok: true });
         }
         if (path === '/api/sync/history' && method === 'GET') {
             return await handleGetHistoryPage(env.DB, identity, reqUrl);

@@ -93,7 +93,7 @@ ClipQ.I18n.register('en', {
     'settings.general.channel': 'Twitch Channel',
     'settings.general.channel_hint': 'Chat channel to join',
     'settings.general.obs_url': 'OBS-Browser-Link',
-    'settings.general.obs_url_hint': 'Personal link for OBS Browser Source without the top menu bar. Keep it private and regenerate it if shared accidentally.',
+    'settings.general.obs_url_hint': 'Personal link for OBS Browser Source without the top menu bar (recommended size: 1920×1080). Keep it private and regenerate it if shared accidentally.',
     'settings.general.obs_reveal': 'Show OBS-Browser-Link',
     'settings.general.obs_copy': 'Copy',
     'settings.general.obs_copied': 'Copied!',

@@ -83,13 +83,27 @@ async function helixGet(endpoint, clientId, clientSecret, retried = false) {
 }
 
 async function fetchBroadcaster(userId, clientId, clientSecret) {
-    if (!userId) return { avatarUrl: '', login: '' };
+    if (!userId) return { avatarUrl: '', displayName: '', login: '' };
     const res = await helixGet(`users?id=${encodeURIComponent(userId)}`, clientId, clientSecret);
     const user = res.ok ? res.data?.data?.[0] : null;
     return {
         avatarUrl: user?.profile_image_url || '',
+        displayName: user?.display_name || '',
         login: (user?.login || '').toLowerCase(),
     };
+}
+
+export async function fetchTwitchUserProfile(userId, env) {
+    const clientSecret = typeof env?.TWITCH_CLIENT_SECRET === 'string' ? env.TWITCH_CLIENT_SECRET.trim() : '';
+    if (!userId || !clientSecret) return null;
+    const clientId = (env?.TWITCH_CLIENT_ID || DEFAULT_TWITCH_CLIENT_ID).trim();
+    try {
+        const user = await fetchBroadcaster(userId, clientId, clientSecret);
+        if (!user.avatarUrl && !user.displayName) return null;
+        return { displayName: user.displayName || user.login, avatar: user.avatarUrl };
+    } catch {
+        return null;
+    }
 }
 
 async function fetchGameName(gameId, clientId, clientSecret) {

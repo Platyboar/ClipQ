@@ -106,9 +106,9 @@ ClipQ.App = (() => {
 
         const avatarEl = document.getElementById('user-avatar');
         const safeAvatar = ClipQ.sanitizeUrl(user.avatar);
-        if (safeAvatar) avatarEl.src = safeAvatar;
-        else avatarEl.removeAttribute('src');
-        document.getElementById('user-name').textContent = user.displayName;
+        avatarEl.onerror = () => { avatarEl.onerror = null; avatarEl.removeAttribute('src'); };
+        if (safeAvatar) avatarEl.src = safeAvatar; else avatarEl.removeAttribute('src');
+        document.getElementById('user-name').textContent = user.displayName || user.login || '';
 
         if (ClipQ.Sync && !options.obsSession) await ClipQ.Sync.init(user);
 

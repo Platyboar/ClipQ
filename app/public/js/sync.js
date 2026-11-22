@@ -283,6 +283,9 @@ ClipQ.Sync = (() => {
 
             available = true;
             accountObsKey = typeof data.obsKey === 'string' && data.obsKey ? data.obsKey : null;
+            if (data.obsProfileMissing && (user?.avatar || user?.displayName)) {
+                authFetch('/api/sync/obs-profile', { method: 'PUT', body: JSON.stringify({ displayName: user.displayName || user.login || '', avatar: user.avatar || '' }) }).catch(() => {});
+            }
             const userId = String(user?.id || data.userId || '');
             const previousOwner = readStorage(OWNER_KEY);
 

@@ -119,6 +119,7 @@ SYNC_TEST_JS = """
                 userId: '99999',
                 login: 'teststreamer',
                 displayName: 'TestStreamer',
+                avatar: obsHdr ? 'https://static-cdn.jtvnw.net/obs-u1.png' : '',
                 obsKey: obsHdr ? undefined : 'obs_key_alpha_1234567890',
                 config: {
                     settings: { appTitle: 'SyncedTitle', providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true }, design: { showBadges: true, showChat: true } },
@@ -151,6 +152,36 @@ SYNC_TEST_JS = """
         }
         if (u.startsWith('https://api.frankerfacez.com/v1/room/id/')) {
             return new Response(JSON.stringify({ room: { set: 2 }, sets: { 2: { emoticons: [{ id: 202, name: 'FfzChan', urls: { '2': '//cdn.frankerfacez.com/emote/202/2' } }] } } }), { status: 200 });
+        }
+        if (u === 'https://gql.twitch.tv/gql') {
+            const parsed = JSON.parse(opts?.body || '{}');
+            const slug = parsed?.variables?.slug || '';
+            if (slug === 'FailedTranscodeClip') {
+                return new Response(JSON.stringify({
+                    data: {
+                        clip: {
+                            assets: [{ creationState: 'FAILED' }],
+                            playbackAccessToken: {
+                                signature: 'sig123',
+                                value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4' })
+                            },
+                            videoQualities: []
+                        }
+                    }
+                }), { status: 200 });
+            }
+            return new Response(JSON.stringify({
+                data: {
+                    clip: {
+                        assets: [{ creationState: 'CREATED' }],
+                        playbackAccessToken: {
+                            signature: 'sig456',
+                            value: JSON.stringify({ clip_uri: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' })
+                        },
+                        videoQualities: [{ quality: '1080', sourceURL: 'https://d1ndex63qxojbr.cloudfront.net/avc/1080/index.mp4' }]
+                    }
+                }
+            }), { status: 200 });
         }
         return origFetch(url, opts);
     };
@@ -241,9 +272,16 @@ SYNC_TEST_JS = """
         const invalidObsRes = await ClipQ.Sync.initObsSession('obs_key_revoked_00000000');
         out.invalidObsRejected = invalidObsRes && invalidObsRes.ok === false && invalidObsRes.invalid === true;
         const obsRes = await ClipQ.Sync.initObsSession('obs_key_beta_9876543210');
-        out.obsSessionLoaded = Boolean(obsRes && obsRes.ok && obsRes.user?.displayName === 'TestStreamer');
+        out.obsSessionLoaded = Boolean(obsRes && obsRes.ok && obsRes.user?.displayName === 'TestStreamer' && obsRes.user?.avatar === 'https://static-cdn.jtvnw.net/obs-u1.png');
         const obsTwitchMeta = await ClipQ.Providers.getProvider('twitch').fetchMeta('GoodClip1', null);
         out.obsTwitchMetaTitle = obsTwitchMeta?.title || '';
+        ClipQ.Player.playClip({ provider: 'twitch', clipId: 'FailedTranscodeClip', url: 'https://www.twitch.tv/skuuii/clip/FailedTranscodeClip', meta: { title: 'HEVC Clip', channel: 'skuuii' } });
+        await new Promise(r => setTimeout(r, 40));
+        out.twitchFallbackVideoSrc = document.getElementById('twitch-video-player')?.getAttribute('src') || '';
+        ClipQ.Player.playClip({ provider: 'twitch', clipId: 'NormalClip1', url: 'https://www.twitch.tv/skuuii/clip/NormalClip1', meta: { title: 'Normal Clip', channel: 'skuuii' } });
+        await new Promise(r => setTimeout(r, 40));
+        out.twitchNormalIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
+        ClipQ.Player.showEmpty();
         ClipQ.Auth.setActiveObsKey(null);
         await ClipQ.Sync.init({ id: '99999', login: 'teststreamer' });
 
@@ -330,6 +368,12 @@ def assert_sync_report(report):
         f'Chat moderation deletion failed: {report}'
     )
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
+    assert report['twitchFallbackVideoSrc'].startswith(
+        'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4?sig=sig123'
+    ), f'Twitch failed-transcode video fallback failed: {report}'
+    assert report['twitchNormalIframeSrc'].startswith('https://clips.twitch.tv/embed?clip=NormalClip1'), (
+        f'Normal Twitch embed failed: {report}'
+    )
     assert report['obsTwitchMetaTitle'] == 'OBS Clip Title', f'OBS Twitch meta fallback failed: {report}'
     assert report['calls']['proxyAuthOk'] and report['calls']['obsSyncOk'] and report['calls']['obsTwitchMetaOk'], (
         f'Proxy/OBS auth header check failed: {report}'

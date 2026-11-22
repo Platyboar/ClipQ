@@ -63,12 +63,20 @@ export async function authenticateObsKey(request, env) {
 }
 
 export async function getOrCreateObsKey(db, identity) {
+    const state = await getObsKeyState(db, identity);
+    return state.obsKey;
+}
+
+export async function getObsKeyState(db, identity) {
     await ensureObsTable(db);
     const existing = await db.prepare(
-        'SELECT obs_key FROM obs_tokens WHERE twitch_user_id = ?'
+        'SELECT obs_key, twitch_display_name, twitch_avatar FROM obs_tokens WHERE twitch_user_id = ?'
     ).bind(identity.userId).first();
     if (existing?.obs_key) {
-        return String(existing.obs_key);
+        return {
+            obsKey: String(existing.obs_key),
+            needsProfile: !existing.twitch_avatar,
+        };
     }
 
     const candidate = generateObsKey();
@@ -85,17 +93,35 @@ export async function getOrCreateObsKey(db, identity) {
     ).run();
 
     const stored = await db.prepare(
-        'SELECT obs_key FROM obs_tokens WHERE twitch_user_id = ?'
+        'SELECT obs_key, twitch_avatar FROM obs_tokens WHERE twitch_user_id = ?'
     ).bind(identity.userId).first();
-    return stored?.obs_key ? String(stored.obs_key) : candidate;
+    return {
+        obsKey: stored?.obs_key ? String(stored.obs_key) : candidate,
+        needsProfile: !stored?.twitch_avatar,
+    };
 }
 
 export async function syncObsProfile(db, identity, profile) {
     await ensureObsTable(db);
     const clean = sanitizeObsProfile(profile, identity.login);
     await db.prepare(
-        'UPDATE obs_tokens SET twitch_login = ?, twitch_display_name = ?, twitch_avatar = ? WHERE twitch_user_id = ?'
-    ).bind(identity.login, clean.displayName, clean.avatar, identity.userId).run();
+        'UPDATE obs_tokens SET twitch_login = ?, ' +
+        'twitch_display_name = CASE WHEN ? <> \'\' THEN ? ELSE twitch_display_name END, ' +
+        'twitch_avatar = CASE WHEN ? <> \'\' THEN ? ELSE twitch_avatar END ' +
+        'WHERE twitch_user_id = ? AND (twitch_login <> ? OR (? <> \'\' AND twitch_display_name <> ?) OR (? <> \'\' AND twitch_avatar <> ?))'
+    ).bind(
+        identity.login,
+        clean.displayName,
+        clean.displayName,
+        clean.avatar,
+        clean.avatar,
+        identity.userId,
+        identity.login,
+        clean.displayName,
+        clean.displayName,
+        clean.avatar,
+        clean.avatar
+    ).run();
 }
 
 export async function rotateObsKey(db, identity, profile) {

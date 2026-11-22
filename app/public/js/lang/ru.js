@@ -93,7 +93,7 @@ ClipQ.I18n.register('ru', {
     'settings.general.channel': 'Канал Twitch',
     'settings.general.channel_hint': 'Канал чата для подключения',
     'settings.general.obs_url': 'OBS-Browser-Link',
-    'settings.general.obs_url_hint': 'Персональная ссылка для источника браузера OBS без верхней панели меню. Храните в секрете и пересоздайте при утечке.',
+    'settings.general.obs_url_hint': 'Персональная ссылка для источника браузера OBS без верхней панели меню (рекомендуемый размер: 1920×1080). Храните в секрете и пересоздайте при утечке.',
     'settings.general.obs_reveal': 'Показать OBS-Browser-Link',
     'settings.general.obs_copy': 'Копировать',
     'settings.general.obs_copied': 'Скопировано!',

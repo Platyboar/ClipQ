@@ -93,7 +93,7 @@ ClipQ.I18n.register('ja', {
     'settings.general.channel': 'Twitchチャンネル',
     'settings.general.channel_hint': '参加するチャットチャンネル',
     'settings.general.obs_url': 'OBS-Browser-Link',
-    'settings.general.obs_url_hint': '上部メニューバーなしの専用OBSブラウザソースURLです。他人に共有せず、必要に応じて再生成してください。',
+    'settings.general.obs_url_hint': '上部メニューバーなしの専用OBSブラウザソースURLです（推奨サイズ: 1920×1080）。他人に共有せず、必要に応じて再生成してください。',
     'settings.general.obs_reveal': 'OBS-Browser-Linkを表示',
     'settings.general.obs_copy': 'コピー',
     'settings.general.obs_copied': 'コピーしました!',

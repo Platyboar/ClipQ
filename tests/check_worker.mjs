@@ -255,8 +255,22 @@ async function main() {
         const emptySync = await callWorker('/api/sync', env, { headers: auth1 });
         assert.equal(emptySync.status, 200);
         assert.equal(emptySync.json.exists, false);
+        assert.equal(emptySync.json.obsProfileMissing, true);
         assert.match(emptySync.json.obsKey, /^[A-Za-z0-9_-]{16,128}$/);
         const obsKey1 = emptySync.json.obsKey;
+
+        const earlyProfileRes = await callWorker('/api/sync/obs-profile', env, {
+            method: 'PUT',
+            headers: { ...auth1, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ displayName: 'EarlyName', avatar: 'https://static-cdn.jtvnw.net/early.png' }),
+        });
+        assert.equal(earlyProfileRes.status, 200);
+        const obsEarlyCheck = await callWorker('/api/sync?limit=5', env, { headers: { 'X-ClipQ-Obs-Key': obsKey1 } });
+        assert.equal(obsEarlyCheck.json.avatar, 'https://static-cdn.jtvnw.net/early.png');
+        assert.equal(obsEarlyCheck.json.displayName, 'EarlyName');
+        assert.equal((await callWorker('/api/sync/obs-profile', env, { method: 'PUT', headers: { 'X-ClipQ-Obs-Key': obsKey1, 'Content-Type': 'application/json' }, body: '{}' })).status, 403);
+        const filledCheck = await callWorker('/api/sync', env, { headers: auth1 });
+        assert.equal(Boolean(filledCheck.json.obsProfileMissing), false);
 
         const putBody = JSON.stringify({
             settings: { appTitle: 'CloudClipQ', userClipLimit: 3 },

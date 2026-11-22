@@ -93,7 +93,7 @@ ClipQ.I18n.register('de', {
     'settings.general.channel': 'Twitch Channel',
     'settings.general.channel_hint': 'Chat-Kanal, dem beigetreten wird',
     'settings.general.obs_url': 'OBS-Browser-Link',
-    'settings.general.obs_url_hint': 'Persönlicher Link für die OBS Browser Source ohne obere Menüleiste. Nicht teilen – bei Bedarf neu generieren.',
+    'settings.general.obs_url_hint': 'Persönlicher Link für die OBS Browser Source ohne obere Menüleiste (empfohlene Größe: 1920×1080). Nicht teilen – bei Bedarf neu generieren.',
     'settings.general.obs_reveal': 'Show OBS-Browser-Link',
     'settings.general.obs_copy': 'Kopieren',
     'settings.general.obs_copied': 'Kopiert!',

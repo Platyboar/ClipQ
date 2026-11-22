@@ -15,6 +15,8 @@ ClipQ.Player = (() => {
     const safeUrl = (val) => ClipQ.sanitizeUrl(val);
 
     const DIRECT_URL_MAX_AGE_MS = 5 * 60 * 1000;
+    const TWITCH_GQL_URL = 'https://gql.twitch.tv/gql';
+    const TWITCH_GQL_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     function formatAge(dateStr) {
         if (!dateStr) return '';
@@ -96,25 +98,38 @@ ClipQ.Player = (() => {
         </div>`;
     }
 
-    function renderInstagramVideo(playerArea, videoUrl, provider, clip) {
+    function renderEmbedIframe(playerArea, embedUrl, isVertical = false, extraClass = '') {
+        if (isVertical) {
+            renderVerticalIframe(playerArea, embedUrl, extraClass);
+            return;
+        }
+        playerArea.innerHTML = `<iframe
+            src="${esc(embedUrl)}"
+            allowfullscreen
+            allow="autoplay; encrypted-media"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        ></iframe>`;
+    }
+
+    function renderDirectVideo(playerArea, videoUrl, videoId, clip, onErrorFallback) {
         const cleanVideoUrl = safeUrl(videoUrl);
         if (!cleanVideoUrl) {
-            renderVerticalIframe(playerArea, provider.getEmbedUrl(clip.clipId, clip.url), 'instagram-embed-wrap');
-            startAutoplayTimeout(clip);
+            onErrorFallback();
             return;
         }
 
         playerArea.innerHTML = `
         <div class="direct-video-wrap">
             <video
-                id="instagram-video-player"
+                id="${esc(videoId)}"
                 src="${esc(cleanVideoUrl)}"
                 autoplay
                 controls
+                playsinline
             ></video>
         </div>`;
 
-        const videoEl = document.getElementById('instagram-video-player');
+        const videoEl = document.getElementById(videoId);
         if (videoEl) {
             videoEl.addEventListener('ended', () => {
                 if (ClipQ.App.isAutoplay() && currentClip === clip) {
@@ -122,13 +137,54 @@ ClipQ.Player = (() => {
                 }
             });
             videoEl.addEventListener('error', (e) => {
-                console.warn('Instagram HTML5 video playback error, falling back to iframe', e);
-                if (currentClip === clip) {
-                    renderVerticalIframe(playerArea, provider.getEmbedUrl(clip.clipId, clip.url), 'instagram-embed-wrap');
-                    startAutoplayTimeout(clip);
-                }
+                console.warn(`HTML5 video playback error (${videoId}), falling back to iframe`, e);
+                if (currentClip === clip) onErrorFallback();
             });
         }
+    }
+
+    async function resolveTwitchFallbackVideoUrl(clipId) {
+        if (!clipId || !/^[A-Za-z0-9_-]{1,128}$/.test(clipId)) return null;
+        try {
+            const resp = await fetch(TWITCH_GQL_URL, {
+                method: 'POST',
+                headers: { 'Client-ID': TWITCH_GQL_CLIENT_ID, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: 'query($slug:ID!){clip(slug:$slug){assets{creationState} playbackAccessToken(params:{platform:"web",playerType:"embed"}){signature value} videoQualities{quality sourceURL}}}',
+                    variables: { slug: clipId }
+                }),
+                signal: AbortSignal.timeout(4000)
+            });
+            if (!resp.ok) return null;
+            const payload = await resp.json();
+            const clipData = payload?.data?.clip;
+            if (!clipData) return null;
+
+            const assets = Array.isArray(clipData.assets) ? clipData.assets : [];
+            const transcodesFailed = assets.length > 0 && assets.every(a => a?.creationState === 'FAILED');
+            const noQualities = !Array.isArray(clipData.videoQualities) || clipData.videoQualities.length === 0;
+            const sig = clipData.playbackAccessToken?.signature;
+            const rawToken = clipData.playbackAccessToken?.value;
+            if (!sig || !rawToken) return null;
+
+            let clipUri = '';
+            try { clipUri = JSON.parse(rawToken)?.clip_uri || ''; } catch { clipUri = ''; }
+            const isHevcSource = typeof clipUri === 'string' && /\/hevc\//i.test(clipUri);
+            if (!transcodesFailed && !noQualities && !isHevcSource) return null;
+
+            const safeBase = safeUrl(clipUri);
+            if (!safeBase) return null;
+            return `${safeBase}?sig=${encodeURIComponent(sig)}&token=${encodeURIComponent(rawToken)}`;
+        } catch {
+            return null;
+        }
+    }
+
+    function renderInstagramVideo(playerArea, videoUrl, provider, clip) {
+        renderDirectVideo(playerArea, videoUrl, 'instagram-video-player', clip, () => {
+            renderVerticalIframe(playerArea, provider.getEmbedUrl(clip.clipId, clip.url), 'instagram-embed-wrap');
+            startAutoplayTimeout(clip);
+        });
     }
 
     function sendTiktokCommand(type, value = null) {
@@ -226,15 +282,25 @@ ClipQ.Player = (() => {
         const embedUrl = safeUrl(provider.getEmbedUrl(clip.clipId, clip.url));
         if (!embedUrl) { showEmpty(); return; }
 
-        if (clip.provider === 'tiktok') {
-            renderVerticalIframe(playerArea, embedUrl);
+        if (clip.provider === 'twitch') {
+            playerArea.innerHTML = '<div class="player-loading"><div class="player-empty-icon">⏳</div></div>';
+            updateInfo(clip);
+            const fallbackToEmbed = () => {
+                renderEmbedIframe(playerArea, embedUrl);
+                startAutoplayTimeout(clip);
+            };
+            resolveTwitchFallbackVideoUrl(clip.clipId).then((directUrl) => {
+                if (currentClip !== clip) return;
+                if (directUrl) {
+                    renderDirectVideo(playerArea, directUrl, 'twitch-video-player', clip, fallbackToEmbed);
+                } else {
+                    fallbackToEmbed();
+                }
+            });
         } else {
-            playerArea.innerHTML = `<iframe
-                src="${esc(embedUrl)}"
-                allowfullscreen
-                allow="autoplay; encrypted-media"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            ></iframe>`;
+            renderEmbedIframe(playerArea, embedUrl, clip.provider === 'tiktok');
+            updateInfo(clip);
+            startAutoplayTimeout(clip);
         }
 
         const token = ClipQ.Auth?.getToken?.();
@@ -247,9 +313,6 @@ ClipQ.Player = (() => {
                 }
             });
         }
-
-        updateInfo(clip);
-        startAutoplayTimeout(clip);
     }
 
     function clearAutoplayTimeout() {

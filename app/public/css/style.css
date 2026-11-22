@@ -121,7 +121,8 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 .avatar-ring { position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center; }
 .avatar-ring::before { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--color-closed); transition:border-color .3s; }
 .avatar-ring.connected::before { border-color:var(--color-open); }
-.avatar-ring img { width:28px; height:28px; border-radius:50%; display:block; }
+.avatar-ring img { width:28px; height:28px; border-radius:50%; display:block; object-fit:cover; background:var(--color-queue-item); }
+.avatar-ring img:not([src]), .avatar-ring img[src=""] { opacity:0; }
 .menu-user span { font-weight:500; color:var(--color-text-dim); font-size:var(--font-size-sm); }
 .menu-user .dropdown-arrow { font-size:10px; color:var(--color-text-dim); margin-left:2px; }
 .user-dropdown { position:absolute; top:100%; right:0; margin-top:6px; min-width:160px; background:var(--color-settings-bg); border:1px solid var(--color-border); border-radius:var(--border-radius-sm); box-shadow:0 8px 24px rgba(0,0,0,.4); z-index:200; animation:fade-in .1s ease-out; }

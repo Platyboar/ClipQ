@@ -93,7 +93,7 @@ ClipQ.I18n.register('it', {
     'settings.general.channel': 'Canale Twitch',
     'settings.general.channel_hint': 'Canale chat a cui unirsi',
     'settings.general.obs_url': 'OBS-Browser-Link',
-    'settings.general.obs_url_hint': 'Link personale per OBS Browser Source senza la barra dei menu superiore. Tienilo privato e rigeneralo se condiviso per errore.',
+    'settings.general.obs_url_hint': 'Link personale per OBS Browser Source senza la barra dei menu superiore (dimensione consigliata: 1920×1080). Tienilo privato e rigeneralo se condiviso per errore.',
     'settings.general.obs_reveal': 'Mostra OBS-Browser-Link',
     'settings.general.obs_copy': 'Copia',
     'settings.general.obs_copied': 'Copiato!',
