@@ -53,6 +53,7 @@
 .design-chat-grid .slider-row { min-height:41px; }
 .design-chat-color-cell { display:flex; flex-direction:column; }
 .design-chat-swatch { flex-direction:row; justify-content:flex-start; min-width:0; min-height:41px; padding:0 4px; }
+.design-chat-actions { display:flex; justify-content:flex-start; margin-top:2px; }
 
 @media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } }
 .design-group { margin-bottom:20px; }

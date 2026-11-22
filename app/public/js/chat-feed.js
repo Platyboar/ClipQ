@@ -321,8 +321,23 @@ ClipQ.ChatFeed = (() => {
         });
     }
 
+    function appendTestMessage(sampleText) {
+        const msg = `Kappa ${sampleText || 'Test chat message!'} https://clips.twitch.tv/ClipQTest`;
+        appendMessage({
+            id: `test_${Date.now()}_${nextUid}`,
+            username: 'ClipQBot',
+            login: 'clipqbot',
+            color: '#ff6b6b',
+            badges: { moderator: '1', subscriber: '12' },
+            emotes: { 25: ['0-4'] },
+            roles: { isMod: true },
+            message: msg
+        });
+    }
+
     return {
         appendMessage,
+        appendTestMessage,
         removeMessage,
         removeUserMessages,
         clear,

@@ -15,6 +15,8 @@ ClipQ.Player = (() => {
     const safeUrl = (val) => ClipQ.sanitizeUrl(val);
 
     const DIRECT_URL_MAX_AGE_MS = 5 * 60 * 1000;
+    const VIDEO_VOLUME_KEY = 'clipq_video_volume';
+    const VIDEO_MUTED_KEY = 'clipq_video_muted';
     const TWITCH_GQL_URL = 'https://gql.twitch.tv/gql';
     const TWITCH_GQL_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
@@ -131,6 +133,18 @@ ClipQ.Player = (() => {
 
         const videoEl = document.getElementById(videoId);
         if (videoEl) {
+            try {
+                const savedVol = Number.parseFloat(localStorage.getItem(VIDEO_VOLUME_KEY) || '');
+                if (Number.isFinite(savedVol) && savedVol >= 0 && savedVol <= 1) videoEl.volume = savedVol;
+                const savedMuted = localStorage.getItem(VIDEO_MUTED_KEY);
+                if (savedMuted === 'true' || savedMuted === 'false') videoEl.muted = savedMuted === 'true';
+            } catch { /* ignore storage errors */ }
+            videoEl.addEventListener('volumechange', () => {
+                try {
+                    localStorage.setItem(VIDEO_VOLUME_KEY, String(videoEl.volume));
+                    localStorage.setItem(VIDEO_MUTED_KEY, String(Boolean(videoEl.muted)));
+                } catch { /* ignore storage quota errors */ }
+            });
             videoEl.addEventListener('ended', () => {
                 if (ClipQ.App.isAutoplay() && currentClip === clip) {
                     ClipQ.App.nextClip();

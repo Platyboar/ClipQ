@@ -260,6 +260,9 @@ ClipQ.Design = (() => {
         document.getElementById('design-chat-exit-ms')?.addEventListener('input', () => {
             if (ClipQ.ChatFeed) ClipQ.ChatFeed.setPreviewOption('hideConfig', readHideCfg());
         });
+        document.getElementById('design-chat-test-btn')?.addEventListener('click', () => {
+            if (ClipQ.ChatFeed) ClipQ.ChatFeed.appendTestMessage(t('settings.design.chat_test_message'));
+        });
     }
 
     function populateFontSelect(selectEl) {

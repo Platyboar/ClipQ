@@ -202,6 +202,10 @@ ClipQ.Queue = (() => {
                 if (daysDiff > settings.ageLimitDays) return 'age';
             }
         }
+        if (settings.maxDurationSeconds > 0 && clipData.meta && clipData.meta.duration) {
+            const secs = ClipQ.Providers?.parseDurationSeconds ? ClipQ.Providers.parseDurationSeconds(clipData.meta.duration) : Number(clipData.meta.duration);
+            if (secs > settings.maxDurationSeconds) return 'duration';
+        }
 
         const hasReachedUserLimit = () => {
             if (isPushed || settings.userClipLimit <= 0) return false;

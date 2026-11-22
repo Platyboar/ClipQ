@@ -200,6 +200,23 @@ SYNC_TEST_JS = """
         const loadMoreVisible = !document.getElementById('history-more-wrap')?.classList.contains('hidden');
         loadMoreBtn?.click();
         const cardsAfterMore = document.querySelectorAll('#history-grid .history-item').length;
+        const histSearch = document.getElementById('history-search');
+        if (histSearch) {
+            histSearch.value = 'Cloud Clip 505';
+            histSearch.dispatchEvent(new Event('input'));
+        }
+        const histFiltered = document.querySelectorAll('#history-grid .history-item').length;
+        if (histSearch) {
+            histSearch.value = 'no_such_clip_match_xyz';
+            histSearch.dispatchEvent(new Event('input'));
+        }
+        const histNoMatch = document.querySelectorAll('#history-grid .history-item').length;
+        if (histSearch) {
+            histSearch.value = '';
+            histSearch.dispatchEvent(new Event('input'));
+        }
+        const histRestored = document.querySelectorAll('#history-grid .history-item').length;
+        out.historySearchOk = cardsAfterMore === 400 && histFiltered === 1 && histNoMatch === 0 && histRestored === 200;
         document.querySelector('.menu-tabs .tab[data-tab="queue"]').click();
         out.historyPaging = { cardsBeforeMore, loadMoreVisible, cardsAfterMore };
 
@@ -302,6 +319,9 @@ SYNC_TEST_JS = """
         chatExitSel.value = 'slide';
         chatExitSel.dispatchEvent(new Event('change'));
         out.exitSlideApplied = Boolean(fadeOutOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
+        const testMsgBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
+        document.getElementById('design-chat-test-btn')?.click();
+        out.chatTestMessageAdded = document.querySelectorAll('#chat-messages .chat-msg').length === testMsgBefore + 1;
         document.getElementById('settings-close').click();
         ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatEnterMs: 350, chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'slide', chatExitMs: 350 });
 
@@ -311,9 +331,13 @@ SYNC_TEST_JS = """
         out.obsSessionLoaded = Boolean(obsRes && obsRes.ok && obsRes.user?.displayName === 'TestStreamer' && obsRes.user?.avatar === 'https://static-cdn.jtvnw.net/obs-u1.png');
         const obsTwitchMeta = await ClipQ.Providers.getProvider('twitch').fetchMeta('GoodClip1', null);
         out.obsTwitchMetaTitle = obsTwitchMeta?.title || '';
+        localStorage.setItem('clipq_video_volume', '0.42');
+        localStorage.setItem('clipq_video_muted', 'true');
         ClipQ.Player.playClip({ provider: 'twitch', clipId: 'FailedTranscodeClip', url: 'https://www.twitch.tv/skuuii/clip/FailedTranscodeClip', meta: { title: 'HEVC Clip', channel: 'skuuii' } });
         await new Promise(r => setTimeout(r, 40));
-        out.twitchFallbackVideoSrc = document.getElementById('twitch-video-player')?.getAttribute('src') || '';
+        const videoEl = document.getElementById('twitch-video-player');
+        out.twitchFallbackVideoSrc = videoEl?.getAttribute('src') || '';
+        out.videoVolumeRestored = Boolean(videoEl && Math.abs(videoEl.volume - 0.42) < 0.01 && videoEl.muted === true);
         ClipQ.Player.playClip({ provider: 'twitch', clipId: 'NormalClip1', url: 'https://www.twitch.tv/skuuii/clip/NormalClip1', meta: { title: 'Normal Clip', channel: 'skuuii' } });
         await new Promise(r => setTimeout(r, 40));
         out.twitchNormalIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
@@ -321,12 +345,32 @@ SYNC_TEST_JS = """
         ClipQ.Auth.setActiveObsKey(null);
         await ClipQ.Sync.init({ id: '99999', login: 'teststreamer' });
 
+        ClipQ.Settings.get().maxDurationSeconds = 30;
+        const durRejectRes = ClipQ.Queue.addClip({
+            provider: 'twitch',
+            clipId: 'TooLongClip1',
+            url: 'https://clips.twitch.tv/TooLongClip1',
+            meta: { title: 'Long Clip', channel: 'test', duration: 60 },
+            submitter: 'tester',
+        });
+        out.maxDurationRejected = durRejectRes === 'duration';
+        ClipQ.Settings.get().maxDurationSeconds = 0;
+
         await ClipQ.fetchWithAuth('/api/oembed?url=https://www.youtube.com/oembed');
         ClipQ.App.setClipLimit(7);
         window.dispatchEvent(new Event('pagehide'));
         await new Promise(r => setTimeout(r, 40));
 
-        await ClipQ.Sync.exportBackup();
+        await ClipQ.Backup.exportData();
+        const importOk = await ClipQ.Backup.importData(JSON.stringify({
+            config: {
+                settings: { appTitle: 'ImportedTitle', maxDurationSeconds: 45 },
+                queue: { items: [], current: null },
+            },
+            history: [{ id: 'imp-1', provider: 'twitch', clipId: 'ImportedClip1', url: 'https://clips.twitch.tv/ImportedClip1', meta: { title: 'Imported Clip', channel: 'imp' }, submitters: ['alice'], playedAt: 1 }],
+            memory: ['twitch:ImportedClip1'],
+        }));
+        out.backupImported = Boolean(importOk && ClipQ.Settings.get().appTitle === 'ImportedTitle' && ClipQ.Settings.get().maxDurationSeconds === 45 && ClipQ.Queue.getHistory().length === 1 && ClipQ.Memory.has('https://clips.twitch.tv/ImportedClip1', 'twitch', 'ImportedClip1'));
         const deleted = await ClipQ.Sync.deleteAllCloudData();
         out.deletedCloud = deleted && !ClipQ.Sync.isAvailable() && localStorage.getItem('clipq_history') === null;
         out.calls = calls;
@@ -340,6 +384,8 @@ SYNC_TEST_JS = """
         localStorage.removeItem('clipq_queue');
         localStorage.removeItem('clipq_autoplay');
         localStorage.removeItem('clipq_sync_owner');
+        localStorage.removeItem('clipq_video_volume');
+        localStorage.removeItem('clipq_video_muted');
         localStorage.setItem('clipq_language', 'en');
     }
 
@@ -434,4 +480,9 @@ def assert_sync_report(report):
     assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
         f'pagehide keepalive config flush failed: {report}'
     )
+    assert report['chatTestMessageAdded'], f'Chat test message button failed: {report}'
+    assert report['videoVolumeRestored'], f'Video volume/mute persistence failed: {report}'
+    assert report['maxDurationRejected'], f'Max clip duration rejection failed: {report}'
+    assert report['historySearchOk'], f'History search filter failed: {report}'
+    assert report['backupImported'], f'Backup JSON import failed: {report}'
     assert report['deletedCloud'] and report['calls']['deleteAll'] == 1, f'Cloud deletion failed: {report}'

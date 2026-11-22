@@ -256,6 +256,8 @@ body.chat-badges-hidden .chat-msg-badges { display:none; }
 
 /* HISTORY */
 #history-view { flex:1; overflow-y:auto; padding:20px; }
+.history-toolbar { display:flex; justify-content:flex-start; margin-bottom:14px; }
+.history-search-input { max-width:360px; }
 .history-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
 .history-item { display:block; background:var(--color-queue-item); border-radius:var(--border-radius-sm); overflow:hidden; transition:transform .15s,box-shadow .15s; position:relative; }
 .history-item:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.3); }

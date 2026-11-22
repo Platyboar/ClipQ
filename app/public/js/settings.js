@@ -17,6 +17,7 @@ ClipQ.Settings = (() => {
             providers: { twitch: true, twitch_vod: true, youtube: true, tiktok: true, instagram: true },
             userClipLimit: 0,
             ageLimitDays: 0,
+            maxDurationSeconds: 0,
             historyRetentionDays: 0,
             blockedUsers: ['streamlabs', 'nightbot', 'streamelements', 'fossabot', 'moobot'],
             blockedStreamers: [],
@@ -192,6 +193,7 @@ ClipQ.Settings = (() => {
 
         document.getElementById('set-user-clip-limit').value = s.userClipLimit || 0;
         document.getElementById('set-age-limit').value = s.ageLimitDays || 0;
+        document.getElementById('set-max-duration').value = s.maxDurationSeconds || 0;
         document.getElementById('set-history-retention').value = s.historyRetentionDays || 0;
         document.getElementById('set-blocked-users').value = s.blockedUsers.join('\n');
         document.getElementById('set-blocked-streamers').value = s.blockedStreamers.join('\n');
@@ -255,6 +257,7 @@ ClipQ.Settings = (() => {
             providers,
             userClipLimit: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-user-clip-limit').value, 0)),
             ageLimitDays: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-age-limit').value, 0)),
+            maxDurationSeconds: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-max-duration').value, 0)),
             historyRetentionDays: Math.max(0, ClipQ.intOrDefault(document.getElementById('set-history-retention').value, 0)),
             blockedUsers: document.getElementById('set-blocked-users').value.split('\n').map(u => u.trim()).filter(Boolean),
             blockedStreamers: document.getElementById('set-blocked-streamers').value.split('\n').map(u => u.trim()).filter(Boolean),
@@ -404,15 +407,15 @@ ClipQ.Settings = (() => {
             });
         }
 
+        const confirmKey = (key) => ClipQ.confirmAction({
+            message: ClipQ.I18n.t(key),
+            yesLabel: ClipQ.I18n.t('history.confirm_yes'),
+            cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
+        });
+
         const regenerateObsBtn = document.getElementById('regenerate-obs-url-btn');
         regenerateObsBtn?.addEventListener('click', async () => {
-            if (!ClipQ.Sync?.regenerateObsKey) return;
-            const confirmed = await ClipQ.confirmAction({
-                message: ClipQ.I18n.t('settings.general.confirm_obs_regenerate'),
-                yesLabel: ClipQ.I18n.t('history.confirm_yes'),
-                cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
-            });
-            if (!confirmed) return;
+            if (!ClipQ.Sync?.regenerateObsKey || !(await confirmKey('settings.general.confirm_obs_regenerate'))) return;
             regenerateObsBtn.disabled = true;
             try {
                 const nextKey = await ClipQ.Sync.regenerateObsKey();
@@ -442,16 +445,25 @@ ClipQ.Settings = (() => {
         });
 
         document.getElementById('settings-export')?.addEventListener('click', () => {
-            if (ClipQ.Sync) ClipQ.Sync.exportBackup();
+            if (ClipQ.Backup) ClipQ.Backup.exportData();
+        });
+
+        const importInput = document.getElementById('settings-import-file');
+        document.getElementById('settings-import')?.addEventListener('click', () => importInput?.click());
+        importInput?.addEventListener('change', async () => {
+            const file = importInput.files?.[0];
+            importInput.value = '';
+            if (!file || !(await confirmKey('settings.general.confirm_import'))) return;
+            try {
+                const ok = ClipQ.Backup ? await ClipQ.Backup.importData(await file.text()) : false;
+                alert(ClipQ.I18n.t(ok ? 'settings.general.import_done' : 'settings.general.import_error'));
+            } catch {
+                alert(ClipQ.I18n.t('settings.general.import_error'));
+            }
         });
 
         document.getElementById('settings-delete-cloud')?.addEventListener('click', async () => {
-            const confirmed = await ClipQ.confirmAction({
-                message: ClipQ.I18n.t('settings.general.confirm_delete_cloud'),
-                yesLabel: ClipQ.I18n.t('history.confirm_yes'),
-                cancelLabel: ClipQ.I18n.t('history.confirm_cancel')
-            });
-            if (!confirmed || !ClipQ.Sync) return;
+            if (!(await confirmKey('settings.general.confirm_delete_cloud')) || !ClipQ.Sync) return;
             const ok = await ClipQ.Sync.deleteAllCloudData();
             alert(ClipQ.I18n.t(ok ? 'settings.general.delete_cloud_done' : 'settings.general.delete_cloud_error'));
             if (ok) ClipQ.Auth.logout();

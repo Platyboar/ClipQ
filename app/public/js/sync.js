@@ -337,31 +337,31 @@ ClipQ.Sync = (() => {
 
     function clearMemory() { fireSync('/api/sync/memory', 'DELETE'); }
 
-    async function exportBackup() {
-        let payload = null;
-        if (available) {
-            try {
-                const resp = await authFetch('/api/sync/export');
-                if (resp && resp.ok) payload = await resp.json();
-            } catch { /* fallback to local snapshot */ }
+    async function fetchExportSnapshot() {
+        if (!available) return null;
+        try {
+            const resp = await authFetch('/api/sync/export');
+            return resp && resp.ok ? await resp.json() : null;
+        } catch {
+            return null;
         }
-        if (!payload) {
-            payload = {
-                exportedAt: new Date().toISOString(),
-                config: buildConfigPayload(),
-                history: ClipQ.Queue ? ClipQ.Queue.getHistory() : [],
-                memory: readJson('clipq_memory', []),
-            };
+    }
+
+    async function applyImportedBackup(normalized) {
+        if (!available || !normalized) return;
+        if (configTimer) { clearTimeout(configTimer); configTimer = null; }
+        if (normalized.hasConfig) {
+            lastSyncedConfigJson = null;
+            await pushConfigNow(false);
         }
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = `clipq-backup-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        if (normalized.hasHistory) {
+            await authFetch('/api/sync/history', { method: 'DELETE' }).catch(() => {});
+            await pushBatch('/api/sync/history', (slice) => ({ items: slice }), normalized.history, 50);
+        }
+        if (normalized.hasMemory) {
+            await authFetch('/api/sync/memory', { method: 'DELETE' }).catch(() => {});
+            await pushBatch('/api/sync/memory', (slice) => ({ keys: slice }), normalized.memory, 100);
+        }
     }
 
     async function initObsSession(urlKey) {
@@ -489,7 +489,9 @@ ClipQ.Sync = (() => {
         pruneHistoryBefore,
         recordMemoryKey,
         clearMemory,
-        exportBackup,
+        buildLocalConfig: buildConfigPayload,
+        fetchExportSnapshot,
+        applyImportedBackup,
         deleteAllCloudData,
     };
 })();
