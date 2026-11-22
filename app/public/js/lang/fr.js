@@ -148,6 +148,7 @@ ClipQ.I18n.register('fr', {
     'settings.commands.prefix': 'Préfixe de commande',
     'settings.commands.next': 'Clip suivant',
     'settings.commands.push': 'Placer le clip en #1',
+    'settings.commands.current': 'Lien du clip actuel',
     'settings.commands.open': 'Ouvrir la file d\'attente',
     'settings.commands.close': 'Fermer la file d\'attente',
     'settings.commands.clear': 'Vider la file d\'attente',

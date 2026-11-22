@@ -148,6 +148,7 @@ ClipQ.I18n.register('es', {
     'settings.commands.prefix': 'Prefijo de comando',
     'settings.commands.next': 'Siguiente clip',
     'settings.commands.push': 'Priorizar clip al #1',
+    'settings.commands.current': 'Enlace del clip actual',
     'settings.commands.open': 'Abrir cola',
     'settings.commands.close': 'Cerrar cola',
     'settings.commands.clear': 'Limpiar cola',

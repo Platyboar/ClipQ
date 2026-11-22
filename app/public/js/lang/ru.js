@@ -148,6 +148,7 @@ ClipQ.I18n.register('ru', {
     'settings.commands.prefix': 'Префикс команды',
     'settings.commands.next': 'Следующий клип',
     'settings.commands.push': 'Вставить клип на 1 место',
+    'settings.commands.current': 'Ссылка на текущий клип',
     'settings.commands.open': 'Открыть очередь',
     'settings.commands.close': 'Закрыть очередь',
     'settings.commands.clear': 'Очистить очередь',

@@ -148,6 +148,7 @@ ClipQ.I18n.register('it', {
     'settings.commands.prefix': 'Prefisso comando',
     'settings.commands.next': 'Clip successiva',
     'settings.commands.push': 'Metti clip in prima posizione',
+    'settings.commands.current': 'Link clip attuale',
     'settings.commands.open': 'Apri coda',
     'settings.commands.close': 'Chiudi coda',
     'settings.commands.clear': 'Svuota coda',

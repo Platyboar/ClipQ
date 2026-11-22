@@ -328,6 +328,7 @@ ClipQ.Settings = (() => {
             if (ClipQ.Player && ClipQ.Player.showEmpty) ClipQ.Player.showEmpty();
             if (ClipQ.App && ClipQ.App.updateNextButton) ClipQ.App.updateNextButton();
         }
+        if (ClipQ.App && ClipQ.App.renderQueueList) ClipQ.App.renderQueueList();
         if (ClipQ.App && ClipQ.App.renderHistory) ClipQ.App.renderHistory();
         populateUI();
     }

@@ -148,6 +148,7 @@ ClipQ.I18n.register('pt', {
     'settings.commands.prefix': 'Prefixo do comando',
     'settings.commands.next': 'Próximo clip',
     'settings.commands.push': 'Priorizar clip no #1',
+    'settings.commands.current': 'Link do clip atual',
     'settings.commands.open': 'Abrir fila',
     'settings.commands.close': 'Fechar fila',
     'settings.commands.clear': 'Limpar fila',

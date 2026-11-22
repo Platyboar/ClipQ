@@ -148,6 +148,7 @@ ClipQ.I18n.register('ja', {
     'settings.commands.prefix': 'コマンドプレフィックス',
     'settings.commands.next': '次のクリップ',
     'settings.commands.push': 'クリップを最優先',
+    'settings.commands.current': '現在のクリップURL',
     'settings.commands.open': 'キューを開く',
     'settings.commands.close': 'キューを閉じる',
     'settings.commands.clear': 'キューをクリア',

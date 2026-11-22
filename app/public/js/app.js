@@ -167,6 +167,16 @@ ClipQ.App = (() => {
         });
     }
 
+    function shareCurrentClipInChat() {
+        const clip = ClipQ.Player.getCurrent();
+        if (!clip) return false;
+        const rawUrl = clip.url ? (ClipQ.Providers?.getCanonicalUrl?.(clip.provider, clip.clipId, clip.url) || clip.url) : '';
+        const safeClipUrl = ClipQ.sanitizeUrl(rawUrl);
+        if (!safeClipUrl || !ClipQ.Chat?.sendMessage) return false;
+        ClipQ.Chat.sendMessage(safeClipUrl);
+        return true;
+    }
+
     function setupControls() {
         document.getElementById('btn-next').addEventListener('click', handleNextButton);
         document.getElementById('btn-prev').addEventListener('click', () => {
@@ -176,13 +186,7 @@ ClipQ.App = (() => {
         document.getElementById('btn-pause')?.addEventListener('click', () => {
             ClipQ.Player.togglePause();
         });
-        document.getElementById('btn-share-chat')?.addEventListener('click', () => {
-            const clip = ClipQ.Player.getCurrent();
-            if (!clip) return;
-            const rawUrl = clip.url ? (ClipQ.Providers?.getCanonicalUrl?.(clip.provider, clip.clipId, clip.url) || clip.url) : '';
-            const safeClipUrl = ClipQ.sanitizeUrl(rawUrl);
-            if (safeClipUrl && ClipQ.Chat && ClipQ.Chat.sendMessage) ClipQ.Chat.sendMessage(safeClipUrl);
-        });
+        document.getElementById('btn-share-chat')?.addEventListener('click', shareCurrentClipInChat);
         document.getElementById('queue-clear-btn').addEventListener('click', () => {
             if (confirm(t('queue.confirm_clear'))) ClipQ.Queue.clear();
         });
@@ -384,13 +388,40 @@ ClipQ.App = (() => {
             : `<div class="${baseClass} clip-placeholder">🎬</div>`;
     }
 
+    function formatQueueDuration(totalSeconds) {
+        const sec = Math.max(0, Math.round(totalSeconds));
+        if (sec <= 0) return '';
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function computeQueueTotalSeconds(items) {
+        const maxDur = ClipQ.intOrDefault(ClipQ.Settings.get()?.maxDurationSeconds, 0);
+        return items.reduce((sum, item) => {
+            if (!item || item.provider === 'twitch_vod') return sum;
+            const rawDur = item.meta?.duration;
+            const dur = ClipQ.Providers?.parseDurationSeconds ? ClipQ.Providers.parseDurationSeconds(rawDur) : Number(rawDur) || 0;
+            if (!Number.isFinite(dur) || dur <= 0) return sum;
+            if (maxDur > 0 && dur > maxDur) return sum;
+            return sum + dur;
+        }, 0);
+    }
+
     function renderQueueList(showBadgesOverride) {
         const items = ClipQ.Queue.getItems();
         const container = document.getElementById('queue-list');
         const countEl = document.getElementById('queue-count');
+        const durationEl = document.getElementById('queue-duration');
         const countTabEl = document.getElementById('queue-count-tab');
 
         countEl.textContent = items.length;
+        if (durationEl) {
+            const totalFormatted = formatQueueDuration(computeQueueTotalSeconds(items));
+            durationEl.textContent = totalFormatted ? ` • ${totalFormatted}` : '';
+        }
         countTabEl.textContent = items.length > 0 ? `(${items.length})` : '';
 
         if (items.length === 0) {
@@ -460,7 +491,7 @@ ClipQ.App = (() => {
     document.addEventListener('DOMContentLoaded', () => ClipQ.App.init());
 
     return {
-        init, nextClip, skipUnavailableClip, setQueueOpen, isAutoplay, setAutoplay,
+        init, nextClip, skipUnavailableClip, shareCurrentClipInChat, setQueueOpen, isAutoplay, setAutoplay,
         setClipLimit, setProvider, renderQueueList, renderHistory, updateNextButton, applyRemoteConfig
     };
 })();

@@ -13,6 +13,7 @@ ClipQ.Auth = (() => {
     const USER_KEY = 'clipq_user';
     const OBS_REDIRECT_KEY = 'clipq_obs_redirect';
     const OBS_KEY_PATH_RE = /^\/obs\/([A-Za-z0-9_-]{16,128})\/?$/i;
+    const REQUIRED_SCOPES = ['chat:read', 'user:write:chat'];
     let activeObsKey = null;
 
     function getUrlObsKey() {
@@ -112,7 +113,10 @@ ClipQ.Auth = (() => {
             }
             const data = await res.json().catch(() => null);
             const clientMismatch = Boolean(data?.client_id && data.client_id !== ClipQ.CLIENT_ID);
-            return { valid: !clientMismatch, unauthorized: clientMismatch };
+            const tokenScopes = Array.isArray(data?.scopes) ? data.scopes : [];
+            const missingScope = !REQUIRED_SCOPES.every(scope => tokenScopes.includes(scope));
+            const unauthorized = clientMismatch || missingScope;
+            return { valid: !unauthorized, unauthorized };
         } catch {
             return { valid: false, unauthorized: false };
         }

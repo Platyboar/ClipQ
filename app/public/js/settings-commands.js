@@ -9,10 +9,11 @@ ClipQ.SettingsCommands = (() => {
     const DEFAULT_PREFIX = '!clipq';
     const DEFAULT_ROLES = { broadcaster: true, leadMod: true, mod: true, vip: false, all: false };
     const RESTRICTED_MEMORY_ROLES = { broadcaster: true, leadMod: true, mod: false, vip: false, all: false };
-    const CMD_KEYS = ['next', 'push', 'open', 'close', 'clear', 'purgememory', 'autoplay', 'limit', 'remove', 'providers'];
+    const CMD_KEYS = ['next', 'push', 'current', 'open', 'close', 'clear', 'purgememory', 'autoplay', 'limit', 'remove', 'providers'];
     const DEFAULT_COMMAND_WORDS = {
         next: 'next',
         push: 'push',
+        current: 'current',
         open: 'open',
         close: 'close',
         clear: 'clear',
@@ -26,6 +27,7 @@ ClipQ.SettingsCommands = (() => {
     const EXAMPLE_SUFFIXES = {
         next: '',
         push: ' https://clips.twitch.tv/...',
+        current: '',
         open: '',
         close: '',
         clear: '',

@@ -46,7 +46,7 @@ window.fetch = async (url, opts) => {
             client_id: ClipQ.CLIENT_ID,
             login: 'teststreamer',
             user_id: '99999',
-            scopes: ['chat:read']
+            scopes: ['chat:read', 'user:write:chat']
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     return __origFetch(url, opts);

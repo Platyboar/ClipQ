@@ -64,6 +64,7 @@ SYNC_TEST_JS = """
         const u = typeof url === 'string' ? url : '';
         const method = (opts?.method || 'GET').toUpperCase();
         const hdrs = new Headers(opts?.headers || {});
+        if (u.includes('id.twitch.tv/oauth2/validate') && opts?.headers?.Authorization === 'OAuth legacy_tok') return new Response(JSON.stringify({ client_id: ClipQ.CLIENT_ID, scopes: ['chat:read'] }), { status: 200 });
         if (u === 'https://api.twitch.tv/helix/chat/messages' && method === 'POST') { calls.chatPosts++; return new Response(JSON.stringify({ data: [{ is_sent: true }] }), { status: 200 }); }
         if (u === '/health') return new Response(JSON.stringify({ ok: true, sync: true }), { status: 200 });
         if (u.startsWith('/api/oembed')) {
@@ -338,6 +339,16 @@ SYNC_TEST_JS = """
         out.maxDurationRejected = durRejectRes === 'duration';
         ClipQ.Settings.get().maxDurationSeconds = 0;
 
+        ClipQ.Queue.clear(); ClipQ.Queue.setOpen(true); ClipQ.Settings.get().maxDurationSeconds = 0;
+        ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'Dur1', url: 'https://clips.twitch.tv/Dur1', meta: { title: 'D1', duration: 40 } }, 'd1');
+        ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'Dur2', url: 'https://youtu.be/Dur2', meta: { title: 'D2', duration: 50 } }, 'd2');
+        ClipQ.Queue.addClip({ provider: 'twitch_vod', clipId: 'Vod1', url: 'https://www.twitch.tv/videos/123456', meta: { title: 'VOD', duration: 3600 } }, 'd3');
+        ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'LongPush1', url: 'https://youtu.be/LongPush1', meta: { title: 'LP', duration: 300 } }, 'd4');
+        const durNoVod = document.getElementById('queue-count')?.textContent === '4' && document.getElementById('queue-duration')?.textContent === ' • 6:30';
+        ClipQ.Settings.get().maxDurationSeconds = 90; ClipQ.App.renderQueueList();
+        out.queueDurationOk = durNoVod && document.getElementById('queue-duration')?.textContent === ' • 1:30';
+        ClipQ.Settings.get().maxDurationSeconds = 0;
+
         ClipQ.Queue.clear();
         ClipQ.Queue.setOpen(true);
         ClipQ.Queue.addClip({ provider: 'twitch', clipId: 'DeadTwitch1', url: 'https://clips.twitch.tv/DeadTwitch1', meta: { title: 'Dead TW' } }, 'u1');
@@ -349,9 +360,12 @@ SYNC_TEST_JS = """
         const shareBtn = document.getElementById('btn-share-chat');
         const nextRect = document.getElementById('btn-next')?.getBoundingClientRect();
         const shareRect = shareBtn?.getBoundingClientRect();
-        shareBtn?.click(); shareBtn?.click(); shareBtn?.click();
+        shareBtn?.click(); shareBtn?.click(); shareBtn?.click(); ClipQ.App.shareCurrentClipInChat();
         await new Promise(r => setTimeout(r, 30));
-        out.shareInChatRapidOk = Boolean(shareBtn && !shareBtn.disabled && shareRect && nextRect && shareRect.top >= nextRect.bottom && calls.chatPosts === 3);
+        out.shareInChatRapidOk = Boolean(shareBtn && !shareBtn.disabled && shareRect && nextRect && shareRect.top >= nextRect.bottom && calls.chatPosts === 4);
+        out.cmdCurrentOk = document.getElementById('example-cmd-current')?.textContent === 'Ex: !clipq current' && ClipQ.Settings.hasCommandPermission('current', { isMod: true }) && !ClipQ.Settings.hasCommandPermission('current', { isVip: true });
+        const legVal = await ClipQ.Auth.validate('legacy_tok');
+        out.missingScopeForcesReauth = Boolean(legVal && legVal.valid === false && legVal.unauthorized === true);
         ClipQ.Player.showEmpty();
 
         document.getElementById('dropdown-settings').click();
@@ -400,14 +414,7 @@ SYNC_TEST_JS = """
         ClipQ.Auth.setActiveObsKey(null);
         document.body.classList.remove('chat-badges-hidden');
         window.fetch = origFetch;
-        localStorage.removeItem('clipq_settings');
-        localStorage.removeItem('clipq_history');
-        localStorage.removeItem('clipq_memory');
-        localStorage.removeItem('clipq_queue');
-        localStorage.removeItem('clipq_autoplay');
-        localStorage.removeItem('clipq_sync_owner');
-        localStorage.removeItem('clipq_video_volume');
-        localStorage.removeItem('clipq_video_muted');
+        ['settings', 'history', 'memory', 'queue', 'autoplay', 'sync_owner', 'video_volume', 'video_muted'].forEach(k => localStorage.removeItem('clipq_' + k));
         localStorage.setItem('clipq_language', 'en');
     }
 
@@ -435,25 +442,18 @@ def assert_sync_report(report):
         'all': False,
     }
     assert report['memoryPreservedOnHistDelete'], 'History delete/clear must preserve Clip Memory'
-    assert report['localFlagsAllPresent'], f'Non-local flags detected: {report}'
-    assert report['aboutPrivacyRendered'], f'About privacy section missing: {report}'
-    assert report['removeExampleText'] == 'Ex: !clipq remove <URL | all | user>', report['removeExampleText']
-    assert report['removedSubmitterCount'] == 0, f'removeSubmitter did not clear user clip: {report}'
-    assert report['offlineDeleteCloudHidden'], f'Delete cloud button should hide offline: {report}'
-    assert report['syncAvailable'] and report['loadedOver500History'], f'Cloud history >500 failed: {report}'
-    assert report['oldestLoadedFirst'] and report['syncedAppTitle'] == 'SyncedTitle', report
-    assert report['historyPaging'] == {'cardsBeforeMore': 200, 'loadMoreVisible': True, 'cardsAfterMore': 400}, report
-    assert report['onlineDeleteCloudVisible'] and report['generalButtonsSingleRow'], report
-    assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890'), report
-    assert report['regenerateObsBtnVisible'], report
-    assert report['regeneratedObsUrlValue'].endswith('/obs/obs_key_beta_9876543210'), report
+    assert report['localFlagsAllPresent'] and report['aboutPrivacyRendered'], report
     assert (
-        report['chatCountInitial'] == 2
-        and report['chatMultiBadgeCount'] == 2
-        and report['chatEmoteCount'] == 4
-        and report['chatXssPrevented']
-        and report['chatInvalidColorBlocked']
-    ), f'Live chat feed rendering/XSS check failed: {report}'
+        report['removeExampleText'] == 'Ex: !clipq remove <URL | all | user>' and report['removedSubmitterCount'] == 0
+    )
+    assert report['offlineDeleteCloudHidden'] and report['syncAvailable'] and report['loadedOver500History']
+    assert report['oldestLoadedFirst'] and report['syncedAppTitle'] == 'SyncedTitle'
+    assert report['historyPaging'] == {'cardsBeforeMore': 200, 'loadMoreVisible': True, 'cardsAfterMore': 400}
+    assert report['onlineDeleteCloudVisible'] and report['generalButtonsSingleRow']
+    assert report['personalObsUrlValue'].endswith('/obs/obs_key_alpha_1234567890') and report['regenerateObsBtnVisible']
+    assert report['regeneratedObsUrlValue'].endswith('/obs/obs_key_beta_9876543210')
+    assert report['chatCountInitial'] == 2 and report['chatMultiBadgeCount'] == 2 and report['chatEmoteCount'] == 4
+    assert report['chatXssPrevented'] and report['chatInvalidColorBlocked'], report
     assert all(
         report[k]
         for k in (
@@ -478,9 +478,12 @@ def assert_sync_report(report):
             'twitchMaxQualitySelected',
             'maxDurationRejected',
             'userWindowLimitOk',
+            'queueDurationOk',
             'brokenAutoSkipped',
             'blockedSideBySide',
             'shareInChatRapidOk',
+            'cmdCurrentOk',
+            'missingScopeForcesReauth',
             'pauseResumeOk',
             'historySearchOk',
             'historyPlatformFilterOk',

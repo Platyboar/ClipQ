@@ -148,6 +148,7 @@ ClipQ.I18n.register('de', {
     'settings.commands.prefix': 'Command-Prefix',
     'settings.commands.next': 'Nächster Clip',
     'settings.commands.push': 'Clip an 1. Stelle pushen',
+    'settings.commands.current': 'Aktueller Clip-Link',
     'settings.commands.open': 'Queue öffnen',
     'settings.commands.close': 'Queue schließen',
     'settings.commands.clear': 'Queue leeren',

@@ -293,6 +293,13 @@ ClipQ.Chat = (() => {
             return 'push';
         }
 
+        if (matchesCmd('current')) {
+            if (!hasPermission('current')) return false;
+            console.log(`[Cmd] ${username}: current`);
+            ClipQ.App.shareCurrentClipInChat();
+            return 'handled';
+        }
+
         if (matchesCmd('open')) {
             if (!hasPermission('open')) return false;
             console.log(`[Cmd] ${username}: open`);
