@@ -208,8 +208,14 @@ ClipQ.Design = (() => {
     }
 
     function syncChatSpeedVisibility(inMode, outMode) {
-        document.getElementById('design-chat-enter-speed-wrap')?.classList.toggle('hidden', inMode === 'none');
-        document.getElementById('design-chat-exit-speed-wrap')?.classList.toggle('hidden', outMode === 'none');
+        [['design-chat-enter-speed-wrap', inMode === 'none'], ['design-chat-exit-speed-wrap', outMode === 'none']].forEach(([id, hidden]) => {
+            const wrap = document.getElementById(id);
+            if (!wrap) return;
+            wrap.classList.toggle('hidden', hidden);
+            wrap.setAttribute('aria-hidden', String(hidden));
+            const input = wrap.querySelector('input');
+            if (input) input.disabled = hidden;
+        });
     }
 
     function initChatControls() {

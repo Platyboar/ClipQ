@@ -48,14 +48,16 @@
 
 /* DESIGN TAB & COLOR PICKER */
 .design-chat-section { margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--color-border); }
-.design-chat-options { display:flex; flex-direction:column; gap:14px; margin-top:12px; }
+.design-chat-options { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
 .design-chat-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 16px; align-items:start; }
 .design-chat-grid .slider-row { min-height:41px; }
+.design-chat-grid .design-chat-speed-wrap.hidden { display:block !important; visibility:hidden; pointer-events:none; }
 .design-chat-color-cell { display:flex; flex-direction:column; }
 .design-chat-swatch { flex-direction:row; justify-content:flex-start; min-width:0; min-height:41px; padding:0 4px; }
-.design-chat-actions { display:flex; justify-content:flex-start; margin-top:2px; }
+.design-chat-options .toggle-row { padding:2px 0; margin-top:0; }
+.design-chat-actions { display:flex; justify-content:flex-start; margin-top:4px; }
 
-@media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } }
+@media (width <= 680px) { .design-chat-grid { grid-template-columns:1fr; } .design-chat-grid .design-chat-speed-wrap.hidden { display:none !important; } }
 .design-group { margin-bottom:20px; }
 .design-group-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--color-text-dim); margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--color-border); }
 .design-swatches { display:flex; flex-wrap:wrap; gap:6px; }

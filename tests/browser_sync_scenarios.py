@@ -201,22 +201,8 @@ SYNC_TEST_JS = """
         loadMoreBtn?.click();
         const cardsAfterMore = document.querySelectorAll('#history-grid .history-item').length;
         const histSearch = document.getElementById('history-search');
-        if (histSearch) {
-            histSearch.value = 'Cloud Clip 505';
-            histSearch.dispatchEvent(new Event('input'));
-        }
-        const histFiltered = document.querySelectorAll('#history-grid .history-item').length;
-        if (histSearch) {
-            histSearch.value = 'no_such_clip_match_xyz';
-            histSearch.dispatchEvent(new Event('input'));
-        }
-        const histNoMatch = document.querySelectorAll('#history-grid .history-item').length;
-        if (histSearch) {
-            histSearch.value = '';
-            histSearch.dispatchEvent(new Event('input'));
-        }
-        const histRestored = document.querySelectorAll('#history-grid .history-item').length;
-        out.historySearchOk = cardsAfterMore === 400 && histFiltered === 1 && histNoMatch === 0 && histRestored === 200;
+        const searchCount = (q) => { histSearch.value = q; histSearch.dispatchEvent(new Event('input')); return document.querySelectorAll('#history-grid .history-item').length; };
+        out.historySearchOk = Boolean(histSearch && cardsAfterMore === 400 && searchCount('Cloud Clip 505') === 1 && searchCount('no_such_clip_match_xyz') === 0 && searchCount('') === 200);
         document.querySelector('.menu-tabs .tab[data-tab="queue"]').click();
         out.historyPaging = { cardsBeforeMore, loadMoreVisible, cardsAfterMore };
 
@@ -307,9 +293,15 @@ SYNC_TEST_JS = """
         out.chatAnimDefaultsOk = designCfg.chatAnimation === 'slide' && designCfg.chatHideMode === 'slide' && designCfg.chatEnterMs === 350 && designCfg.chatExitMs === 350;
         const chatAnimSel = document.getElementById('design-chat-animation');
         const chatExitSel = document.getElementById('design-chat-hide-mode');
+        const hideSecTopBefore = Math.round(document.getElementById('design-chat-hide-seconds')?.getBoundingClientRect().top || 0);
+        const badgesRowRect = document.getElementById('design-chat-show-badges')?.closest('.toggle-row')?.getBoundingClientRect();
+        const linksRowRect = document.getElementById('design-chat-show-links')?.closest('.toggle-row')?.getBoundingClientRect();
+        out.chatToggleGapCompact = Boolean(badgesRowRect && linksRowRect && (linksRowRect.top - badgesRowRect.bottom) <= 16);
         chatAnimSel.value = 'none';
         chatAnimSel.dispatchEvent(new Event('change'));
+        const hideSecTopAfter = Math.round(document.getElementById('design-chat-hide-seconds')?.getBoundingClientRect().top || 0);
         out.enterSpeedHiddenOnNone = document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden');
+        out.chatRow3StableOnNone = hideSecTopBefore > 0 && hideSecTopBefore === hideSecTopAfter;
         chatAnimSel.value = 'fade';
         chatAnimSel.dispatchEvent(new Event('change'));
         out.enterSpeedShownOnFade = !document.getElementById('design-chat-enter-speed-wrap')?.classList.contains('hidden') && document.getElementById('chat-messages')?.classList.contains('anim-in-fade');
@@ -319,8 +311,15 @@ SYNC_TEST_JS = """
         chatExitSel.value = 'slide';
         chatExitSel.dispatchEvent(new Event('change'));
         out.exitSlideApplied = Boolean(fadeOutOk && document.getElementById('chat-messages')?.classList.contains('anim-out-slide'));
+        chatAnimSel.value = 'slide';
+        chatAnimSel.dispatchEvent(new Event('change'));
+        const chatBox = document.getElementById('chat-messages');
         const testMsgBefore = document.querySelectorAll('#chat-messages .chat-msg').length;
         document.getElementById('design-chat-test-btn')?.click();
+        const top0 = chatBox.scrollTop;
+        const sh0 = chatBox.scrollHeight;
+        await new Promise(r => setTimeout(r, 400));
+        out.chatNoScrollBounce = chatBox.scrollTop === top0 && chatBox.scrollHeight === sh0;
         out.chatTestMessageAdded = document.querySelectorAll('#chat-messages .chat-msg').length === testMsgBefore + 1;
         document.getElementById('settings-close').click();
         ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatEnterMs: 350, chatDirection: 'bottom', chatHideSeconds: 0, chatHideMode: 'slide', chatExitMs: 350 });
@@ -480,7 +479,10 @@ def assert_sync_report(report):
     assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
         f'pagehide keepalive config flush failed: {report}'
     )
-    assert report['chatTestMessageAdded'], f'Chat test message button failed: {report}'
+    assert report['chatTestMessageAdded'] and report['chatNoScrollBounce'], f'Chat test message/bounce failed: {report}'
+    assert report['chatRow3StableOnNone'] and report['chatToggleGapCompact'], (
+        f'Chat settings grid/spacing failed: {report}'
+    )
     assert report['videoVolumeRestored'], f'Video volume/mute persistence failed: {report}'
     assert report['maxDurationRejected'], f'Max clip duration rejection failed: {report}'
     assert report['historySearchOk'], f'History search filter failed: {report}'
