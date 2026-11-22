@@ -120,7 +120,7 @@ async function main() {
             const auth = init?.headers?.Authorization || '';
             if (auth === 'OAuth token_user1') {
                 return new Response(JSON.stringify({
-                    client_id: '7i3oa82uoo3e39ovny3p7k079f84n3',
+                    client_id: 'fvu8e09aa5f2xhomhll396ogkdyckb',
                     login: 'streamer_one',
                     user_id: '11111',
                     expires_in: 3600,
@@ -128,7 +128,7 @@ async function main() {
             }
             if (auth === 'OAuth token_user2') {
                 return new Response(JSON.stringify({
-                    client_id: '7i3oa82uoo3e39ovny3p7k079f84n3',
+                    client_id: 'fvu8e09aa5f2xhomhll396ogkdyckb',
                     login: 'streamer_two',
                     user_id: '22222',
                     expires_in: 3600,

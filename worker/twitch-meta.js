@@ -4,7 +4,7 @@
 
 import { jsonResponse } from './proxy.js';
 
-const DEFAULT_TWITCH_CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
+const DEFAULT_TWITCH_CLIENT_ID = 'fvu8e09aa5f2xhomhll396ogkdyckb';
 const CLIP_ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
 const VOD_ID_RE = /^\d{1,32}$/;
 

@@ -12,7 +12,7 @@ import {
 } from './obs-auth.js';
 import { jsonResponse } from './proxy.js';
 
-const DEFAULT_TWITCH_CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
+const DEFAULT_TWITCH_CLIENT_ID = 'fvu8e09aa5f2xhomhll396ogkdyckb';
 const MAX_BODY_BYTES = 512 * 1024;
 const INITIAL_HISTORY_LIMIT = 1000;
 const MAX_BATCH_SIZE = 50;

@@ -3,7 +3,7 @@
  */
 window.ClipQ = window.ClipQ || {};
 
-ClipQ.CLIENT_ID = '7i3oa82uoo3e39ovny3p7k079f84n3';
+ClipQ.CLIENT_ID = 'fvu8e09aa5f2xhomhll396ogkdyckb';
 
 ClipQ.Auth = (() => {
     'use strict';
@@ -107,7 +107,12 @@ ClipQ.Auth = (() => {
             const res = await fetch('https://id.twitch.tv/oauth2/validate', {
                 headers: { 'Authorization': `OAuth ${token}` }
             });
-            return { valid: res.ok, unauthorized: res.status === 401 };
+            if (!res.ok) {
+                return { valid: false, unauthorized: res.status === 401 };
+            }
+            const data = await res.json().catch(() => null);
+            const clientMismatch = Boolean(data?.client_id && data.client_id !== ClipQ.CLIENT_ID);
+            return { valid: !clientMismatch, unauthorized: clientMismatch };
         } catch {
             return { valid: false, unauthorized: false };
         }
