@@ -345,6 +345,7 @@ SYNC_TEST_JS = """
 
         document.getElementById('dropdown-settings').click();
         document.querySelector('.modal-tabs .tab[data-stab="queue"]').click();
+        const qLefts = ['#stab-queue .form-label', '#stab-queue .form-hint', '.user-limit-grid > div:first-child .form-hint'].map(s => Math.round(document.querySelector(s)?.getBoundingClientRect().left || 0));
         document.getElementById('set-remove-timeout-clips').click();
         document.getElementById('set-remove-timeout-clips').click();
         document.getElementById('set-user-clip-limit').value = '1';
@@ -356,7 +357,7 @@ SYNC_TEST_JS = """
         ClipQ.Queue.start();
         ClipQ.Queue.next();
         const winLimRes = ClipQ.Queue.addClip({ provider: 'youtube', clipId: 'WinClip2', url: 'https://youtu.be/WinClip2', meta: { title: 'W2' } }, 'winuser');
-        out.userWindowLimitOk = qCfg.userClipLimitWindow === 24 && qCfg.userClipLimitUnit === 'days' && qCfg.removeClipsOnTimeout === true && winLimRes === 'limit';
+        out.userWindowLimitOk = new Set(qLefts).size === 1 && qLefts[0] > 0 && qCfg.userClipLimitWindow === 24 && qCfg.userClipLimitUnit === 'days' && qCfg.removeClipsOnTimeout === true && winLimRes === 'limit';
         qCfg.userClipLimit = 0;
         qCfg.userClipLimitWindow = 0;
 

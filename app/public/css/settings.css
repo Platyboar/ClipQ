@@ -18,7 +18,7 @@
 .form-group { margin-bottom:20px; }
 .form-label { display:block; font-weight:600; margin-bottom:4px; color:var(--color-text); }
 .form-hint { font-size:var(--font-size-sm); color:var(--color-text-dim); margin-bottom:8px; }
-.form-group > .form-label, .form-group > .form-hint, .design-chat-grid .form-label { padding-left:2px; }
+.modal-body .form-label, .modal-body .form-hint, .modal-body .settings-section-title, .modal-body .settings-count-text, #stab-about .about-title, #stab-about .about-text, #stab-about .about-meta, #stab-about .about-privacy-title { padding-left:2px; }
 .commands-hint { margin-bottom:16px; }
 .form-input, .form-textarea { width:100%; padding:10px 14px; background:rgba(20,23,30,0.65); color:var(--color-text); border:1px solid var(--color-border); border-radius:var(--border-radius-sm); transition:border-color .15s; }
 .form-textarea { min-height:100px; resize:vertical; font-family:monospace; }
