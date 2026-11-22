@@ -118,6 +118,7 @@ ClipQ.App = (() => {
             ClipQ.Settings.save(settings);
         }
         if (user?.id && ClipQ.ChatBadges) ClipQ.ChatBadges.loadForChannel(user.id);
+        if (user?.id && ClipQ.ChatEmotes) ClipQ.ChatEmotes.loadForChannel(user.id);
 
         const titleEl = document.getElementById('app-title');
         if (titleEl) titleEl.textContent = settings.appTitle || 'ClipQ';

@@ -134,6 +134,24 @@ SYNC_TEST_JS = """
                 memory: ['youtube:seen_1']
             }), { status: 200 });
         }
+        if (u === 'https://7tv.io/v3/emote-sets/global') {
+            return new Response(JSON.stringify({ emotes: [{ id: 'stvG1', name: 'StvGlobal', data: { host: { url: '//cdn.7tv.app/emote/stvG1', files: [{ name: '2x.webp' }] } } }] }), { status: 200 });
+        }
+        if (u.startsWith('https://7tv.io/v3/users/twitch/')) {
+            return new Response(JSON.stringify({ emote_set: { emotes: [{ id: 'stvC1', name: 'StvChan', data: { host: { url: '//cdn.7tv.app/emote/stvC1', files: [{ name: '2x.webp' }] } } }] } }), { status: 200 });
+        }
+        if (u === 'https://api.betterttv.net/3/cached/emotes/global') {
+            return new Response(JSON.stringify([{ id: 'bttvG1', code: 'BttvGlobal' }]), { status: 200 });
+        }
+        if (u.startsWith('https://api.betterttv.net/3/cached/users/twitch/')) {
+            return new Response(JSON.stringify({ channelEmotes: [{ id: 'bttvC1', code: 'BttvChan' }], sharedEmotes: [] }), { status: 200 });
+        }
+        if (u === 'https://api.frankerfacez.com/v1/set/global') {
+            return new Response(JSON.stringify({ default_sets: [1], sets: { 1: { emoticons: [{ id: 101, name: 'FfzGlobal', urls: { '2': '//cdn.frankerfacez.com/emote/101/2' } }] } } }), { status: 200 });
+        }
+        if (u.startsWith('https://api.frankerfacez.com/v1/room/id/')) {
+            return new Response(JSON.stringify({ room: { set: 2 }, sets: { 2: { emoticons: [{ id: 202, name: 'FfzChan', urls: { '2': '//cdn.frankerfacez.com/emote/202/2' } }] } } }), { status: 200 });
+        }
         return origFetch(url, opts);
     };
 
@@ -179,6 +197,7 @@ SYNC_TEST_JS = """
         document.getElementById('settings-close').click();
         out.obsCoverRemaskedOnClose = document.getElementById('obs-url-group')?.classList.contains('obs-masked');
 
+        await ClipQ.ChatEmotes.loadForChannel('88888');
         ClipQ.ChatFeed.applySettings({ showChat: true, chatShowBadges: true, chatShowLinks: true, chatAnimation: 'slide', chatDirection: 'bottom' });
         ClipQ.ChatFeed.appendMessage({
             id: 'msg_1',
@@ -186,8 +205,9 @@ SYNC_TEST_JS = """
             login: 'chatviewer',
             color: '#ff5500',
             badges: { moderator: '1', subscriber: '12' },
+            emotes: { '25': ['0-4'] },
             roles: { isMod: true },
-            message: 'Hello <img src=x onerror="window.__chatXss=1"> https://clips.twitch.tv/ClipOne'
+            message: 'Kappa StvChan BttvChan FfzChan <img src=x onerror="window.__chatXss=1"> https://clips.twitch.tv/ClipOne'
         });
         ClipQ.ChatFeed.appendMessage({
             id: 'msg_2',
@@ -199,6 +219,7 @@ SYNC_TEST_JS = """
         });
         out.chatCountInitial = document.querySelectorAll('#chat-messages .chat-msg').length;
         out.chatMultiBadgeCount = document.querySelectorAll('#chat-messages .chat-msg')[0]?.querySelectorAll('.chat-badge').length || 0;
+        out.chatEmoteCount = document.querySelectorAll('#chat-messages .chat-msg')[0]?.querySelectorAll('.chat-emote').length || 0;
         out.chatXssPrevented = typeof window.__chatXss === 'undefined';
         out.chatInvalidColorBlocked = !document.querySelectorAll('#chat-messages .chat-msg-author')[1]?.getAttribute('style');
         document.getElementById('design-chat-show-badges').click();
@@ -295,6 +316,7 @@ def assert_sync_report(report):
     assert (
         report['chatCountInitial'] == 2
         and report['chatMultiBadgeCount'] == 2
+        and report['chatEmoteCount'] == 4
         and report['chatXssPrevented']
         and report['chatInvalidColorBlocked']
     ), f'Live chat feed rendering/XSS check failed: {report}'

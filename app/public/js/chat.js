@@ -178,8 +178,9 @@ ClipQ.Chat = (() => {
 
         const userRoles = { isBroadcaster, isLeadMod, isMod, isVip };
 
-        if (userstate['room-id'] && ClipQ.ChatBadges && ClipQ.ChatBadges.loadForChannel) {
-            ClipQ.ChatBadges.loadForChannel(userstate['room-id']);
+        if (userstate['room-id']) {
+            if (ClipQ.ChatBadges) ClipQ.ChatBadges.loadForChannel(userstate['room-id']);
+            if (ClipQ.ChatEmotes) ClipQ.ChatEmotes.loadForChannel(userstate['room-id']);
         }
 
         if (ClipQ.ChatFeed && ClipQ.ChatFeed.appendMessage) {
@@ -189,6 +190,7 @@ ClipQ.Chat = (() => {
                 login,
                 color: userstate.color,
                 badges,
+                emotes: userstate.emotes,
                 roles: userRoles,
                 message
             });

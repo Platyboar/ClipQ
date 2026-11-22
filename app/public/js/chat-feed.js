@@ -8,7 +8,6 @@ ClipQ.ChatFeed = (() => {
 
     const MAX_MESSAGES = 120;
     const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
-    const URL_STRIP_RE = /\bhttps?:\/\/[^\s]+/gi;
 
     let entries = [];
     let enabled = true;
@@ -26,12 +25,6 @@ ClipQ.ChatFeed = (() => {
         return HEX_COLOR_RE.test(trimmed) ? trimmed : '';
     }
 
-    function formatDisplayText(rawMessage) {
-        const text = typeof rawMessage === 'string' ? rawMessage : '';
-        if (showLinks) return text;
-        return text.replace(URL_STRIP_RE, '').replace(/\s{2,}/g, ' ').trim();
-    }
-
     function applyContainerClasses(container) {
         if (!container) return;
         container.classList.toggle('dir-top', direction === 'top');
@@ -40,8 +33,10 @@ ClipQ.ChatFeed = (() => {
     }
 
     function buildMessageRow(entry, isNewArrival) {
-        const displayText = formatDisplayText(entry.message);
-        if (!displayText) return null;
+        const messageHtml = ClipQ.ChatEmotes && ClipQ.ChatEmotes.formatMessageHtml
+            ? ClipQ.ChatEmotes.formatMessageHtml(entry.message, entry.emotes, showLinks)
+            : ClipQ.escapeHtml(typeof entry.message === 'string' ? entry.message : '');
+        if (!messageHtml) return null;
 
         const row = document.createElement('div');
         row.className = isNewArrival ? 'chat-msg chat-msg-enter' : 'chat-msg';
@@ -54,13 +49,12 @@ ClipQ.ChatFeed = (() => {
         const safeColor = sanitizeColor(entry.color);
         const colorAttr = safeColor ? ` style="color:${safeColor}"` : '';
         const safeAuthor = ClipQ.escapeHtml(entry.username || entry.login || 'unknown');
-        const safeText = ClipQ.escapeHtml(displayText);
 
         row.innerHTML =
             (badgeHtml ? `<span class="chat-msg-badges">${badgeHtml}</span>` : '') +
             `<span class="chat-msg-author"${colorAttr}>${safeAuthor}</span>` +
             `<span class="chat-msg-sep">: </span>` +
-            `<span class="chat-msg-text">${safeText}</span>`;
+            `<span class="chat-msg-text">${messageHtml}</span>`;
         return row;
     }
 
