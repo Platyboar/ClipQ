@@ -236,8 +236,11 @@ ClipQ.App = (() => {
         const pauseBtn = document.getElementById('btn-pause');
         if (pauseBtn) {
             pauseBtn.disabled = !current;
-            pauseBtn.textContent = t(isPaused ? 'player.resume' : 'player.pause');
             pauseBtn.setAttribute('aria-pressed', String(isPaused));
+            const pauseLabel = pauseBtn.querySelector('.pause-label-pause');
+            const resumeLabel = pauseBtn.querySelector('.pause-label-resume');
+            if (pauseLabel) pauseLabel.setAttribute('aria-hidden', String(isPaused));
+            if (resumeLabel) resumeLabel.setAttribute('aria-hidden', String(!isPaused));
         }
         const shareBtn = document.getElementById('btn-share-chat');
         if (shareBtn) shareBtn.disabled = !current;

@@ -110,9 +110,11 @@ ClipQ.ChatFeed = (() => {
         const safeAuthor = ClipQ.escapeHtml(entry.username || entry.login || 'unknown');
 
         row.innerHTML =
+            '<span class="chat-msg-header">' +
             (badgeHtml ? `<span class="chat-msg-badges">${badgeHtml}</span>` : '') +
             `<span class="chat-msg-author"${colorAttr}>${safeAuthor}</span>` +
-            `<span class="chat-msg-sep">: </span>` +
+            '<span class="chat-msg-sep">:</span>' +
+            '</span> ' +
             `<span class="chat-msg-text">${messageHtml}</span>`;
         return row;
     }

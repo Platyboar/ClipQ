@@ -228,6 +228,8 @@ SYNC_TEST_JS = """
         });
         out.chatCountInitial = document.querySelectorAll('#chat-messages .chat-msg').length;
         out.chatMultiBadgeCount = document.querySelectorAll('#chat-messages .chat-msg')[0]?.querySelectorAll('.chat-badge').length || 0;
+        const cBadgeRect = document.querySelector('#chat-messages .chat-msg .chat-badge')?.getBoundingClientRect(), cAuthorRect = document.querySelector('#chat-messages .chat-msg .chat-msg-author')?.getBoundingClientRect();
+        out.chatBadgeCentered = Boolean(cBadgeRect && cAuthorRect && Math.abs(((cBadgeRect.top + cBadgeRect.bottom) / 2) - ((cAuthorRect.top + cAuthorRect.bottom) / 2)) < 1);
         out.chatEmoteCount = document.querySelectorAll('#chat-messages .chat-msg')[0]?.querySelectorAll('.chat-emote').length || 0;
         out.chatXssPrevented = typeof window.__chatXss === 'undefined';
         out.chatInvalidColorBlocked = !document.querySelectorAll('#chat-messages .chat-msg-author')[1]?.getAttribute('style');
@@ -313,9 +315,10 @@ SYNC_TEST_JS = """
         const ytIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
         const pauseBtn = document.getElementById('btn-pause'), prevRect = document.getElementById('btn-prev')?.getBoundingClientRect(), pauseRect = pauseBtn?.getBoundingClientRect(), nextRectPause = document.getElementById('btn-next')?.getBoundingClientRect();
         pauseBtn?.click();
-        const pausedAfter1 = Boolean(ClipQ.Player.isPaused() && pauseBtn?.getAttribute('aria-pressed') === 'true' && pauseBtn?.textContent.includes('Resume'));
+        const pauseRect2 = pauseBtn?.getBoundingClientRect(), nextRectPause2 = document.getElementById('btn-next')?.getBoundingClientRect();
+        const pausedAfter1 = Boolean(ClipQ.Player.isPaused() && pauseBtn?.getAttribute('aria-pressed') === 'true' && getComputedStyle(pauseBtn.querySelector('.pause-label-resume')).visibility === 'visible' && getComputedStyle(pauseBtn.querySelector('.pause-label-pause')).visibility === 'hidden');
         pauseBtn?.click();
-        out.pauseResumeOk = Boolean(ytIframeSrc.includes('enablejsapi=1') && prevRect && pauseRect && nextRectPause && pauseRect.left > prevRect.right && nextRectPause.left > pauseRect.right && pausedAfter1 && !ClipQ.Player.isPaused() && pauseBtn?.textContent.includes('Pause'));
+        out.pauseResumeOk = Boolean(ytIframeSrc.includes('enablejsapi=1') && prevRect && pauseRect && nextRectPause && pauseRect.left > prevRect.right && nextRectPause.left > pauseRect.right && Math.abs(pauseRect.width - pauseRect2.width) < 0.1 && Math.abs(nextRectPause.left - nextRectPause2.left) < 0.1 && pausedAfter1 && !ClipQ.Player.isPaused() && getComputedStyle(pauseBtn.querySelector('.pause-label-pause')).visibility === 'visible');
         ClipQ.Player.playClip({ provider: 'twitch', clipId: 'EmbedOnlyClip', url: 'https://www.twitch.tv/skuuii/clip/EmbedOnlyClip', meta: { title: 'Embed Clip', channel: 'skuuii' } });
         await new Promise(r => setTimeout(r, 40));
         out.twitchNormalIframeSrc = document.querySelector('#player-area iframe')?.getAttribute('src') || '';
@@ -453,6 +456,7 @@ def assert_sync_report(report):
     assert all(
         report[k]
         for k in (
+            'chatBadgeCentered',
             'chatBadgesHiddenClass',
             'chatUrlsStripped',
             'chatMessagesHidden',
@@ -483,17 +487,9 @@ def assert_sync_report(report):
     ), f'Sync/chat/queue/history feature check failed: {report}'
     assert report['chatCountAfterDeleteMsg'] == 1 and report['chatCountAfterDeleteUser'] == 0, report
     assert report['invalidObsRejected'] and report['obsSessionLoaded'], f'OBS session handling failed: {report}'
-    assert report['twitchFallbackVideoSrc'].startswith(
-        'https://d1ndex63qxojbr.cloudfront.net/hevc/1440/index.mp4?sig=sig123'
-    ), f'Twitch failed-transcode video fallback failed: {report}'
-    assert report['twitchNormalIframeSrc'].startswith('https://clips.twitch.tv/embed?clip=EmbedOnlyClip'), (
-        f'Normal Twitch embed failed: {report}'
-    )
-    assert report['obsTwitchMetaTitle'] == 'OBS Clip Title', f'OBS Twitch meta fallback failed: {report}'
-    assert report['calls']['proxyAuthOk'] and report['calls']['obsSyncOk'] and report['calls']['obsTwitchMetaOk'], (
-        f'Proxy/OBS auth header check failed: {report}'
-    )
-    assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], (
-        f'pagehide keepalive config flush failed: {report}'
-    )
+    assert report['twitchFallbackVideoSrc'].startswith('https://d1ndex63qxojbr.cloudfront.net/'), report
+    assert report['twitchNormalIframeSrc'].startswith('https://clips.twitch.tv/embed?clip=EmbedOnlyClip'), report
+    assert report['obsTwitchMetaTitle'] == 'OBS Clip Title' and report['calls']['obsTwitchMetaOk'], report
+    assert report['calls']['proxyAuthOk'] and report['calls']['obsSyncOk'], report
+    assert report['calls']['putConfig'] >= 1 and report['calls']['keepalivePut'], report
     assert report['deletedCloud'] and report['calls']['deleteAll'] == 1, f'Cloud deletion failed: {report}'

@@ -184,6 +184,10 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 .ctrl-btn:disabled { opacity:.45; cursor:not-allowed; }
 .ctrl-btn.primary { background:var(--color-accent); color:#fff; border-color:var(--color-accent); box-shadow:0 2px 12px var(--color-accent-glow); }
 .ctrl-btn.primary:hover:not(:disabled) { background:var(--color-accent-hover); }
+.ctrl-btn-pause { display:inline-grid; place-items:center; }
+.ctrl-btn-pause .pause-label { grid-area:1 / 1; }
+.ctrl-btn-pause[aria-pressed="false"] .pause-label-resume,
+.ctrl-btn-pause[aria-pressed="true"] .pause-label-pause { visibility:hidden; }
 .ctrl-btn-share { grid-column:2 / span 3; padding:6px 16px; font-size:13px; border-radius:20px; width:100%; }
 .autoplay-toggle { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:var(--border-radius-sm); background:rgba(255,255,255,.03); color:inherit; border:1px solid var(--color-border); transition:all .2s; user-select:none; }
 .autoplay-toggle:hover { background:rgba(255,255,255,.06); }
@@ -216,12 +220,13 @@ body.obs-mode.obs-hide-topbar #menubar { display:none; }
 @keyframes chat-slide-out-down { from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(12px)} }
 
 @media (prefers-reduced-motion:reduce) { .chat-messages.anim-in-slide .chat-msg-enter, .chat-messages.anim-out-slide .chat-msg-exit { animation:none; } }
-.chat-msg-badges { display:inline; vertical-align:middle; }
-.chat-badge { width:16px; height:16px; }
+.chat-msg-header { display:inline-flex; align-items:center; flex-wrap:wrap; max-width:100%; vertical-align:middle; }
+.chat-msg-badges { display:inline-flex; align-items:center; gap:4px; margin-right:5px; }
+.chat-msg-badges .badge-role, .chat-msg-badges .chat-badge { margin-right:0; vertical-align:baseline; }
 body.chat-badges-hidden .chat-msg-badges { display:none; }
 .chat-msg-author { font-weight:600; color:var(--color-text-accent); }
 .chat-msg-sep { color:var(--color-text-dim); }
-.chat-msg-text { color:var(--color-chat-text); }
+.chat-msg-text { color:var(--color-chat-text); vertical-align:middle; }
 .chat-emote { height:1.35em; width:auto; max-width:4em; vertical-align:middle; display:inline-block; margin:-2px 2px; object-fit:contain; }
 #facecam-area { height:var(--facecam-height); flex-shrink:0; background:var(--color-facecam-bg); border:1px solid var(--color-border-facecam); border-radius:var(--border-radius); }
 #queue-section { flex:1; display:flex; flex-direction:column; background:var(--color-queue-bg); border:1px solid var(--color-border-queue); border-radius:var(--border-radius); overflow:hidden; min-height:0; }
